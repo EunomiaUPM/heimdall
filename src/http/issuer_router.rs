@@ -101,7 +101,10 @@ impl IssuerRouter {
     ) -> impl IntoResponse {
         let payload = match payload {
             Ok(Form(data)) => data,
-            Err(e) => return e.into_response(),
+            Err(e) => {
+                error!("{}", e.to_string());
+                return e.into_response();
+            }
         };
 
         match issuer.get_token(payload).await {

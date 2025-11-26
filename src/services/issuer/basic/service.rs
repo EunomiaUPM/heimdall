@@ -16,7 +16,6 @@
  *  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  *
  */
-
 use super::super::IssuerTrait;
 use super::config::{BasicIssuerConfig, BasicIssuerConfigTrait};
 use crate::data::entities::{interaction, issuing, minions, request};
@@ -25,14 +24,13 @@ use crate::types::enums::errors::BadFormat;
 use crate::types::enums::vc_type::VcType;
 use crate::types::issuing::{
     AuthServerMetadata, CredentialRequest, DidPossession, GiveVC, IssuerMetadata, IssuingToken,
-    VCCredOffer,
+    TokenRequest, VCCredOffer,
 };
-use crate::types::vcs::cred_subject::{CredentialSubject4DataSpace, CredentialSubject4Identity};
-use crate::types::vcs::{VCClaimsV1, VCFromClaimsV1, VCIssuer};
 use crate::utils::{get_from_opt, has_expired, is_active, trim_4_base, validate_token};
 use anyhow::bail;
-use chrono::{Duration, Utc};
 use jsonwebtoken::{encode, Algorithm, EncodingKey, Header, TokenData};
+use serde_json::Value;
+use std::str::FromStr;
 use tracing::{error, info};
 use urlencoding;
 
@@ -49,7 +47,6 @@ impl BasicIssuerService {
 impl IssuerTrait for BasicIssuerService {
     fn start_vci(&self, model: &request::Model) -> issuing::NewModel {
         info!("Starting OIDC4VCI");
-        let uri = model.vc_uri.clone().unwrap(); // EXPECTED ALWAYS
         let host = format!(
             "{}{}/issuer",
             self.config.get_host(),
@@ -64,7 +61,6 @@ impl IssuerTrait for BasicIssuerService {
             id: model.id.clone(),
             name: model.participant_slug.clone(),
             vc_type: model.vc_type.clone(),
-            uri,
             aud,
         }
     }
@@ -158,17 +154,22 @@ impl IssuerTrait for BasicIssuerService {
     fn validate_token_req(
         &self,
         model: &issuing::Model,
-        tx_code: &str,
-        pre_auth_code: &str,
+        payload: &TokenRequest,
     ) -> anyhow::Result<()> {
         info!("Validating token request");
 
-        if model.tx_code != tx_code {
-            let error = Errors::forbidden_new("tx_code does not match");
-            error!("{}", error.log());
-            bail!(error)
+        match &payload.tx_code {
+            Some(tx_code) => {
+                if model.tx_code != *tx_code {
+                    let error = Errors::forbidden_new("tx_code does not match");
+                    error!("{}", error.log());
+                    bail!(error)
+                }
+            }
+            None => {}
         }
-        if model.pre_auth_code != pre_auth_code {
+
+        if model.pre_auth_code != payload.pre_authorized_code {
             let error = Errors::forbidden_new("pre_auth_code does not match");
             error!("{}", error.log());
             bail!(error)
@@ -177,63 +178,12 @@ impl IssuerTrait for BasicIssuerService {
         Ok(())
     }
 
-    fn issue_cred(&self, model: &mut issuing::Model, did: &str) -> anyhow::Result<GiveVC> {
+    fn issue_cred(&self, claims: Value, did: &str) -> anyhow::Result<GiveVC> {
         info!("Issuing cred");
-
-        let credential_subject = match VcType::from_str(&model.vc_type)? {
-            VcType::DataSpaceParticipant => {
-                serde_json::to_value(CredentialSubject4DataSpace::new(
-                    get_from_opt(&model.did, "did")?,
-                    model.name.clone(),
-                ))?
-            }
-            VcType::Identity => serde_json::to_value(CredentialSubject4Identity::new(
-                get_from_opt(&model.did, "did")?,
-                model.name.clone(),
-            ))?,
-        };
-
-        let now = Utc::now();
-        let claims = VCClaimsV1 {
-            exp: None,
-            iat: None,
-            iss: None,
-            sub: None,
-            vc: VCFromClaimsV1 {
-                context: vec!["https://www.w3.org/ns/credentials/v2".to_string()],
-                r#type: vec!["VerifiableCredential".to_string(), model.vc_type.clone()],
-                id: model.credential_id.clone(),
-                credential_subject,
-                issuer: VCIssuer {
-                    id: did.to_string(),
-                    name: "RainbowAuthority".to_string(),
-                },
-                valid_from: Some(now),
-                valid_until: Some(now + Duration::days(365)),
-            },
-        };
-        // let claims = VCClaimsV2 {
-        //     exp: None,
-        //     iat: None,
-        //     iss: None,
-        //     sub: None,
-        //     context: vec!["https://www.w3.org/ns/credentials/v2".to_string()],
-        //     r#type: vec!["VerifiableCredential".to_string(), model.vc_type.clone()],
-        //     id: model.credential_id.clone(),
-        //     credential_subject,
-        //     issuer: VCIssuer {
-        //         id: did.to_string(),
-        //         name: "RainbowAuthority".to_string(),
-        //     },
-        //     valid_from: Some(now),
-        //     valid_until: Some(now + Duration::days(365)),
-        // };
 
         let mut header = Header::new(Algorithm::RS256);
         header.kid = Some(did.to_string());
 
-        let data = self.config.get_priv_key()?;
-        println!("{}", data);
         let key = match EncodingKey::from_rsa_pem(self.config.get_priv_key()?.as_bytes()) {
             Ok(data) => data,
             Err(e) => {
@@ -258,7 +208,6 @@ impl IssuerTrait for BasicIssuerService {
             }
         };
 
-        model.credential = Some(vc_jwt.clone());
         Ok(GiveVC {
             format: "jwt_vc_json".to_string(),
             credential: vc_jwt,
@@ -270,6 +219,7 @@ impl IssuerTrait for BasicIssuerService {
         model: &mut issuing::Model,
         cred_req: &CredentialRequest,
         token: &str,
+        issuer_did: &str,
     ) -> anyhow::Result<()> {
         info!("Validating credential request");
 
@@ -302,7 +252,8 @@ impl IssuerTrait for BasicIssuerService {
 
         let (token, kid) = validate_token::<DidPossession>(&cred_req.proof.jwt, Some(&model.aud))?;
         self.validate_did_possession(&token, &kid)?;
-        model.did = Some(kid);
+        model.holder_did = Some(kid);
+        model.issuer_did = Some(issuer_did.to_string());
         is_active(token.claims.iat)?;
         has_expired(token.claims.exp)?;
         Ok(())
@@ -327,7 +278,7 @@ impl IssuerTrait for BasicIssuerService {
         int_model: &interaction::Model,
         iss_model: &issuing::Model,
     ) -> anyhow::Result<minions::NewModel> {
-        let did = get_from_opt(&iss_model.did, "did")?;
+        let did = get_from_opt(&iss_model.holder_did, "did")?;
         let base_url = trim_4_base(&int_model.uri);
         Ok(minions::NewModel {
             participant_id: did,

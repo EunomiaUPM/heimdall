@@ -16,7 +16,6 @@
  *  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  *
  */
-
 use super::config::{GnapConfig, GnapConfigTrait};
 use crate::data::entities::{interaction, request};
 use crate::errors::{ErrorLogTrait, Errors};
@@ -24,19 +23,17 @@ use crate::services::client::ClientServiceTrait;
 use crate::services::gatekeeper::GateKeeperTrait;
 use crate::types::enums::errors::BadFormat;
 use crate::types::enums::request::Body;
+use crate::types::enums::role::AuthorityRole;
 use crate::types::enums::vc_type::VcType;
 use crate::types::gnap::{CallbackBody, GrantRequest, Interact4GR, RejectedCallbackBody};
-use crate::types::vcs::VCIData;
 use crate::utils::create_opaque_token;
 use anyhow::bail;
 use async_trait::async_trait;
 use axum::http::header::{ACCEPT, CONTENT_TYPE};
 use axum::http::HeaderMap;
-use base64::engine::general_purpose::STANDARD;
-use base64::Engine;
+use std::str::FromStr;
 use std::sync::Arc;
 use tracing::{error, info};
-use x509_parser::parse_x509_certificate;
 
 pub struct GnapService {
     config: GnapConfig,
@@ -62,8 +59,10 @@ impl GateKeeperTrait for GnapService {
         let client = payload.client;
         let cert = client.key.cert;
         let participant_slug = client.class_id.unwrap_or("Slug".to_string());
-        let vc_type = payload.access_token.access.r#type.as_str();
-        VcType::from_str(vc_type)?;
+        let vc_type = VcType::from_str(&payload.access_token.access.r#type)?;
+
+        self.validate_vc_to_issue(&vc_type)?;
+
         let new_request_model = request::NewModel {
             id: id.clone(),
             participant_slug,
@@ -130,33 +129,31 @@ impl GateKeeperTrait for GnapService {
         Ok(interact.clone())
     }
 
-    fn manage_cont_req(&self, req_model: &request::Model) -> anyhow::Result<VCIData> {
-        info!("Continuing request");
+    fn validate_vc_to_issue(&self, vc_type: &VcType) -> anyhow::Result<()> {
+        info!("Validating that the requested vc can be issued");
 
-        let base_cert = match req_model.cert.clone() {
-            Some(data) => data,
-            None => {
-                let error = Errors::format_new(
-                    BadFormat::Received,
-                    "There was no cert in the Grant Request",
-                );
-                error!("{}", error.log());
-                bail!(error)
+        match self.config.get_role() {
+            AuthorityRole::LegalAuthority => match vc_type {
+                VcType::LegalRegistrationNumber(_) => {}
+                _ => {
+                    let error = Errors::unauthorized_new(
+                        "As a legal authority we can only issue LegalRegistration numbers vcs",
+                    );
+                    error!("{}", error.log());
+                    bail!(error)
+                }
+            },
+            AuthorityRole::ClearingHouse => {
+                // TODO
             }
-        };
-
-        let cert_bytes = STANDARD.decode(base_cert)?;
-        let (_, cert) = parse_x509_certificate(&cert_bytes)?;
-        let test = cert.subject.to_string();
-        let clean = test.strip_prefix("CN=").unwrap_or(test.as_str());
-        let website = format!("http://{}", clean.to_string());
-        let name = req_model.participant_slug.clone();
-        let vc_type = VcType::from_str(req_model.vc_type.as_str())?;
-        Ok(VCIData {
-            name,
-            website,
-            vc_type,
-        })
+            AuthorityRole::ClearingHouseProxy => {
+                // TODO
+            }
+            AuthorityRole::DataSpaceAuthority => {
+                // TODO
+            }
+        }
+        Ok(())
     }
 
     fn validate_cont_req(
@@ -226,15 +223,15 @@ impl GateKeeperTrait for GnapService {
         &self,
         approve: bool,
         req_model: &mut request::Model,
-        int_model: interaction::Model,
+        int_model: &interaction::Model,
     ) -> anyhow::Result<()> {
         let body = match approve {
             true => {
                 info!("Approving petition to obtain a VC");
                 req_model.status = "Approved".to_string();
                 let body = CallbackBody {
-                    interact_ref: int_model.interact_ref,
-                    hash: int_model.hash,
+                    interact_ref: int_model.interact_ref.clone(),
+                    hash: int_model.hash.clone(),
                 };
                 serde_json::to_value(body)?
             }

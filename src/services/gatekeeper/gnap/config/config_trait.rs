@@ -16,9 +16,11 @@
  *  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  *
  */
+use crate::types::enums::role::AuthorityRole;
 
 pub trait GnapConfigTrait {
     fn get_host(&self) -> String;
     fn get_host_without_protocol(&self) -> String;
+    fn get_role(&self) -> AuthorityRole;
     fn get_api_path(&self) -> String;
 }

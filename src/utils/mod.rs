@@ -184,10 +184,7 @@ where
     match value {
         Some(v) => Ok(v.clone()),
         None => {
-            let error = Errors::format_new(
-                BadFormat::Received,
-                &format!("Missing field: {}", field_name),
-            );
+            let error = Errors::unauthorized_new(&format!("Missing field: {}", field_name));
             error!("{}", error.log());
             bail!(error);
         }

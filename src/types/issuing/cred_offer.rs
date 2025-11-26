@@ -43,7 +43,11 @@ impl VCCredOffer {
     pub fn new(issuer: String, token: String, vc_type: VcType) -> Self {
         VCCredOffer {
             credential_issuer: issuer,
-            grants: CredOfferGrants { urn_pre_authorized_code: UrnPreAuthorizedCode { pre_authorized_code: token } },
+            grants: CredOfferGrants {
+                urn_pre_authorized_code: UrnPreAuthorizedCode {
+                    pre_authorized_code: token,
+                },
+            },
             credential_configuration_ids: vec![vc_type.to_conf()],
         }
     }

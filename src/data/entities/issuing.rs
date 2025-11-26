@@ -32,12 +32,14 @@ pub struct Model {
     pub tx_code: String,
     pub step: bool,
     pub vc_type: String,
-    pub uri: String,
+    pub uri: Option<String>,
     pub token: String,
     pub aud: String,
-    pub did: Option<String>,
+    pub holder_did: Option<String>,
+    pub issuer_did: Option<String>,
     pub credential_id: String,
     pub credential: Option<String>,
+    pub credential_data: Option<String>,
 }
 
 #[derive(Clone, Debug)]
@@ -45,7 +47,6 @@ pub struct NewModel {
     pub id: String,
     pub name: String,
     pub vc_type: String,
-    pub uri: String,
     pub aud: String,
 }
 
@@ -62,12 +63,14 @@ impl IntoActiveSet<ActiveModel> for NewModel {
             tx_code: ActiveValue::Set(tx_code),
             step: ActiveValue::Set(true),
             vc_type: ActiveValue::Set(self.vc_type),
-            uri: ActiveValue::Set(self.uri),
+            uri: ActiveValue::Set(None),
             token: ActiveValue::Set(token),
             aud: ActiveValue::Set(self.aud),
-            did: ActiveValue::Set(None),
+            holder_did: ActiveValue::Set(None),
+            issuer_did: ActiveValue::Set(None),
             credential_id: ActiveValue::Set(credential_id),
             credential: ActiveValue::Set(None),
+            credential_data: ActiveValue::Set(None),
         }
     }
 }
@@ -84,9 +87,11 @@ impl IntoActiveSet<ActiveModel> for Model {
             uri: ActiveValue::Set(self.uri),
             token: ActiveValue::Set(self.token),
             aud: ActiveValue::Set(self.aud),
-            did: ActiveValue::Set(self.did),
+            holder_did: ActiveValue::Set(self.holder_did),
+            issuer_did: ActiveValue::Set(self.issuer_did),
             credential_id: ActiveValue::Set(self.credential_id),
             credential: ActiveValue::Set(self.credential),
+            credential_data: ActiveValue::Set(self.credential_data),
         }
     }
 }

@@ -20,9 +20,10 @@
 use crate::data::entities::{interaction, issuing, minions, request};
 use crate::types::issuing::{
     AuthServerMetadata, CredentialRequest, DidPossession, GiveVC, IssuerMetadata, IssuingToken,
-    VCCredOffer,
+    TokenRequest, VCCredOffer,
 };
 use jsonwebtoken::TokenData;
+use serde_json::Value;
 
 pub trait IssuerTrait: Send + Sync + 'static {
     fn start_vci(&self, req_model: &request::Model) -> issuing::NewModel;
@@ -34,15 +35,15 @@ pub trait IssuerTrait: Send + Sync + 'static {
     fn validate_token_req(
         &self,
         model: &issuing::Model,
-        tx_code: &str,
-        pre_auth_code: &str,
+        payload: &TokenRequest,
     ) -> anyhow::Result<()>;
-    fn issue_cred(&self, model: &mut issuing::Model, did: &str) -> anyhow::Result<GiveVC>;
+    fn issue_cred(&self, claims: Value, did: &str) -> anyhow::Result<GiveVC>;
     fn validate_cred_req(
         &self,
         model: &mut issuing::Model,
         cred_req: &CredentialRequest,
         token: &str,
+        issuer_did: &str,
     ) -> anyhow::Result<()>;
     fn validate_did_possession(
         &self,

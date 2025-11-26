@@ -19,7 +19,7 @@
 
 use crate::core::traits::CoreTrait;
 use crate::http::{
-    GateKeeperRouter, IssuerRouter, OpenapiRouter, VcsRouter, VerifierRouter, WalletRouter,
+    GateKeeperRouter, IssuerRouter, OpenapiRouter, ApproverRouter, VerifierRouter, WalletRouter,
 };
 use axum::extract::Request;
 use axum::http::StatusCode;
@@ -50,7 +50,7 @@ impl RainbowAuthorityRouter {
         let wallet_router = WalletRouter::new(self.core.clone()).router();
         let issuer_router = IssuerRouter::new(self.core.clone()).router();
         let verifier_router = VerifierRouter::new(self.core.clone()).router();
-        let vcs_router = VcsRouter::new(self.core.clone()).router();
+        let approver_router = ApproverRouter::new(self.core.clone()).router();
         let openapi_router = OpenapiRouter::new(self.openapi.clone()).router();
 
         Router::new()
@@ -63,8 +63,8 @@ impl RainbowAuthorityRouter {
                 wallet_router,
             )
             .nest(
-                &format!("{}/vc-request", self.core.config().get_api_path()),
-                vcs_router,
+                &format!("{}/approver", self.core.config().get_api_path()),
+                approver_router,
             )
             .nest(
                 &format!("{}/gate", self.core.config().get_api_path()),

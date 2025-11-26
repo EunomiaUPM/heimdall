@@ -16,13 +16,8 @@
  *  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  *
  */
+mod config;
+mod config_trait;
 
-pub trait BasicIssuerConfigTrait {
-    fn get_host_without_protocol(&self) -> String;
-    fn get_host(&self) -> String;
-    fn is_local(&self) -> bool;
-    fn get_cert(&self) -> anyhow::Result<String>;
-    fn get_priv_key(&self) -> anyhow::Result<String>;
-    fn get_pub_key(&self) -> anyhow::Result<String>;
-    fn get_api_path(&self) -> String;
-}
+pub use config::LegalAuthorityConfig;
+pub use config_trait::LegalAuthorityConfigTrait;

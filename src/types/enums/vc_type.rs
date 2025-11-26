@@ -16,41 +16,92 @@
  *  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  *
  */
-
 use crate::errors::{ErrorLogTrait, Errors};
 use crate::types::enums::errors::BadFormat;
+use crate::types::vcs::legal_authority::LegalRegistrationNumberTypes;
 use anyhow::bail;
+use serde::{Deserialize, Serialize};
+use std::fmt;
+use std::fmt::Formatter;
+use std::str::FromStr;
 use tracing::error;
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum VcType {
-    DataSpaceParticipant,
-    Identity,
+    LegalRegistrationNumber(LegalRegistrationNumberTypes),
+    Unknown,
 }
 
-impl VcType {
-    pub fn to_conf(self) -> String {
-        match self {
-            VcType::DataSpaceParticipant => "DataspaceParticipantCredential_jwt_vc_json".to_string(),
-            VcType::Identity => "IdentityCredential_jwt_vc_json".to_string(),
-        }
-    }
+impl FromStr for VcType {
+    type Err = anyhow::Error;
 
-    pub fn from_str(s: &str) -> anyhow::Result<VcType> {
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
-            "DataspaceParticipantCredential" => Ok(VcType::DataSpaceParticipant),
-            "IdentityCredential" => Ok(VcType::Identity),
+            "LegalRegistrationNumber-tax_id" => Ok(VcType::LegalRegistrationNumber(
+                LegalRegistrationNumberTypes::TaxId,
+            )),
+            "LegalRegistrationNumber-euid" => Ok(VcType::LegalRegistrationNumber(
+                LegalRegistrationNumberTypes::Euid,
+            )),
+            "LegalRegistrationNumber-eori" => Ok(VcType::LegalRegistrationNumber(
+                LegalRegistrationNumberTypes::Eori,
+            )),
+            "LegalRegistrationNumber-vat_id" => Ok(VcType::LegalRegistrationNumber(
+                LegalRegistrationNumberTypes::VatId,
+            )),
+            "LegalRegistrationNumber-lei_code" => Ok(VcType::LegalRegistrationNumber(
+                LegalRegistrationNumberTypes::LeiCode,
+            )),
             _ => {
-                let error = Errors::format_new(BadFormat::Received, &format!("Unknown format: {}", s));
+                let error = Errors::format_new(
+                    BadFormat::Received,
+                    &format!("Unknown credential format: {}", s),
+                );
                 error!("{}", error.log());
                 bail!(error)
             }
         }
     }
+}
 
-    pub fn to_string(&self) -> String {
+impl fmt::Display for VcType {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        let s = match self {
+            VcType::LegalRegistrationNumber(data) => match data {
+                LegalRegistrationNumberTypes::TaxId => "LegalRegistrationNumber-tax_id".to_string(),
+                LegalRegistrationNumberTypes::Euid => "LegalRegistrationNumber-euid".to_string(),
+                LegalRegistrationNumberTypes::Eori => "LegalRegistrationNumber-eori".to_string(),
+                LegalRegistrationNumberTypes::VatId => "LegalRegistrationNumber-vat_id".to_string(),
+                LegalRegistrationNumberTypes::LeiCode => {
+                    "LegalRegistrationNumber-lei_code".to_string()
+                }
+            },
+            _ => "Unknown".to_string(),
+        };
+
+        write!(f, "{s}")
+    }
+}
+
+impl VcType {
+    pub fn to_conf(&self) -> String {
         match self {
-            VcType::DataSpaceParticipant => "DataspaceParticipantCredential".to_string(),
-            VcType::Identity => "IdentityCredential".to_string(),
+            VcType::LegalRegistrationNumber(_) => "LegalRegistrationNumber_jwt_vc_json".to_string(),
+            _ => "Unknown".to_string(),
+        }
+    }
+
+    pub fn variants() -> Vec<VcType> {
+        vec![
+            VcType::Unknown,
+            VcType::LegalRegistrationNumber(LegalRegistrationNumberTypes::TaxId),
+            // TODO ADD MORE
+        ]
+    }
+    pub fn name(&self) -> String {
+        match self {
+            VcType::LegalRegistrationNumber(_) => "LegalRegistrationNumber".to_string(),
+            VcType::Unknown => "Unknown".to_string(),
         }
     }
 }

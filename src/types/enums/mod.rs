@@ -19,3 +19,5 @@
 pub mod errors;
 pub mod request;
 pub mod vc_type;
+pub mod data_model;
+pub mod role;

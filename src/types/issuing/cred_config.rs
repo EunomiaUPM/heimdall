@@ -17,6 +17,7 @@
  *
  */
 
+use crate::types::enums::vc_type::VcType;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
@@ -37,29 +38,19 @@ impl CredentialConfiguration {
     pub fn basic() -> HashMap<String, CredentialConfiguration> {
         let mut credential_configurations_supported = HashMap::new();
 
-        credential_configurations_supported.insert(
-            "DataspaceParticipantCredential_jwt_vc_json".to_string(),
-            CredentialConfiguration {
-                format: "jwt_vc_json".to_string(),
-                cryptographic_binding_methods_supported: vec!["did".to_string()],
-                credential_signing_alg_values_supported: vec!["RSA".to_string()],
-                credential_definition: CredentialDefinition {
-                    r#type: vec!["VerifiableCredential".to_string(), "DataspaceParticipantCredential".to_string()],
+        for vc_type in VcType::variants() {
+            credential_configurations_supported.insert(
+                vc_type.to_conf(),
+                CredentialConfiguration {
+                    format: "jwt_vc_json".to_string(),
+                    cryptographic_binding_methods_supported: vec!["did".to_string()],
+                    credential_signing_alg_values_supported: vec!["RSA".to_string()],
+                    credential_definition: CredentialDefinition {
+                        r#type: vec!["VerifiableCredential".to_string(), vc_type.name()],
+                    },
                 },
-            },
-        );
-
-        credential_configurations_supported.insert(
-            "IdentityCredential_jwt_vc_json".to_string(),
-            CredentialConfiguration {
-                format: "jwt_vc_json".to_string(),
-                cryptographic_binding_methods_supported: vec!["did".to_string()],
-                credential_signing_alg_values_supported: vec!["RSA".to_string()],
-                credential_definition: CredentialDefinition {
-                    r#type: vec!["VerifiableCredential".to_string(), "IdentityCredential".to_string()],
-                },
-            },
-        );
+            );
+        }
 
         credential_configurations_supported
     }

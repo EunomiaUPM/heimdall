@@ -21,8 +21,10 @@ use crate::config::CoreApplicationConfig;
 use tracing::info;
 
 pub fn extract_env_config(env_file: Option<String>) -> anyhow::Result<CoreApplicationConfig> {
-    let config = CoreApplicationConfig::merge_dotenv_configuration(env_file);
-    let table = json_to_table::json_to_table(&serde_json::to_value(&config)?).collapse().to_string();
+    let config = CoreApplicationConfig::load_from_yaml(env_file);
+    let table = json_to_table::json_to_table(&serde_json::to_value(&config)?)
+        .collapse()
+        .to_string();
     info!("Current Application Authority Config:\n{}", table);
     Ok(config)
 }

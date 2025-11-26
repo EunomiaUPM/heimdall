@@ -22,10 +22,14 @@ use crate::core::Core;
 use crate::http::RainbowAuthorityRouter;
 use crate::services::client::basic::BasicClientService;
 use crate::services::gatekeeper::gnap::{config::GnapConfig, GnapService};
-use crate::services::issuer::basic_v1::{config::BasicIssuerConfig, BasicIssuerService};
+use crate::services::issuer::basic::{config::BasicIssuerConfig, BasicIssuerService};
 use crate::services::repo::postgres::RepoForSql;
-use crate::services::verifier::basic_v1::{config::BasicVerifierConfig, BasicVerifierService};
+use crate::services::vcs_builder::legal_authority::{
+    config::LegalAuthorityConfig, LegalAuthorityBuilder,
+};
+use crate::services::verifier::basic::{config::BasicVerifierConfig, BasicVerifierService};
 use crate::services::wallet::waltid::{config::WaltIdConfig, WaltIdService};
+use crate::types::enums::role::AuthorityRole;
 use axum::{serve, Router};
 use sea_orm::Database;
 use std::sync::Arc;
@@ -35,12 +39,40 @@ use tracing::info;
 pub struct AuthorityApplication;
 
 pub async fn create_authority_router(config: &CoreApplicationConfig) -> Router {
+    // ROLE
+    let role = config.get_role();
+
+    let builder = match role {
+        AuthorityRole::LegalAuthority => {
+            let config = LegalAuthorityConfig::from(config.clone());
+            LegalAuthorityBuilder::new(config)
+        }
+        AuthorityRole::ClearingHouse => {
+            // TODO
+            let config = LegalAuthorityConfig::from(config.clone());
+            LegalAuthorityBuilder::new(config)
+        }
+        AuthorityRole::ClearingHouseProxy => {
+            // TODO
+            let config = LegalAuthorityConfig::from(config.clone());
+            LegalAuthorityBuilder::new(config)
+        }
+        AuthorityRole::DataSpaceAuthority => {
+            // TODO
+            let config = LegalAuthorityConfig::from(config.clone());
+            LegalAuthorityBuilder::new(config)
+        }
+    };
+
     // CONFIGS
-    let db_connection = Database::connect(config.get_full_db_url()).await.expect("Database can't connect");
+    let db_connection = Database::connect(config.get_full_db_url())
+        .await
+        .expect("Database can't connect");
     let waltid_config = WaltIdConfig::from(config.clone());
     let gnap_config = GnapConfig::from(config.clone());
     let issuer_config = BasicIssuerConfig::from(config.clone());
     let verifier_config = BasicVerifierConfig::from(config.clone());
+    let builder_service= Arc::new(builder);
     let core_config = Arc::new(config.clone());
 
     // SERVICES
@@ -52,10 +84,19 @@ pub async fn create_authority_router(config: &CoreApplicationConfig) -> Router {
     let verifier = Arc::new(BasicVerifierService::new(verifier_config));
 
     // CORE
-    let authority = Core::new(wallet, access, issuer, verifier, repo, client, core_config);
+    let core = Core::new(
+        wallet,
+        access,
+        issuer,
+        verifier,
+        builder_service,
+        repo,
+        client,
+        core_config,
+    );
 
     // ROUTER
-    RainbowAuthorityRouter::new(Arc::new(authority)).router()
+    RainbowAuthorityRouter::new(Arc::new(core)).router()
 }
 
 impl AuthorityApplication {

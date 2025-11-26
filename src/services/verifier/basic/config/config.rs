@@ -17,31 +17,31 @@
  *
  */
 
+use super::BasicVerifierConfigTrait;
 use crate::config::{CoreApplicationConfig, CoreApplicationConfigTrait};
-use crate::services::issuer::basic_v1::config::config_trait::BasicIssuerConfigTrait;
+use crate::types::enums::vc_type::VcType;
 use crate::types::host::HostConfig;
-use crate::utils::read;
 
-pub struct BasicIssuerConfig {
+pub struct BasicVerifierConfig {
     host: HostConfig,
     is_local: bool,
-    keys_path: String,
     api_path: String,
+    requested_vcs: Vec<VcType>,
 }
 
-impl From<CoreApplicationConfig> for BasicIssuerConfig {
-    fn from(config: CoreApplicationConfig) -> BasicIssuerConfig {
+impl From<CoreApplicationConfig> for BasicVerifierConfig {
+    fn from(config: CoreApplicationConfig) -> BasicVerifierConfig {
         let api_path = config.get_api_path();
-        BasicIssuerConfig {
+        BasicVerifierConfig {
             host: config.host,
             is_local: config.is_local,
-            keys_path: config.keys_path,
             api_path,
+            requested_vcs: config.requested_vcs,
         }
     }
 }
 
-impl BasicIssuerConfigTrait for BasicIssuerConfig {
+impl BasicVerifierConfigTrait for BasicVerifierConfig {
     fn get_host_without_protocol(&self) -> String {
         let host = self.host.clone();
         match host.port {
@@ -69,18 +69,8 @@ impl BasicIssuerConfigTrait for BasicIssuerConfig {
     fn is_local(&self) -> bool {
         self.is_local
     }
-
-    fn get_cert(&self) -> anyhow::Result<String> {
-        let path = format!("{}/cert.pem", self.keys_path);
-        read(&path)
-    }
-    fn get_priv_key(&self) -> anyhow::Result<String> {
-        let path = format!("{}/private_key.pem", self.keys_path);
-        read(&path)
-    }
-    fn get_pub_key(&self) -> anyhow::Result<String> {
-        let path = format!("{}/public_key.pem", self.keys_path);
-        read(&path)
+    fn get_requested_vcs(&self) -> Vec<VcType> {
+        self.requested_vcs.clone()
     }
     fn get_api_path(&self) -> String {
         self.api_path.clone()

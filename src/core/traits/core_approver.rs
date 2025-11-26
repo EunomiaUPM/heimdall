@@ -25,7 +25,7 @@ use async_trait::async_trait;
 use std::sync::Arc;
 
 #[async_trait]
-pub trait CoreVcsTrait: Send + Sync + 'static {
+pub trait CoreApproverTrait: Send + Sync + 'static {
     fn gatekeeper(&self) -> Arc<dyn GateKeeperTrait>;
     fn repo(&self) -> Arc<dyn RepoTrait>;
     async fn get_all(&self) -> anyhow::Result<Vec<request::Model>> {
@@ -38,7 +38,7 @@ pub trait CoreVcsTrait: Send + Sync + 'static {
         let mut req_model = self.repo().request().get_by_id(&id).await?;
         let int_model = self.repo().interaction().get_by_id(&id).await?;
         self.gatekeeper()
-            .apprv_dny_req(payload.approve, &mut req_model, int_model)
+            .apprv_dny_req(payload.approve, &mut req_model, &int_model)
             .await?;
         Ok(())
     }

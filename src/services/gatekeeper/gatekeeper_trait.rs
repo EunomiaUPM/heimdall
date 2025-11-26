@@ -16,10 +16,9 @@
  *  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  *
  */
-
 use crate::data::entities::{interaction, request};
+use crate::types::enums::vc_type::VcType;
 use crate::types::gnap::{GrantRequest, Interact4GR};
-use crate::types::vcs::VCIData;
 use async_trait::async_trait;
 
 #[async_trait]
@@ -29,7 +28,7 @@ pub trait GateKeeperTrait: Send + Sync + 'static {
         grant_request: GrantRequest,
     ) -> anyhow::Result<(request::NewModel, interaction::NewModel)>;
     fn validate_acc_req(&self, payload: &GrantRequest) -> anyhow::Result<Interact4GR>;
-    fn manage_cont_req(&self, req_model: &request::Model) -> anyhow::Result<VCIData>;
+    fn validate_vc_to_issue(&self, vc_type: &VcType) -> anyhow::Result<()>;
     fn validate_cont_req(
         &self,
         int_model: &interaction::Model,
@@ -41,6 +40,6 @@ pub trait GateKeeperTrait: Send + Sync + 'static {
         &self,
         approve: bool,
         req_model: &mut request::Model,
-        int_model: interaction::Model,
+        int_model: &interaction::Model,
     ) -> anyhow::Result<()>;
 }

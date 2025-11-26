@@ -18,11 +18,11 @@
  */
 
 use super::helper::DbType;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Clone, Debug)]
+#[derive(Deserialize, Serialize, Clone, Debug)]
 pub struct DatabaseConfig {
-    pub db_type: DbType,
+    pub r#type: DbType,
     pub url: String,
     pub port: String,
     pub user: String,

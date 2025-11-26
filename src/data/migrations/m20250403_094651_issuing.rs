@@ -33,25 +33,34 @@ impl MigrationTrait for Migration {
             .create_table(
                 Table::create()
                     .table(Issuing::Table)
-                    .col(ColumnDef::new(Issuing::Id).string().not_null().primary_key())
+                    .col(
+                        ColumnDef::new(Issuing::Id)
+                            .string()
+                            .not_null()
+                            .primary_key(),
+                    )
                     .col(ColumnDef::new(Issuing::Name).string().not_null())
                     .col(ColumnDef::new(Issuing::PreAuthCode).string().not_null())
                     .col(ColumnDef::new(Issuing::TxCode).string().not_null())
                     .col(ColumnDef::new(Issuing::Step).boolean().not_null())
                     .col(ColumnDef::new(Issuing::VcType).string().not_null())
-                    .col(ColumnDef::new(Issuing::Uri).string().not_null())
+                    .col(ColumnDef::new(Issuing::Uri).string())
                     .col(ColumnDef::new(Issuing::Token).string().not_null())
                     .col(ColumnDef::new(Issuing::Aud).string().not_null())
-                    .col(ColumnDef::new(Issuing::Did).string())
+                    .col(ColumnDef::new(Issuing::HolderDid).string())
+                    .col(ColumnDef::new(Issuing::IssuerDid).string())
                     .col(ColumnDef::new(Issuing::CredentialId).string().not_null())
                     .col(ColumnDef::new(Issuing::Credential).string())
+                    .col(ColumnDef::new(Issuing::CredentialData).string())
                     .to_owned(),
             )
             .await
     }
 
     async fn down(&self, manager: &SchemaManager) -> Result<(), DbErr> {
-        manager.drop_table(Table::drop().table(Issuing::Table).to_owned()).await
+        manager
+            .drop_table(Table::drop().table(Issuing::Table).to_owned())
+            .await
     }
 }
 
@@ -67,7 +76,9 @@ pub enum Issuing {
     Uri,
     Token,
     Aud,
-    Did,
+    HolderDid,
+    IssuerDid,
     CredentialId,
     Credential,
+    CredentialData,
 }

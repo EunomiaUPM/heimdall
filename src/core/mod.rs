@@ -17,7 +17,7 @@
  *
  */
 
-mod authority;
+mod core;
 pub mod traits;
 
-pub use authority::Core;
+pub use core::Core;

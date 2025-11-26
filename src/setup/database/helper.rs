@@ -18,11 +18,11 @@
  */
 
 use anyhow::anyhow;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use std::fmt::Display;
 use std::str::FromStr;
 
-#[derive(Serialize, Clone, Debug)]
+#[derive(Deserialize, Serialize, Clone, Debug)]
 pub enum DbType {
     Postgres,
     Mysql,

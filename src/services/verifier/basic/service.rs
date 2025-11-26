@@ -22,7 +22,6 @@ use super::config::{BasicVerifierConfig, BasicVerifierConfigTrait};
 use crate::data::entities::verification;
 use crate::errors::{ErrorLogTrait, Errors};
 use crate::types::enums::errors::BadFormat;
-use crate::types::enums::vc_type::VcType;
 use crate::types::vcs::VPDef;
 use crate::utils::{get_claim, get_opt_claim, split_did};
 use anyhow::bail;
@@ -47,7 +46,7 @@ impl BasicVerifierService {
 }
 
 impl VerifierTrait for BasicVerifierService {
-    fn start_vp(&self, id: &str, vc_type: VcType) -> anyhow::Result<verification::NewModel> {
+    fn start_vp(&self, id: &str) -> anyhow::Result<verification::NewModel> {
         info!("Managing OIDC4VP");
         let host_url = self.config.get_host();
         let host_url = match self.config.is_local() {
@@ -56,8 +55,18 @@ impl VerifierTrait for BasicVerifierService {
         };
 
         let client_id = format!("{}/verify", &host_url);
-        let new_verification_model =
-            verification::NewModel { id: id.to_string(), audience: client_id, vc_type: vc_type.to_string() };
+        let requested_vcs = self.config.get_requested_vcs();
+        if requested_vcs.is_empty() {
+            let error = Errors::unauthorized_new("Unable to verify following oidc4vp");
+            error!("{}", error.log());
+            bail!(error)
+        }
+        let vc_type = serde_json::to_string(&requested_vcs)?;
+        let new_verification_model = verification::NewModel {
+            id: id.to_string(),
+            audience: client_id,
+            vc_type,
+        };
 
         Ok(new_verification_model)
     }
@@ -103,7 +112,11 @@ impl VerifierTrait for BasicVerifierService {
         VPDef::new(ver_model.id, ver_model.vc_type)
     }
 
-    fn verify_all(&self, ver_model: &mut verification::Model, vp_token: String) -> anyhow::Result<()> {
+    fn verify_all(
+        &self,
+        ver_model: &mut verification::Model,
+        vp_token: String,
+    ) -> anyhow::Result<()> {
         info!("Verifying all");
 
         let (vcs, holder) = self.verify_vp(ver_model, &vp_token)?;
@@ -115,7 +128,11 @@ impl VerifierTrait for BasicVerifierService {
         Ok(())
     }
 
-    fn verify_vp(&self, model: &mut verification::Model, vp_token: &str) -> anyhow::Result<(Vec<String>, String)> {
+    fn verify_vp(
+        &self,
+        model: &mut verification::Model,
+        vp_token: &str,
+    ) -> anyhow::Result<(Vec<String>, String)> {
         info!("Verifying vp");
 
         model.vpt = Some(vp_token.to_string());
@@ -165,7 +182,11 @@ impl VerifierTrait for BasicVerifierService {
         Ok(())
     }
 
-    fn validate_token(&self, vp_token: &str, audience: Option<&str>) -> anyhow::Result<(TokenData<Value>, String)> {
+    fn validate_token(
+        &self,
+        vp_token: &str,
+        audience: Option<&str>,
+    ) -> anyhow::Result<(TokenData<Value>, String)> {
         info!("Validating token");
         let header = jsonwebtoken::decode_header(&vp_token)?;
         let kid_str = match header.kid.as_ref() {
@@ -214,7 +235,10 @@ impl VerifierTrait for BasicVerifierService {
         let token = match jsonwebtoken::decode::<Value>(&vp_token, &key, &val) {
             Ok(token) => token,
             Err(e) => {
-                let error = Errors::security_new(&format!("VPT signature is incorrect -> {}", e.to_string()));
+                let error = Errors::security_new(&format!(
+                    "VPT signature is incorrect -> {}",
+                    e.to_string()
+                ));
                 error!("{}", error.log());
                 bail!(error);
             }
@@ -224,7 +248,11 @@ impl VerifierTrait for BasicVerifierService {
         Ok((token, kid.to_string()))
     }
 
-    fn validate_nonce(&self, model: &verification::Model, token: &TokenData<Value>) -> anyhow::Result<()> {
+    fn validate_nonce(
+        &self,
+        model: &verification::Model,
+        token: &TokenData<Value>,
+    ) -> anyhow::Result<()> {
         info!("Validating nonce");
 
         let nonce = get_claim(&token.claims, vec!["nonce"])?;
@@ -285,7 +313,9 @@ impl VerifierTrait for BasicVerifierService {
         match sub {
             Some(sub) => {
                 if sub != holder {
-                    let error = Errors::security_new("VCT token sub, credential subject & VP Holder do not match");
+                    let error = Errors::security_new(
+                        "VCT token sub, credential subject & VP Holder do not match",
+                    );
                     error!("{}", error.log());
                     bail!(error);
                 }
@@ -295,7 +325,8 @@ impl VerifierTrait for BasicVerifierService {
         }
 
         if holder != cred_sub_id {
-            let error = Errors::security_new("VCT token sub, credential subject & VP Holder do not match");
+            let error =
+                Errors::security_new("VCT token sub, credential subject & VP Holder do not match");
             error!("{}", error.log());
             bail!(error);
         }
@@ -303,7 +334,11 @@ impl VerifierTrait for BasicVerifierService {
         Ok(())
     }
 
-    fn validate_vp_id(&self, model: &verification::Model, token: &TokenData<Value>) -> anyhow::Result<()> {
+    fn validate_vp_id(
+        &self,
+        model: &verification::Model,
+        token: &TokenData<Value>,
+    ) -> anyhow::Result<()> {
         info!("Validating vp id");
 
         let vp_id = get_claim(&token.claims, vec!["vp", "id"])?;
@@ -318,7 +353,11 @@ impl VerifierTrait for BasicVerifierService {
         Ok(())
     }
 
-    fn validate_holder(&self, model: &verification::Model, token: &TokenData<Value>) -> anyhow::Result<()> {
+    fn validate_holder(
+        &self,
+        model: &verification::Model,
+        token: &TokenData<Value>,
+    ) -> anyhow::Result<()> {
         info!("Validating holder");
 
         let vp_holder = get_claim(&token.claims, vec!["vp", "holder"])?;
@@ -400,7 +439,10 @@ impl VerifierTrait for BasicVerifierService {
                         }
                     }
                     Err(e) => {
-                        let error = Errors::security_new(&format!("VC iat and issuanceDate do not match -> {}", e));
+                        let error = Errors::security_new(&format!(
+                            "VC iat and issuanceDate do not match -> {}",
+                            e
+                        ));
                         error!("{}", error.log());
                         bail!(error);
                     }
@@ -430,7 +472,10 @@ impl VerifierTrait for BasicVerifierService {
                         }
                     }
                     Err(e) => {
-                        let error = Errors::security_new(&format!("VC validUntil has invalid format -> {}", e));
+                        let error = Errors::security_new(&format!(
+                            "VC validUntil has invalid format -> {}",
+                            e
+                        ));
                         error!("{}", error.log());
                         bail!(error);
                     }
@@ -445,20 +490,21 @@ impl VerifierTrait for BasicVerifierService {
 
     fn retrieve_vcs(&self, token: TokenData<Value>) -> anyhow::Result<Vec<String>> {
         info!("Retrieving VCs");
-        let vcs: Vec<String> = match serde_json::from_value(token.claims["vp"]["verifiableCredential"].clone()) {
-            Ok(data) => data,
-            Err(e) => {
-                let error = Errors::format_new(
-                    BadFormat::Received,
-                    &format!(
-                        "VPT does not contain the 'verifiableCredential' field -> {}",
-                        e.to_string()
-                    ),
-                );
-                error!("{}", error.log());
-                bail!(error);
-            }
-        };
+        let vcs: Vec<String> =
+            match serde_json::from_value(token.claims["vp"]["verifiableCredential"].clone()) {
+                Ok(data) => data,
+                Err(e) => {
+                    let error = Errors::format_new(
+                        BadFormat::Received,
+                        &format!(
+                            "VPT does not contain the 'verifiableCredential' field -> {}",
+                            e.to_string()
+                        ),
+                    );
+                    error!("{}", error.log());
+                    bail!(error);
+                }
+            };
         Ok(vcs)
     }
 }

@@ -17,24 +17,34 @@
  *
  */
 
-use super::BasicVerifierConfigTrait;
 use crate::config::{CoreApplicationConfig, CoreApplicationConfigTrait};
+use crate::services::issuer::basic::config::config_trait::BasicIssuerConfigTrait;
+use crate::types::enums::data_model::VcDataModelVersion;
 use crate::types::host::HostConfig;
+use crate::utils::read;
 
-pub struct BasicVerifierConfig {
+pub struct BasicIssuerConfig {
     host: HostConfig,
     is_local: bool,
+    keys_path: String,
     api_path: String,
+    vc_data_model: VcDataModelVersion,
 }
 
-impl From<CoreApplicationConfig> for BasicVerifierConfig {
-    fn from(config: CoreApplicationConfig) -> BasicVerifierConfig {
+impl From<CoreApplicationConfig> for BasicIssuerConfig {
+    fn from(config: CoreApplicationConfig) -> BasicIssuerConfig {
         let api_path = config.get_api_path();
-        BasicVerifierConfig { host: config.host, is_local: config.is_local, api_path }
+        BasicIssuerConfig {
+            host: config.host,
+            is_local: config.is_local,
+            keys_path: config.keys_path,
+            api_path,
+            vc_data_model: config.vc_data_model,
+        }
     }
 }
 
-impl BasicVerifierConfigTrait for BasicVerifierConfig {
+impl BasicIssuerConfigTrait for BasicIssuerConfig {
     fn get_host_without_protocol(&self) -> String {
         let host = self.host.clone();
         match host.port {
@@ -62,7 +72,24 @@ impl BasicVerifierConfigTrait for BasicVerifierConfig {
     fn is_local(&self) -> bool {
         self.is_local
     }
+
+    fn get_cert(&self) -> anyhow::Result<String> {
+        let path = format!("{}/cert.pem", self.keys_path);
+        read(&path)
+    }
+    fn get_priv_key(&self) -> anyhow::Result<String> {
+        let path = format!("{}/private_key.pem", self.keys_path);
+        read(&path)
+    }
+    fn get_pub_key(&self) -> anyhow::Result<String> {
+        let path = format!("{}/public_key.pem", self.keys_path);
+        read(&path)
+    }
     fn get_api_path(&self) -> String {
         self.api_path.clone()
     }
+    fn get_data_model_version(&self) -> VcDataModelVersion {
+        self.vc_data_model.clone()
+    }
+
 }

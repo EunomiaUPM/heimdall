@@ -23,3 +23,4 @@ pub mod issuer;
 pub mod repo;
 pub mod verifier;
 pub mod wallet;
+pub mod vcs_builder;

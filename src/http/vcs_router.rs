@@ -17,7 +17,7 @@
  *
  */
 
-use crate::core::traits::CoreVcsTrait;
+use crate::core::traits::CoreApproverTrait;
 use crate::errors::CustomToResponse;
 use crate::types::vcs::VcDecisionApproval;
 use axum::extract::rejection::JsonRejection;
@@ -28,12 +28,12 @@ use axum::routing::{get, post};
 use axum::{Json, Router};
 use std::sync::Arc;
 
-pub struct VcsRouter {
-    approver: Arc<dyn CoreVcsTrait>,
+pub struct ApproverRouter {
+    approver: Arc<dyn CoreApproverTrait>,
 }
 
-impl VcsRouter {
-    pub fn new(approver: Arc<dyn CoreVcsTrait>) -> Self {
+impl ApproverRouter {
+    pub fn new(approver: Arc<dyn CoreApproverTrait>) -> Self {
         Self { approver }
     }
     pub fn router(self) -> Router {
@@ -44,7 +44,7 @@ impl VcsRouter {
             .with_state(self.approver)
     }
 
-    async fn get_all_requests(State(approver): State<Arc<dyn CoreVcsTrait>>) -> impl IntoResponse {
+    async fn get_all_requests(State(approver): State<Arc<dyn CoreApproverTrait>>) -> impl IntoResponse {
         match approver.get_all().await {
             Ok(data) => (StatusCode::OK, Json(data)).into_response(),
             Err(e) => e.to_response(),
@@ -52,7 +52,7 @@ impl VcsRouter {
     }
 
     async fn get_one_request(
-        State(approver): State<Arc<dyn CoreVcsTrait>>,
+        State(approver): State<Arc<dyn CoreApproverTrait>>,
         Path(id): Path<String>,
     ) -> impl IntoResponse {
         match approver.get_by_id(id).await {
@@ -62,7 +62,7 @@ impl VcsRouter {
     }
 
     async fn manage_request(
-        State(approver): State<Arc<dyn CoreVcsTrait>>,
+        State(approver): State<Arc<dyn CoreApproverTrait>>,
         Path(id): Path<String>,
         payload: Result<Json<VcDecisionApproval>, JsonRejection>,
     ) -> impl IntoResponse {

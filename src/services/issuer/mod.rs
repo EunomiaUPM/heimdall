@@ -17,6 +17,6 @@
  *
  */
 
-pub mod basic_v1;
+pub mod basic;
 mod issuer_trait;
 pub use issuer_trait::IssuerTrait;

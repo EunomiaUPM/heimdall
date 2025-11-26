@@ -17,9 +17,9 @@
  *
  */
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Clone, Debug)]
+#[derive(Deserialize, Serialize, Clone, Debug)]
 pub struct HostConfig {
     pub protocol: String,
     pub url: String,

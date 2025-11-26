@@ -44,9 +44,9 @@ impl BasicRepoTrait<Entity, NewModel> for IssuingRepo {
 
 #[async_trait]
 impl IssuingRepoTrait for IssuingRepo {
-    async fn get_by_tx_code(&self, code: &str) -> anyhow::Result<Model> {
+    async fn get_by_pre_auth_code(&self, code: &str) -> anyhow::Result<Model> {
         let model = match Entity::find()
-            .filter(Column::TxCode.eq(code))
+            .filter(Column::PreAuthCode.eq(code))
             .one(self.db())
             .await
         {

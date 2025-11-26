@@ -23,6 +23,6 @@ use async_trait::async_trait;
 
 #[async_trait]
 pub trait IssuingRepoTrait: BasicRepoTrait<Entity, NewModel> + Send + Sync {
-    async fn get_by_tx_code(&self, code: &str) -> anyhow::Result<Model>;
+    async fn get_by_pre_auth_code(&self, code: &str) -> anyhow::Result<Model>;
     async fn get_by_token(&self, token: &str) -> anyhow::Result<Model>;
 }

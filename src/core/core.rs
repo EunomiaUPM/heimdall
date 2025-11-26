@@ -19,13 +19,14 @@
 
 use crate::config::CoreApplicationConfigTrait;
 use crate::core::traits::{
-    CoreGatekeeperTrait, CoreIssuerTrait, CoreTrait, CoreVcsTrait, CoreVerifierTrait,
+    CoreApproverTrait, CoreGatekeeperTrait, CoreIssuerTrait, CoreTrait, CoreVerifierTrait,
     CoreWalletTrait,
 };
 use crate::services::client::ClientServiceTrait;
 use crate::services::gatekeeper::GateKeeperTrait;
 use crate::services::issuer::IssuerTrait;
 use crate::services::repo::RepoTrait;
+use crate::services::vcs_builder::VcBuilderTrait;
 use crate::services::verifier::VerifierTrait;
 use crate::services::wallet::WalletTrait;
 use std::sync::Arc;
@@ -35,6 +36,7 @@ pub struct Core {
     gatekeeper: Arc<dyn GateKeeperTrait>,
     issuer: Arc<dyn IssuerTrait>,
     verifier: Arc<dyn VerifierTrait>,
+    vc_builder: Arc<dyn VcBuilderTrait>,
     repo: Arc<dyn RepoTrait>,
     #[allow(dead_code)] // as an orchestrator, it should have access even though it's not used
     client: Arc<dyn ClientServiceTrait>,
@@ -47,6 +49,7 @@ impl Core {
         gatekeeper: Arc<dyn GateKeeperTrait>,
         issuer: Arc<dyn IssuerTrait>,
         verifier: Arc<dyn VerifierTrait>,
+        vc_builder: Arc<dyn VcBuilderTrait>,
         repo: Arc<dyn RepoTrait>,
         client: Arc<dyn ClientServiceTrait>,
         config: Arc<dyn CoreApplicationConfigTrait>,
@@ -56,6 +59,7 @@ impl Core {
             gatekeeper,
             issuer,
             verifier,
+            vc_builder,
             repo,
             client,
             config,
@@ -94,9 +98,13 @@ impl CoreIssuerTrait for Core {
     fn repo(&self) -> Arc<dyn RepoTrait> {
         self.repo.clone()
     }
+
+    fn vc_builder(&self) -> Arc<dyn VcBuilderTrait> {
+        self.vc_builder.clone()
+    }
 }
 
-impl CoreVcsTrait for Core {
+impl CoreApproverTrait for Core {
     fn gatekeeper(&self) -> Arc<dyn GateKeeperTrait> {
         self.gatekeeper.clone()
     }
@@ -121,6 +129,10 @@ impl CoreGatekeeperTrait for Core {
 
     fn repo(&self) -> Arc<dyn RepoTrait> {
         self.repo.clone()
+    }
+
+    fn vc_builder(&self) -> Arc<dyn VcBuilderTrait> {
+        self.vc_builder.clone()
     }
 }
 

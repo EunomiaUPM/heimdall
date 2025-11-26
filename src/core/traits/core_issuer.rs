@@ -19,6 +19,7 @@
 
 use crate::services::issuer::IssuerTrait;
 use crate::services::repo::RepoTrait;
+use crate::services::vcs_builder::VcBuilderTrait;
 use crate::services::wallet::WalletTrait;
 use crate::types::issuing::{
     AuthServerMetadata, CredentialRequest, GiveVC, IssuerMetadata, IssuingToken, TokenRequest,
@@ -32,9 +33,12 @@ pub trait CoreIssuerTrait: Send + Sync + 'static {
     fn issuer(&self) -> Arc<dyn IssuerTrait>;
     fn wallet(&self) -> Arc<dyn WalletTrait>;
     fn repo(&self) -> Arc<dyn RepoTrait>;
+    fn vc_builder(&self) -> Arc<dyn VcBuilderTrait>;
     async fn get_cred_offer_data(&self, id: String) -> anyhow::Result<VCCredOffer> {
         let mut model = self.repo().issuing().get_by_id(&id).await?;
+
         let data = self.issuer().get_cred_offer_data(&model)?;
+
         match model.step {
             true => {
                 model.step = false;
@@ -60,10 +64,11 @@ pub trait CoreIssuerTrait: Send + Sync + 'static {
         let model = self
             .repo()
             .issuing()
-            .get_by_tx_code(&payload.tx_code)
+            .get_by_pre_auth_code(&payload.pre_authorized_code)
             .await?;
-        self.issuer()
-            .validate_token_req(&model, &payload.tx_code, &payload.pre_authorized_code)?;
+
+        self.issuer().validate_token_req(&model, &payload)?;
+
         let response = self.issuer().get_token(&model);
         Ok(response)
     }
@@ -74,15 +79,22 @@ pub trait CoreIssuerTrait: Send + Sync + 'static {
         token: String,
     ) -> anyhow::Result<GiveVC> {
         let mut iss_model = self.repo().issuing().get_by_token(&token).await?;
-        self.issuer()
-            .validate_cred_req(&mut iss_model, &payload, &token)?;
+
         let did = self.wallet().get_did().await?;
-        let data = self.issuer().issue_cred(&mut iss_model, &did)?;
+
+        self.issuer()
+            .validate_cred_req(&mut iss_model, &payload, &token, &did)?;
+
+        let claims = self.vc_builder().build_vc(&iss_model)?;
+        let data = self.issuer().issue_cred(claims, &did)?;
+
         let req_model = self.repo().request().get_by_id(&iss_model.id).await?;
         let int_model = self.repo().interaction().get_by_id(&iss_model.id).await?;
         let iss_model = self.repo().issuing().update(iss_model).await?;
+
         let minion = self.issuer().end(&req_model, &int_model, &iss_model)?;
         self.repo().minions().force_create(minion).await?;
+
         Ok(data)
     }
 }

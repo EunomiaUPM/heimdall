@@ -16,11 +16,8 @@
  *  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  *
  */
+mod legal_registration_number;
+mod vc_data;
 
-use crate::types::enums::vc_type::VcType;
-
-pub struct VCIData {
-    pub name: String,
-    pub website: String,
-    pub vc_type: VcType,
-}
+pub use legal_registration_number::*;
+pub use vc_data::*;

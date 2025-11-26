@@ -25,3 +25,4 @@ pub mod jwt;
 pub mod vcs;
 pub mod verifying;
 pub mod wallet;
+pub mod api;

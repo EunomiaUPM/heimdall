@@ -18,6 +18,8 @@
  */
 
 use crate::setup::database::DatabaseConfig;
+use crate::types::enums::role::AuthorityRole;
+use crate::types::enums::vc_type::VcType;
 
 pub trait CoreApplicationConfigTrait: Send + Sync + 'static {
     fn get_full_db_url(&self) -> String;
@@ -25,6 +27,8 @@ pub trait CoreApplicationConfigTrait: Send + Sync + 'static {
     fn get_host(&self) -> String;
     fn is_local(&self) -> bool;
     fn get_weird_port(&self) -> String;
+    fn get_role(&self) -> AuthorityRole;
+    fn  get_requested_vcs(&self) -> Vec<VcType>;
     fn get_openapi_json(&self) -> anyhow::Result<String>;
     fn get_api_path(&self) -> String;
 }

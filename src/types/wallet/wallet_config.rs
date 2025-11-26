@@ -17,9 +17,9 @@
  *
  */
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Clone, Debug)]
+#[derive(Deserialize, Serialize, Clone, Debug)]
 pub struct WalletConfig {
     pub api_protocol: String,
     pub api_url: String,

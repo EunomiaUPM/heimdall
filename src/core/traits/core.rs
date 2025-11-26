@@ -18,7 +18,7 @@
  */
 
 use super::{
-    CoreGatekeeperTrait, CoreIssuerTrait, CoreVcsTrait, CoreVerifierTrait, CoreWalletTrait,
+    CoreGatekeeperTrait, CoreIssuerTrait, CoreApproverTrait, CoreVerifierTrait, CoreWalletTrait,
 };
 use crate::config::CoreApplicationConfigTrait;
 use async_trait::async_trait;
@@ -28,7 +28,7 @@ use std::sync::Arc;
 pub trait CoreTrait:
     CoreVerifierTrait
     + CoreIssuerTrait
-    + CoreVcsTrait
+    + CoreApproverTrait
     + CoreGatekeeperTrait
     + CoreWalletTrait
     + Send

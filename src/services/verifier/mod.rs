@@ -17,7 +17,7 @@
  *
  */
 
-pub mod basic_v1;
+pub mod basic;
 mod verifier_trait;
 
 pub use verifier_trait::VerifierTrait;

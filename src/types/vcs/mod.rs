@@ -18,17 +18,16 @@
  */
 mod claims_v1;
 mod claims_v2;
-pub mod cred_subject;
+// pub mod cred_subject;
 mod input_descriptor;
 mod vc_decision_approval;
 mod vc_issuer;
-mod vci_data;
 mod vpd;
+pub mod legal_authority;
 
 pub use claims_v1::*;
 pub use claims_v2::*;
 pub use input_descriptor::*;
 pub use vc_decision_approval::*;
 pub use vc_issuer::*;
-pub use vci_data::VCIData;
 pub use vpd::VPDef;
