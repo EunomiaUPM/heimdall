@@ -22,7 +22,6 @@ use crate::setup::database::{DatabaseConfig, DbType};
 use crate::types::api::ApiConfig;
 use crate::types::enums::data_model::W3cDataModelVersion;
 use crate::types::enums::role::AuthorityRole;
-use crate::types::enums::vc_type::VcType;
 use crate::types::host::HostConfig;
 use crate::types::verifying::RequirementsToVerify;
 use crate::types::wallet::WalletConfig;

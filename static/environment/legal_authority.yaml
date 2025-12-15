@@ -21,12 +21,7 @@ wallet_config:
   password: rainbow
   id: null
 
-vc_data_model: V1
 role: LegalAuthority
-dataspace_id: null
-
-requested_vcs: []
-is_cert_allowed: true
 
 keys_path: static/certificates/
 is_local: true
@@ -34,3 +29,12 @@ is_local: true
 api:
   version: v1
   openapi_path: static/specs/openapi/openapi.json
+
+stuff_to_issue:
+  vc_model: JwtVc
+  w3c_data_model: V1
+  dataspace_id: null
+
+requirements_to_verify:
+  is_cert_allowed: true
+  requested_vcs: []
