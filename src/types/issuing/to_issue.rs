@@ -17,41 +17,49 @@
  *
  */
 use crate::errors::{ErrorLogTrait, Errors};
-use anyhow::bail;
+use crate::types::enums::data_model::W3cDataModelVersion;
+use anyhow::{anyhow, bail};
 use serde::{Deserialize, Serialize};
-use std::fmt;
+use std::fmt::{Display, Formatter};
 use std::str::FromStr;
 use tracing::error;
 
 #[derive(Deserialize, Serialize, Clone, Debug)]
-pub enum W3cDataModelVersion {
-    V1,
-    V2,
+pub struct StuffToIssue {
+    pub vc_model: VcModel,
+    pub w3c_data_model: Option<W3cDataModelVersion>,
+    pub dataspace_id: Option<String>,
 }
 
-impl FromStr for W3cDataModelVersion {
+#[derive(Deserialize, Serialize, Clone, Debug)]
+pub enum VcModel {
+    JwtVc,
+    SdJwtVc,
+}
+
+impl Display for VcModel {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        let s = match self {
+            VcModel::JwtVc => "jwt_vc".to_string(),
+            VcModel::SdJwtVc => "sd_jwt_vc".to_string(),
+        };
+
+        write!(f, "{}", s)
+    }
+}
+
+impl FromStr for VcModel {
     type Err = anyhow::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
-            "V1" => Ok(W3cDataModelVersion::V1),
-            "V2" => Ok(W3cDataModelVersion::V2),
+            "jwt_vc" => Ok(VcModel::JwtVc),
+            "sd_jwt_vc" => Ok(VcModel::SdJwtVc),
             _ => {
-                let error = Errors::parse_new("Invalid data model version");
+                let error = Errors::parse_new("Invalid VC format role");
                 error!("{}", error.log());
                 bail!(error)
             }
         }
-    }
-}
-
-impl fmt::Display for W3cDataModelVersion {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let s = match self {
-            W3cDataModelVersion::V1 => "V1",
-            W3cDataModelVersion::V2 => "V2",
-        };
-
-        write!(f, "{s}")
     }
 }

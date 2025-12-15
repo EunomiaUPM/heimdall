@@ -20,17 +20,18 @@
 use super::CoreApplicationConfigTrait;
 use crate::setup::database::{DatabaseConfig, DbType};
 use crate::types::api::ApiConfig;
-use crate::types::enums::data_model::VcDataModelVersion;
+use crate::types::enums::data_model::W3cDataModelVersion;
 use crate::types::enums::role::AuthorityRole;
 use crate::types::enums::vc_type::VcType;
 use crate::types::host::HostConfig;
+use crate::types::verifying::RequirementsToVerify;
 use crate::types::wallet::WalletConfig;
 use crate::utils::read;
-use serde::de::{self, Deserializer};
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use std::{env, fs};
 use tracing::debug;
+use crate::types::issuing::{StuffToIssue, VcModel};
 
 #[derive(Deserialize, Serialize, Clone, Debug)]
 pub struct CoreApplicationConfig {
@@ -38,14 +39,11 @@ pub struct CoreApplicationConfig {
     pub is_local: bool,
     pub database_config: DatabaseConfig,
     pub wallet_config: WalletConfig,
-    pub vc_data_model: VcDataModelVersion,
     pub role: AuthorityRole,
-    #[serde(deserialize_with = "deserialize_vctype_vec")]
-    pub requested_vcs: Vec<VcType>,
     pub keys_path: String,
     pub api: ApiConfig,
-    pub dataspace_id: Option<String>,
-    pub is_cert_allowed: bool,
+    pub stuff_to_issue: StuffToIssue,
+    pub requirements_to_verify: RequirementsToVerify,
 }
 
 impl Default for CoreApplicationConfig {
@@ -80,11 +78,16 @@ impl Default for CoreApplicationConfig {
                 version: "v1".to_string(),
                 openapi_path: "static/specs/openapi/openapi.json".to_string(),
             },
-            vc_data_model: VcDataModelVersion::V1,
             role: AuthorityRole::LegalAuthority,
-            requested_vcs: vec![],
-            is_cert_allowed: true,
-            dataspace_id: None,
+            requirements_to_verify: RequirementsToVerify {
+                is_cert_allowed: true,
+                vcs_requested: vec![],
+            },
+            stuff_to_issue: StuffToIssue {
+                vc_model: VcModel::JwtVc,
+                w3c_data_model: Some(W3cDataModelVersion::V2),
+                dataspace_id: Some("rainbow_authority".to_string()),
+            },
         }
     }
 }
@@ -152,27 +155,11 @@ impl CoreApplicationConfigTrait for CoreApplicationConfig {
     fn get_role(&self) -> AuthorityRole {
         self.role.clone()
     }
-    fn get_requested_vcs(&self) -> Vec<VcType> {
-        self.requested_vcs.clone()
-    }
+
     fn get_openapi_json(&self) -> anyhow::Result<String> {
         read(&self.api.openapi_path)
     }
     fn get_api_path(&self) -> String {
         format!("/api/{}", self.api.version)
     }
-    fn is_cert_allowed(&self) -> bool {
-        self.is_cert_allowed
-    }
-}
-
-fn deserialize_vctype_vec<'de, D>(deserializer: D) -> Result<Vec<VcType>, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    let strings: Vec<String> = Vec::deserialize(deserializer)?;
-    strings
-        .into_iter()
-        .map(|s| s.parse::<VcType>().map_err(de::Error::custom))
-        .collect()
 }

@@ -16,9 +16,11 @@
  *  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  *
  */
-use crate::types::enums::data_model::VcDataModelVersion;
+use crate::types::enums::data_model::W3cDataModelVersion;
+use crate::types::issuing::VcModel;
 
 pub trait DataSpaceAuthorityConfigTrait {
-    fn get_data_model(&self) -> &VcDataModelVersion;
+    fn get_w3c_data_model(&self) -> &Option<W3cDataModelVersion>;
     fn get_dataspace_id(&self) -> &str;
+    fn get_vc_model(&self) -> &VcModel;
 }

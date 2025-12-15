@@ -23,7 +23,7 @@ use crate::errors::{ErrorLogTrait, Errors};
 use crate::services::vcs_builder::legal_authority::config::{
     LegalAuthorityConfig, LegalAuthorityConfigTrait,
 };
-use crate::types::enums::data_model::VcDataModelVersion;
+use crate::types::enums::data_model::W3cDataModelVersion;
 use crate::types::enums::errors::BadFormat;
 use crate::types::enums::vc_type::VcType;
 use crate::types::vcs::legal_authority::{
@@ -98,8 +98,9 @@ impl VcBuilderTrait for LegalAuthorityBuilder {
         let credential_subject = serde_json::to_value(&cred_subj)?;
         let now = Utc::now();
         let vc_type = VcType::from_str(&model.vc_type)?;
-        let vc = match self.config.get_data_model() {
-            VcDataModelVersion::V1 => serde_json::to_value(VCClaimsV1 {
+        let vc = match self.config.get_w3c_data_model().as_ref().unwrap() {
+            // TODO
+            W3cDataModelVersion::V1 => serde_json::to_value(VCClaimsV1 {
                 exp: None,
                 iat: None,
                 iss: None,
@@ -117,7 +118,7 @@ impl VcBuilderTrait for LegalAuthorityBuilder {
                     valid_until: Some(now + Duration::days(365)),
                 },
             })?,
-            VcDataModelVersion::V2 => serde_json::to_value(VCClaimsV2 {
+            W3cDataModelVersion::V2 => serde_json::to_value(VCClaimsV2 {
                 exp: None,
                 iat: None,
                 iss: None,

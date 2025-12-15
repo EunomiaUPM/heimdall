@@ -19,7 +19,7 @@
 
 use crate::config::{CoreApplicationConfig, CoreApplicationConfigTrait};
 use crate::services::issuer::basic::config::config_trait::BasicIssuerConfigTrait;
-use crate::types::enums::data_model::VcDataModelVersion;
+use crate::types::enums::data_model::W3cDataModelVersion;
 use crate::types::host::HostConfig;
 use crate::utils::read;
 
@@ -28,7 +28,7 @@ pub struct BasicIssuerConfig {
     is_local: bool,
     keys_path: String,
     api_path: String,
-    vc_data_model: VcDataModelVersion,
+    w3c_vc_data_model: Option<W3cDataModelVersion>,
 }
 
 impl From<CoreApplicationConfig> for BasicIssuerConfig {
@@ -39,7 +39,7 @@ impl From<CoreApplicationConfig> for BasicIssuerConfig {
             is_local: config.is_local,
             keys_path: config.keys_path,
             api_path,
-            vc_data_model: config.vc_data_model,
+            w3c_vc_data_model: config.stuff_to_issue.w3c_data_model,
         }
     }
 }
@@ -88,8 +88,8 @@ impl BasicIssuerConfigTrait for BasicIssuerConfig {
     fn get_api_path(&self) -> String {
         self.api_path.clone()
     }
-    fn get_data_model_version(&self) -> VcDataModelVersion {
-        self.vc_data_model.clone()
+    fn get_w3c_data_model(&self) -> Option<W3cDataModelVersion> {
+        self.w3c_vc_data_model.clone()
     }
 
 }

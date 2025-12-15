@@ -16,10 +16,23 @@
  *  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  *
  */
-use crate::types::enums::data_model::W3cDataModelVersion;
-use crate::types::issuing::VcModel;
+use crate::types::enums::vc_type::VcType;
+use serde::de::{self, Deserializer};
+use serde::{Deserialize, Serialize};
+#[derive(Deserialize, Serialize, Clone, Debug)]
+pub struct RequirementsToVerify {
+    pub is_cert_allowed: bool,
+    #[serde(deserialize_with = "deserialize_vctype_vec")]
+    pub vcs_requested: Vec<VcType>,
+}
 
-pub trait LegalAuthorityConfigTrait {
-    fn get_w3c_data_model(&self) -> &Option<W3cDataModelVersion>;
-    fn get_vc_model(&self) -> &VcModel;
+fn deserialize_vctype_vec<'de, D>(deserializer: D) -> Result<Vec<VcType>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let strings: Vec<String> = Vec::deserialize(deserializer)?;
+    strings
+        .into_iter()
+        .map(|s| s.parse::<VcType>().map_err(de::Error::custom))
+        .collect()
 }

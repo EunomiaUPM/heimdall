@@ -18,22 +18,28 @@
  */
 use crate::config::CoreApplicationConfig;
 use super::config_trait::LegalAuthorityConfigTrait;
-use crate::types::enums::data_model::VcDataModelVersion;
+use crate::types::enums::data_model::W3cDataModelVersion;
+use crate::types::issuing::VcModel;
 
 pub struct LegalAuthorityConfig {
-    vc_data_model: VcDataModelVersion,
+    vc_model: VcModel,
+    vc_data_model: Option<W3cDataModelVersion>,
 }
 
 impl LegalAuthorityConfigTrait for LegalAuthorityConfig {
-    fn get_data_model(&self) -> &VcDataModelVersion {
+    fn get_w3c_data_model(&self) -> &Option<W3cDataModelVersion> {
         &self.vc_data_model
+    }
+    fn get_vc_model(&self) -> &VcModel {
+        &self.vc_model
     }
 }
 
 impl From<CoreApplicationConfig> for LegalAuthorityConfig {
     fn from(value: CoreApplicationConfig) -> Self {
         Self {
-            vc_data_model: value.vc_data_model,
+            vc_model: value.stuff_to_issue.vc_model,
+            vc_data_model: value.stuff_to_issue.w3c_data_model,
         }
     }
 }

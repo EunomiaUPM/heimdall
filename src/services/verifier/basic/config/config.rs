@@ -36,7 +36,7 @@ impl From<CoreApplicationConfig> for BasicVerifierConfig {
             host: config.host,
             is_local: config.is_local,
             api_path,
-            requested_vcs: config.requested_vcs,
+            requested_vcs: config.requirements_to_verify.vcs_requested,
         }
     }
 }

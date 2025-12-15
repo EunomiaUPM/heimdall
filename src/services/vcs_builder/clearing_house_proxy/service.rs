@@ -23,7 +23,7 @@ use crate::errors::{ErrorLogTrait, Errors};
 use crate::services::vcs_builder::legal_authority::config::{
     LegalAuthorityConfig, LegalAuthorityConfigTrait,
 };
-use crate::types::enums::data_model::VcDataModelVersion;
+use crate::types::enums::data_model::W3cDataModelVersion;
 use crate::types::enums::errors::BadFormat;
 use crate::types::enums::vc_type::VcType;
 use crate::types::vcs::legal_authority::{
@@ -96,9 +96,9 @@ impl VcBuilderTrait for GaiaProxyAuthorityBuilder {
         let credential_subject = serde_json::to_value(&cred_subj)?;
         let now = Utc::now();
         let vc_type = VcType::from_str(&model.vc_type)?;
-        let kk = VcDataModelVersion::V2;
+        let kk = W3cDataModelVersion::V2;
         let vc = match kk {
-            VcDataModelVersion::V1 => serde_json::to_value(VCClaimsV1 {
+            W3cDataModelVersion::V1 => serde_json::to_value(VCClaimsV1 {
                 exp: None,
                 iat: None,
                 iss: None,
@@ -116,7 +116,7 @@ impl VcBuilderTrait for GaiaProxyAuthorityBuilder {
                     valid_until: Some(now + Duration::days(365)),
                 },
             })?,
-            VcDataModelVersion::V2 => serde_json::to_value(VCClaimsV2 {
+            W3cDataModelVersion::V2 => serde_json::to_value(VCClaimsV2 {
                 exp: None,
                 iat: None,
                 iss: None,

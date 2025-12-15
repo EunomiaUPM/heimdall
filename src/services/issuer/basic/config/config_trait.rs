@@ -16,7 +16,7 @@
  *  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  *
  */
-use crate::types::enums::data_model::VcDataModelVersion;
+use crate::types::enums::data_model::W3cDataModelVersion;
 
 pub trait BasicIssuerConfigTrait {
     fn get_host_without_protocol(&self) -> String;
@@ -26,5 +26,5 @@ pub trait BasicIssuerConfigTrait {
     fn get_priv_key(&self) -> anyhow::Result<String>;
     fn get_pub_key(&self) -> anyhow::Result<String>;
     fn get_api_path(&self) -> String;
-    fn get_data_model_version(&self) -> VcDataModelVersion;
+    fn get_w3c_data_model(&self) -> Option<W3cDataModelVersion>;
 }
