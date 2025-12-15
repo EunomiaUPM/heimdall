@@ -37,4 +37,4 @@ stuff_to_issue:
 
 requirements_to_verify:
   is_cert_allowed: true
-  requested_vcs: []
+  vcs_requested: []
