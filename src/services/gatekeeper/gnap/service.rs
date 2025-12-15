@@ -278,6 +278,7 @@ impl GateKeeperTrait for GnapService {
     }
 
     fn manage_cross_user(&self, model: Model) -> anyhow::Result<GrantResponse> {
+        info!("Managing cross-user request");
         match self.config.is_cert_allowed() {
             true => {
                 let response = GrantResponse::default4cross_user(
