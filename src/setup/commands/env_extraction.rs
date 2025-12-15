@@ -21,7 +21,7 @@ use crate::config::CoreApplicationConfig;
 use tracing::info;
 
 pub fn extract_env_config(env_file: Option<String>) -> anyhow::Result<CoreApplicationConfig> {
-    let config = CoreApplicationConfig::load_from_yaml(env_file);
+    let config = CoreApplicationConfig::load(env_file);
     let table = json_to_table::json_to_table(&serde_json::to_value(&config)?)
         .collapse()
         .to_string();

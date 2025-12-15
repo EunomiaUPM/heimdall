@@ -29,7 +29,6 @@ use crate::utils::read;
 use serde::de::{self, Deserializer};
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
-use std::str::FromStr;
 use std::{env, fs};
 use tracing::debug;
 
@@ -45,6 +44,8 @@ pub struct CoreApplicationConfig {
     pub requested_vcs: Vec<VcType>,
     pub keys_path: String,
     pub api: ApiConfig,
+    pub dataspace_id: Option<String>,
+    pub is_cert_allowed: bool,
 }
 
 impl Default for CoreApplicationConfig {
@@ -82,85 +83,23 @@ impl Default for CoreApplicationConfig {
             vc_data_model: VcDataModelVersion::V1,
             role: AuthorityRole::LegalAuthority,
             requested_vcs: vec![],
+            is_cert_allowed: true,
+            dataspace_id: None,
         }
     }
 }
 
 impl CoreApplicationConfig {
-    pub fn load_from_yaml(env_file: Option<String>) -> Self {
+    pub fn load(env_file: Option<String>) -> Self {
         if let Some(env_file) = env_file {
             let path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join(env_file);
             debug!("Config file path: {}", path.display());
 
             let data = fs::read_to_string(&path).expect("Unable to read config file");
-            serde_yaml::from_str(&data).expect("Unable to parse config file")
+            serde_norway::from_str(&data).expect("Unable to parse config file")
         } else {
             CoreApplicationConfig::default()
         }
-    }
-
-    pub fn merge_dotenv_configuration(env_file: Option<String>) -> Self {
-        if let Some(env_file) = env_file {
-            let path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join(env_file.clone());
-
-            debug!("Config file path: {}", path.display());
-            dotenvy::from_filename(path).expect(".env not found");
-        }
-
-        dotenvy::dotenv().ok();
-        let default = CoreApplicationConfig::default();
-        let compound_config = Self {
-            host: HostConfig {
-                protocol: extract_env("HOST_PROTOCOL", default.host.clone().protocol),
-                url: extract_env("HOST_URL", default.host.clone().url),
-                port: option_extract_env("HOST_PORT"),
-            },
-            database_config: DatabaseConfig {
-                r#type: extract_env("DB_TYPE", default.database_config.r#type.to_string())
-                    .parse()
-                    .unwrap(),
-                url: extract_env("DB_URL", default.database_config.url),
-                port: extract_env("DB_PORT", default.database_config.port),
-                user: extract_env("DB_USER", default.database_config.user),
-                password: extract_env("DB_PASSWORD", default.database_config.password),
-                name: extract_env("DB_DATABASE", default.database_config.name),
-            },
-            wallet_config: WalletConfig {
-                api_protocol: extract_env(
-                    "WALLET_API_PROTOCOL",
-                    default.wallet_config.api_protocol,
-                ),
-                api_url: extract_env("WALLET_API_URL", default.wallet_config.api_url),
-                api_port: option_extract_env("WALLET_API_PORT"),
-                r#type: extract_env("WALLET_TYPE", default.wallet_config.r#type),
-                name: extract_env("WALLET_NAME", default.wallet_config.name),
-                email: extract_env("WALLET_EMAIL", default.wallet_config.email),
-                password: extract_env("WALLET_PASSWORD", default.wallet_config.password),
-                id: None,
-            },
-            vc_data_model: VcDataModelVersion::from_str(&extract_env(
-                "VC_DATA_MODEL",
-                default.vc_data_model.to_string(),
-            ))
-            .expect("Invalid_version"),
-            role: AuthorityRole::from_str(&extract_env("ROLE", default.role.to_string()))
-                .expect("InvalidRole"),
-            requested_vcs: serde_json::from_str(&extract_env(
-                "REQUESTED_VCS",
-                serde_json::to_string(&default.requested_vcs).unwrap(),
-            ))
-            .expect("Invalid requested credentials"),
-            keys_path: extract_env("KEYS_PATH", default.keys_path),
-            is_local: extract_env("IS_LOCAL", default.is_local.to_string())
-                .parse()
-                .unwrap(),
-            api: ApiConfig {
-                version: extract_env("API_VERSION", default.api.version),
-                openapi_path: extract_env("OPENAPI_PATH", default.api.openapi_path),
-            },
-        };
-
-        compound_config
     }
 }
 
@@ -222,16 +161,8 @@ impl CoreApplicationConfigTrait for CoreApplicationConfig {
     fn get_api_path(&self) -> String {
         format!("/api/{}", self.api.version)
     }
-}
-
-fn extract_env(env_var_name: &str, default: String) -> String {
-    env::var(env_var_name).unwrap_or(default)
-}
-
-fn option_extract_env(env_var_name: &str) -> Option<String> {
-    match env::var(env_var_name) {
-        Ok(value) => Some(value),
-        Err(_) => None,
+    fn is_cert_allowed(&self) -> bool {
+        self.is_cert_allowed
     }
 }
 

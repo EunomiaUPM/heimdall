@@ -16,20 +16,9 @@
  *  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  *
  */
+use crate::types::enums::data_model::VcDataModelVersion;
 
-use crate::setup::database::DatabaseConfig;
-use crate::types::enums::role::AuthorityRole;
-use crate::types::enums::vc_type::VcType;
-
-pub trait CoreApplicationConfigTrait: Send + Sync + 'static {
-    fn get_full_db_url(&self) -> String;
-    fn get_raw_database_config(&self) -> &DatabaseConfig;
-    fn get_host(&self) -> String;
-    fn is_local(&self) -> bool;
-    fn get_weird_port(&self) -> String;
-    fn get_role(&self) -> AuthorityRole;
-    fn  get_requested_vcs(&self) -> Vec<VcType>;
-    fn get_openapi_json(&self) -> anyhow::Result<String>;
-    fn get_api_path(&self) -> String;
-    fn is_cert_allowed(&self) -> bool;
+pub trait DataSpaceAuthorityConfigTrait {
+    fn get_data_model(&self) -> &VcDataModelVersion;
+    fn get_dataspace_id(&self) -> &str;
 }

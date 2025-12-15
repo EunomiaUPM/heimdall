@@ -40,17 +40,15 @@ use std::str::FromStr;
 use tracing::{error, info};
 use x509_parser::parse_x509_certificate;
 
-pub struct LegalAuthorityBuilder {
-    config: LegalAuthorityConfig,
-}
+pub struct GaiaProxyAuthorityBuilder {}
 
-impl LegalAuthorityBuilder {
-    pub fn new(config: LegalAuthorityConfig) -> Self {
-        Self { config }
+impl GaiaProxyAuthorityBuilder {
+    pub fn new() -> Self {
+        Self {}
     }
 }
 
-impl VcBuilderTrait for LegalAuthorityBuilder {
+impl VcBuilderTrait for GaiaProxyAuthorityBuilder {
     fn build_vc(&self, model: &issuing::Model) -> anyhow::Result<Value> {
         let vc_type = VcType::from_str(&model.vc_type)?;
         info!("Building {} credential", vc_type.to_string());
@@ -98,7 +96,8 @@ impl VcBuilderTrait for LegalAuthorityBuilder {
         let credential_subject = serde_json::to_value(&cred_subj)?;
         let now = Utc::now();
         let vc_type = VcType::from_str(&model.vc_type)?;
-        let vc = match self.config.get_data_model() {
+        let kk = VcDataModelVersion::V2;
+        let vc = match kk {
             VcDataModelVersion::V1 => serde_json::to_value(VCClaimsV1 {
                 exp: None,
                 iat: None,

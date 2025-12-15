@@ -29,6 +29,7 @@ use tracing::error;
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum VcType {
     LegalRegistrationNumber(LegalRegistrationNumberTypes),
+    DataspaceParticipant,
     Unknown,
 }
 
@@ -52,6 +53,7 @@ impl FromStr for VcType {
             "LegalRegistrationNumber-lei_code" => Ok(VcType::LegalRegistrationNumber(
                 LegalRegistrationNumberTypes::LeiCode,
             )),
+            "DataspaceParticipant" => Ok(VcType::DataspaceParticipant),
             _ => {
                 let error = Errors::format_new(
                     BadFormat::Received,
@@ -76,6 +78,7 @@ impl fmt::Display for VcType {
                     "LegalRegistrationNumber-lei_code".to_string()
                 }
             },
+            VcType::DataspaceParticipant => "DataspaceParticipant".to_string(),
             _ => "Unknown".to_string(),
         };
 
@@ -87,20 +90,21 @@ impl VcType {
     pub fn to_conf(&self) -> String {
         match self {
             VcType::LegalRegistrationNumber(_) => "LegalRegistrationNumber_jwt_vc_json".to_string(),
+            VcType::DataspaceParticipant => "DataspaceParticipant_vc_json".to_string(),
             _ => "Unknown".to_string(),
         }
     }
 
     pub fn variants() -> Vec<VcType> {
         vec![
-            VcType::Unknown,
             VcType::LegalRegistrationNumber(LegalRegistrationNumberTypes::TaxId),
-            // TODO ADD MORE
+            VcType::DataspaceParticipant,
         ]
     }
     pub fn name(&self) -> String {
         match self {
             VcType::LegalRegistrationNumber(_) => "LegalRegistrationNumber".to_string(),
+            VcType::DataspaceParticipant => "DataspaceParticipant".to_string(),
             VcType::Unknown => "Unknown".to_string(),
         }
     }

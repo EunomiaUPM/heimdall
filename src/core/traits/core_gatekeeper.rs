@@ -16,6 +16,7 @@
  *  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  *
  */
+
 use crate::errors::Errors;
 use crate::services::gatekeeper::GateKeeperTrait;
 use crate::services::issuer::IssuerTrait;
@@ -65,13 +66,7 @@ pub trait CoreGatekeeperTrait: Send + Sync + 'static {
             return Ok(response);
         }
         if int_model.start.contains(&"cross-user".to_string()) {
-            let response = GrantResponse::default4cross_user(
-                int_model.id,
-                int_model.continue_endpoint,
-                int_model.continue_token,
-                int_model.as_nonce,
-            );
-            return Ok(response);
+            return self.gatekeeper().manage_cross_user(int_model)
         }
         let error = Errors::format_new(BadFormat::Received, "Interact method not supported");
         error!("{}", error);

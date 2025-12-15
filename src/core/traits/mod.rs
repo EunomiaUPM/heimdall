@@ -23,6 +23,7 @@ mod core_issuer;
 mod core_approver;
 mod core_verifier;
 mod core_wallet;
+mod core_gaia;
 
 pub use core::CoreTrait;
 pub use core_gatekeeper::CoreGatekeeperTrait;

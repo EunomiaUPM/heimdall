@@ -17,6 +17,7 @@
  *
  */
 use super::config::{GnapConfig, GnapConfigTrait};
+use crate::data::entities::interaction::Model;
 use crate::data::entities::{interaction, request};
 use crate::errors::{ErrorLogTrait, Errors};
 use crate::services::client::ClientServiceTrait;
@@ -25,7 +26,9 @@ use crate::types::enums::errors::BadFormat;
 use crate::types::enums::request::Body;
 use crate::types::enums::role::AuthorityRole;
 use crate::types::enums::vc_type::VcType;
-use crate::types::gnap::{CallbackBody, GrantRequest, Interact4GR, RejectedCallbackBody};
+use crate::types::gnap::{
+    CallbackBody, GrantRequest, GrantResponse, Interact4GR, RejectedCallbackBody,
+};
 use crate::utils::create_opaque_token;
 use anyhow::bail;
 use async_trait::async_trait;
@@ -272,5 +275,25 @@ impl GateKeeperTrait for GnapService {
         }
 
         Ok(())
+    }
+
+    fn manage_cross_user(&self, model: Model) -> anyhow::Result<GrantResponse> {
+        match self.config.is_cert_allowed() {
+            true => {
+                let response = GrantResponse::default4cross_user(
+                    model.id,
+                    model.continue_endpoint,
+                    model.continue_token,
+                    model.as_nonce,
+                );
+                Ok(response)
+            }
+            false => {
+                let error =
+                    Errors::unauthorized_new("Not able to allow authorization using a cert");
+                error!("{}", error.log());
+                bail!(error)
+            }
+        }
     }
 }

@@ -24,9 +24,12 @@ use crate::services::client::basic::BasicClientService;
 use crate::services::gatekeeper::gnap::{config::GnapConfig, GnapService};
 use crate::services::issuer::basic::{config::BasicIssuerConfig, BasicIssuerService};
 use crate::services::repo::postgres::RepoForSql;
+use crate::services::vcs_builder::dataspace_authority::config::DataSpaceAuthorityConfig;
+use crate::services::vcs_builder::dataspace_authority::DataSpaceAuthorityBuilder;
 use crate::services::vcs_builder::legal_authority::{
     config::LegalAuthorityConfig, LegalAuthorityBuilder,
 };
+use crate::services::vcs_builder::VcBuilderTrait;
 use crate::services::verifier::basic::{config::BasicVerifierConfig, BasicVerifierService};
 use crate::services::wallet::waltid::{config::WaltIdConfig, WaltIdService};
 use crate::types::enums::role::AuthorityRole;
@@ -42,25 +45,24 @@ pub async fn create_authority_router(config: &CoreApplicationConfig) -> Router {
     // ROLE
     let role = config.get_role();
 
-    let builder = match role {
+    let builder: Arc<dyn VcBuilderTrait> = match role {
         AuthorityRole::LegalAuthority => {
             let config = LegalAuthorityConfig::from(config.clone());
-            LegalAuthorityBuilder::new(config)
+            Arc::new(LegalAuthorityBuilder::new(config))
         }
         AuthorityRole::ClearingHouse => {
             // TODO
             let config = LegalAuthorityConfig::from(config.clone());
-            LegalAuthorityBuilder::new(config)
+            Arc::new(LegalAuthorityBuilder::new(config))
         }
         AuthorityRole::ClearingHouseProxy => {
             // TODO
             let config = LegalAuthorityConfig::from(config.clone());
-            LegalAuthorityBuilder::new(config)
+            Arc::new(LegalAuthorityBuilder::new(config))
         }
         AuthorityRole::DataSpaceAuthority => {
-            // TODO
-            let config = LegalAuthorityConfig::from(config.clone());
-            LegalAuthorityBuilder::new(config)
+            let config = DataSpaceAuthorityConfig::from(config.clone());
+            Arc::new(DataSpaceAuthorityBuilder::new(config))
         }
     };
 
@@ -72,7 +74,7 @@ pub async fn create_authority_router(config: &CoreApplicationConfig) -> Router {
     let gnap_config = GnapConfig::from(config.clone());
     let issuer_config = BasicIssuerConfig::from(config.clone());
     let verifier_config = BasicVerifierConfig::from(config.clone());
-    let builder_service= Arc::new(builder);
+    let builder_service = builder;
     let core_config = Arc::new(config.clone());
 
     // SERVICES

@@ -24,6 +24,7 @@ mod vc_decision_approval;
 mod vc_issuer;
 mod vpd;
 pub mod legal_authority;
+pub mod dataspace;
 
 pub use claims_v1::*;
 pub use claims_v2::*;

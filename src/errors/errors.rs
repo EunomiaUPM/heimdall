@@ -142,6 +142,12 @@ pub enum Errors {
         info: ErrorInfo,
         cause: String,
     },
+    #[error("Module not active Error")]
+    ModuleNotActiveError {
+        #[serde(flatten)]
+        info: ErrorInfo,
+        cause: String,
+    },
 }
 
 impl Errors {
@@ -345,6 +351,18 @@ impl Errors {
             cause: cause.to_string(),
         }
     }
+
+    pub fn module_new(module: &str) -> Self {
+        Self::ModuleNotActiveError {
+            info: ErrorInfo {
+                message: "You are trying to use a module which is not active".to_string(),
+                error_code: 5500,
+                status_code: StatusCode::INTERNAL_SERVER_ERROR,
+                details: None,
+            },
+            cause: format!("module {} is not active", module),
+        }
+    }
 }
 
 impl IntoResponse for &Errors {
@@ -364,6 +382,7 @@ impl IntoResponse for &Errors {
             | Errors::ParseError { info, .. }
             | Errors::WriteError { info, .. }
             | Errors::SecurityError { info, .. }
+            | Errors::ModuleNotActiveError { info, .. }
             | Errors::WalletError { info, .. } => info,
         };
 
@@ -457,6 +476,7 @@ impl ErrorLogTrait for Errors {
             | Errors::ForbiddenError { info, cause }
             | Errors::DatabaseError { info, cause }
             | Errors::ParseError { info, cause }
+            | Errors::ModuleNotActiveError { info, cause }
             | Errors::SecurityError { info, cause } => format_info(info, cause),
         }
     }

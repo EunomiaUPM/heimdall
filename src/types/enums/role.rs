@@ -40,6 +40,7 @@ impl FromStr for AuthorityRole {
             "ClearingHouse" => Ok(Self::ClearingHouse),
             "ClearingHouseProxy" => Ok(Self::ClearingHouseProxy),
             "DataSpaceAuthority" => Ok(Self::DataSpaceAuthority),
+            "DataspaceAuthority" => Ok(Self::DataSpaceAuthority),
             _ => {
                 let error = Errors::parse_new("Invalid Authority role");
                 error!("{}", error.log());

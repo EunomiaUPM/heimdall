@@ -23,4 +23,5 @@ pub trait GnapConfigTrait {
     fn get_host_without_protocol(&self) -> String;
     fn get_role(&self) -> AuthorityRole;
     fn get_api_path(&self) -> String;
+    fn is_cert_allowed(&self) -> bool;
 }

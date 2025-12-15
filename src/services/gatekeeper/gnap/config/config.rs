@@ -26,15 +26,18 @@ pub struct GnapConfig {
     host: HostConfig,
     role: AuthorityRole,
     api_path: String,
+    is_cert_allowed: bool,
 }
 
 impl From<CoreApplicationConfig> for GnapConfig {
     fn from(config: CoreApplicationConfig) -> GnapConfig {
         let api_path = config.get_api_path();
+        let is_cert_allowed = config.is_cert_allowed();
         GnapConfig {
             host: config.host,
             role: config.role,
             api_path,
+            is_cert_allowed,
         }
     }
 }
@@ -67,5 +70,8 @@ impl GnapConfigTrait for GnapConfig {
     }
     fn get_api_path(&self) -> String {
         self.api_path.clone()
+    }
+    fn is_cert_allowed(&self) -> bool {
+        self.is_cert_allowed
     }
 }

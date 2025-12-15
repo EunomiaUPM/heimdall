@@ -18,7 +18,7 @@
  */
 use crate::data::entities::{interaction, request};
 use crate::types::enums::vc_type::VcType;
-use crate::types::gnap::{GrantRequest, Interact4GR};
+use crate::types::gnap::{GrantRequest, GrantResponse, Interact4GR};
 use async_trait::async_trait;
 
 #[async_trait]
@@ -42,4 +42,5 @@ pub trait GateKeeperTrait: Send + Sync + 'static {
         req_model: &mut request::Model,
         int_model: &interaction::Model,
     ) -> anyhow::Result<()>;
+    fn manage_cross_user(&self, model: interaction::Model) -> anyhow::Result<GrantResponse>;
 }

@@ -48,8 +48,8 @@ impl FromStr for VcDataModelVersion {
 impl fmt::Display for VcDataModelVersion {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let s = match self {
-            VcDataModelVersion::V1 => "v1",
-            VcDataModelVersion::V2 => "v2",
+            VcDataModelVersion::V1 => "V1",
+            VcDataModelVersion::V2 => "V2",
         };
 
         write!(f, "{s}")

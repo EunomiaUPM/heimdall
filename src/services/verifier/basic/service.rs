@@ -197,7 +197,7 @@ impl VerifierTrait for BasicVerifierService {
                 bail!(error);
             }
         };
-        // let (kid, kid_id) = split_did(kid_str.as_str()); // TODO KID_ID
+
         let (kid, _) = split_did(kid_str.as_str()); // TODO KID_ID
         let alg = header.alg;
 

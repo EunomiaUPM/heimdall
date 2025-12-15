@@ -22,7 +22,7 @@ wallet_config:
   id: null
 
 vc_data_model: V1
-role: LegalAuthority
+role: ClearingHouseProxy
 
 requested_vcs:
   - LegalRegistrationNumber-tax_id

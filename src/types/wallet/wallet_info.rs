@@ -27,6 +27,6 @@ pub struct WalletInfo {
     pub created_on: String,
     #[serde(rename = "addedOn")]
     pub added_on: String,
-    pub permission: String, // TODO
+    pub permission: String, 
     pub dids: Vec<DidsInfo>,
 }
