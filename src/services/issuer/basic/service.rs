@@ -24,11 +24,13 @@ use crate::types::enums::errors::BadFormat;
 use crate::types::enums::vc_type::VcType;
 use crate::types::issuing::{
     AuthServerMetadata, CredentialRequest, DidPossession, GiveVC, IssuerMetadata, IssuingToken,
-    TokenRequest, VCCredOffer,
+    TokenRequest, VCCredOffer, WellKnownJwks,
 };
 use crate::utils::{get_from_opt, has_expired, is_active, trim_4_base, validate_token};
 use anyhow::bail;
 use jsonwebtoken::{encode, Algorithm, EncodingKey, Header, TokenData};
+use rsa::pkcs8::DecodePrivateKey;
+use rsa::RsaPrivateKey;
 use serde_json::Value;
 use std::str::FromStr;
 use tracing::{error, info};
@@ -178,9 +180,10 @@ impl IssuerTrait for BasicIssuerService {
         Ok(())
     }
 
-    fn issue_cred(&self, claims: Value, did: &str) -> anyhow::Result<GiveVC> {
+    fn issue_cred(&self, claims: Value) -> anyhow::Result<GiveVC> {
         info!("Issuing cred");
 
+        let did = self.config.get_did();
         let mut header = Header::new(Algorithm::RS256);
         header.kid = Some(did.to_string());
 
@@ -219,7 +222,6 @@ impl IssuerTrait for BasicIssuerService {
         model: &mut issuing::Model,
         cred_req: &CredentialRequest,
         token: &str,
-        issuer_did: &str,
     ) -> anyhow::Result<()> {
         info!("Validating credential request");
 
@@ -250,10 +252,11 @@ impl IssuerTrait for BasicIssuerService {
             bail!(error)
         }
 
+        let did = self.config.get_did();
         let (token, kid) = validate_token::<DidPossession>(&cred_req.proof.jwt, Some(&model.aud))?;
         self.validate_did_possession(&token, &kid)?;
         model.holder_did = Some(kid);
-        model.issuer_did = Some(issuer_did.to_string());
+        model.issuer_did = Some(did);
         is_active(token.claims.iat)?;
         has_expired(token.claims.exp)?;
         Ok(())
@@ -289,5 +292,12 @@ impl IssuerTrait for BasicIssuerService {
             is_vc_issued: false,
             is_me: false,
         })
+    }
+    fn get_jwks_data(&self) -> anyhow::Result<WellKnownJwks> {
+        info!("Retrieving jwks data");
+
+        let n_key = self.config.get_priv_key()?;
+        let key = RsaPrivateKey::from_pkcs8_pem(&n_key)?;
+        Ok(WellKnownJwks::new(key))
     }
 }

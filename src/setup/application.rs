@@ -38,6 +38,7 @@ use sea_orm::Database;
 use std::sync::Arc;
 use tokio::net::TcpListener;
 use tracing::info;
+use crate::services::wallet::WalletTrait;
 
 pub struct AuthorityApplication;
 
@@ -80,10 +81,16 @@ pub async fn create_authority_router(config: &CoreApplicationConfig) -> Router {
     // SERVICES
     let repo = Arc::new(RepoForSql::new(db_connection));
     let client = Arc::new(BasicClientService::new());
-    let wallet = Arc::new(WaltIdService::new(waltid_config, client.clone()));
     let access = Arc::new(GnapService::new(gnap_config, client.clone()));
     let issuer = Arc::new(BasicIssuerService::new(issuer_config));
     let verifier = Arc::new(BasicVerifierService::new(verifier_config));
+
+    let wallet: Option<Arc<dyn WalletTrait>> = match config.is_wallet_active() {
+        true => {
+             Some(Arc::new(WaltIdService::new(waltid_config, client.clone())))
+        }
+        false => None,
+    };
 
     // CORE
     let core = Core::new(

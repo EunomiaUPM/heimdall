@@ -23,6 +23,7 @@ use crate::types::api::ApiConfig;
 use crate::types::enums::data_model::W3cDataModelVersion;
 use crate::types::enums::role::AuthorityRole;
 use crate::types::host::HostConfig;
+use crate::types::issuing::{StuffToIssue, VcModel};
 use crate::types::verifying::RequirementsToVerify;
 use crate::types::wallet::WalletConfig;
 use crate::utils::read;
@@ -30,14 +31,13 @@ use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use std::{env, fs};
 use tracing::debug;
-use crate::types::issuing::{StuffToIssue, VcModel};
 
 #[derive(Deserialize, Serialize, Clone, Debug)]
 pub struct CoreApplicationConfig {
     pub host: HostConfig,
     pub is_local: bool,
     pub database_config: DatabaseConfig,
-    pub wallet_config: WalletConfig,
+    pub wallet_config: Option<WalletConfig>,
     pub role: AuthorityRole,
     pub keys_path: String,
     pub api: ApiConfig,
@@ -61,7 +61,7 @@ impl Default for CoreApplicationConfig {
                 password: "ds_authority".to_string(),
                 name: "ds_authority".to_string(),
             },
-            wallet_config: WalletConfig {
+            wallet_config: Some(WalletConfig {
                 api_protocol: "http".to_string(),
                 api_url: "127.0.0.1".to_string(),
                 api_port: Some("7001".to_string()),
@@ -70,7 +70,7 @@ impl Default for CoreApplicationConfig {
                 email: "RainbowAuthority@rainbow.com".to_string(),
                 password: "rainbow".to_string(),
                 id: None,
-            },
+            }),
             is_local: true,
             keys_path: "static/certificates/".to_string(),
             api: ApiConfig {
@@ -160,5 +160,8 @@ impl CoreApplicationConfigTrait for CoreApplicationConfig {
     }
     fn get_api_path(&self) -> String {
         format!("/api/{}", self.api.version)
+    }
+    fn is_wallet_active(&self) -> bool {
+        self.wallet_config.is_some()
     }
 }

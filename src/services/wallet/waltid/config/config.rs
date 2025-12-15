@@ -34,7 +34,7 @@ impl From<CoreApplicationConfig> for WaltIdConfig {
     fn from(config: CoreApplicationConfig) -> Self {
         WaltIdConfig {
             host: config.host,
-            ssi_wallet_config: config.wallet_config.clone(),
+            ssi_wallet_config: config.wallet_config.clone().expect("Module not active"),
             keys_path: config.keys_path.clone(),
         }
     }

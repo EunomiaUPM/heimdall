@@ -30,9 +30,11 @@ use crate::services::vcs_builder::VcBuilderTrait;
 use crate::services::verifier::VerifierTrait;
 use crate::services::wallet::WalletTrait;
 use std::sync::Arc;
+use tracing::error;
+use crate::errors::{ErrorLogTrait, Errors};
 
 pub struct Core {
-    wallet: Arc<dyn WalletTrait>,
+    wallet: Option<Arc<dyn WalletTrait>>,
     gatekeeper: Arc<dyn GateKeeperTrait>,
     issuer: Arc<dyn IssuerTrait>,
     verifier: Arc<dyn VerifierTrait>,
@@ -45,7 +47,7 @@ pub struct Core {
 
 impl Core {
     pub fn new(
-        wallet: Arc<dyn WalletTrait>,
+        wallet: Option<Arc<dyn WalletTrait>>,
         gatekeeper: Arc<dyn GateKeeperTrait>,
         issuer: Arc<dyn IssuerTrait>,
         verifier: Arc<dyn VerifierTrait>,
@@ -90,15 +92,9 @@ impl CoreIssuerTrait for Core {
     fn issuer(&self) -> Arc<dyn IssuerTrait> {
         self.issuer.clone()
     }
-
-    fn wallet(&self) -> Arc<dyn WalletTrait> {
-        self.wallet.clone()
-    }
-
     fn repo(&self) -> Arc<dyn RepoTrait> {
         self.repo.clone()
     }
-
     fn vc_builder(&self) -> Arc<dyn VcBuilderTrait> {
         self.vc_builder.clone()
     }
@@ -138,7 +134,15 @@ impl CoreGatekeeperTrait for Core {
 
 impl CoreWalletTrait for Core {
     fn wallet(&self) -> Arc<dyn WalletTrait> {
-        self.wallet.clone()
+        let wallet = self.wallet.clone();
+        match wallet {
+            Some(_) => {}
+            None => {
+                let error = Errors::module_new("wallet");
+                error!("{:#?}", error.log());
+            }
+        }
+        wallet.expect("module wallet not implemented")
     }
 
     fn repo(&self) -> Arc<dyn RepoTrait> {

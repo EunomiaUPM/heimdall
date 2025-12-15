@@ -18,10 +18,7 @@
  */
 
 use crate::data::entities::{interaction, issuing, minions, request};
-use crate::types::issuing::{
-    AuthServerMetadata, CredentialRequest, DidPossession, GiveVC, IssuerMetadata, IssuingToken,
-    TokenRequest, VCCredOffer,
-};
+use crate::types::issuing::{AuthServerMetadata, CredentialRequest, DidPossession, GiveVC, IssuerMetadata, IssuingToken, TokenRequest, VCCredOffer, WellKnownJwks};
 use jsonwebtoken::TokenData;
 use serde_json::Value;
 
@@ -37,13 +34,12 @@ pub trait IssuerTrait: Send + Sync + 'static {
         model: &issuing::Model,
         payload: &TokenRequest,
     ) -> anyhow::Result<()>;
-    fn issue_cred(&self, claims: Value, did: &str) -> anyhow::Result<GiveVC>;
+    fn issue_cred(&self, claims: Value) -> anyhow::Result<GiveVC>;
     fn validate_cred_req(
         &self,
         model: &mut issuing::Model,
         cred_req: &CredentialRequest,
         token: &str,
-        issuer_did: &str,
     ) -> anyhow::Result<()>;
     fn validate_did_possession(
         &self,
@@ -56,4 +52,5 @@ pub trait IssuerTrait: Send + Sync + 'static {
         int_model: &interaction::Model,
         iss_model: &issuing::Model,
     ) -> anyhow::Result<minions::NewModel>;
+    fn get_jwks_data(&self) -> anyhow::Result<WellKnownJwks>;
 }

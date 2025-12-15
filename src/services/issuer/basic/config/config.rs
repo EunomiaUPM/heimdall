@@ -29,6 +29,7 @@ pub struct BasicIssuerConfig {
     keys_path: String,
     api_path: String,
     w3c_vc_data_model: Option<W3cDataModelVersion>,
+    did: String
 }
 
 impl From<CoreApplicationConfig> for BasicIssuerConfig {
@@ -40,6 +41,7 @@ impl From<CoreApplicationConfig> for BasicIssuerConfig {
             keys_path: config.keys_path,
             api_path,
             w3c_vc_data_model: config.stuff_to_issue.w3c_data_model,
+            did: "did:jwk:eyJrdHkiOiJSU0EiLCJlIjoiQVFBQiIsIm4iOiJ4T0F3WlpkQ3AwQ0dCQV9tMVVHR1VXcEM5THJlcmJjbDMxblJoZThzNzd6R204aXA3YUgtUW5NNUNLbEo1YXlvUDhKTV9rLWhVQ0V2Q09qNWw5VmNhN0RfNTdRMjRJUEtHN0dQSGdnYzZ5bGxwZFlnSkVlY2xUcXJGcjdGUFBxcThDQzY1WVpfS1hGY3ByOHJGRVFEUGtkc3gzbU1qTkYzQUpNNzBpaEItdGtOOWxxcHZLb0h6MzJRaHRybVhFY2t1X1NtVFlFTU9GVU0xd0I1TE4xNmN4ZzIxZXYwMnZGdlVCYmdWZENTNHZocjNHNlNMM2dPZXVzd3BZaTZtTTZ6clloY3lkaDJaRjZCUEZVMS1NNk9tcENGRnd6SFVWNTdqMHJMLUR0OU1Ja1FUWmxXam5kcVVOZG1Ecnlyd0E1OU8zS1lWYWY5cmUwdW9QS3ZGUmRmY3cifQ".to_string(),
         }
     }
 }
@@ -90,6 +92,9 @@ impl BasicIssuerConfigTrait for BasicIssuerConfig {
     }
     fn get_w3c_data_model(&self) -> Option<W3cDataModelVersion> {
         self.w3c_vc_data_model.clone()
+    }
+    fn get_did(&self) -> String {
+        self.did.clone()
     }
 
 }

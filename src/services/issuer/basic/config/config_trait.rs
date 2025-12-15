@@ -27,4 +27,5 @@ pub trait BasicIssuerConfigTrait {
     fn get_pub_key(&self) -> anyhow::Result<String>;
     fn get_api_path(&self) -> String;
     fn get_w3c_data_model(&self) -> Option<W3cDataModelVersion>;
+    fn get_did(&self) -> String;
 }

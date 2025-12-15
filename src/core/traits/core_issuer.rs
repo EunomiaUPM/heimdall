@@ -20,7 +20,6 @@
 use crate::services::issuer::IssuerTrait;
 use crate::services::repo::RepoTrait;
 use crate::services::vcs_builder::VcBuilderTrait;
-use crate::services::wallet::WalletTrait;
 use crate::types::issuing::{
     AuthServerMetadata, CredentialRequest, GiveVC, IssuerMetadata, IssuingToken, TokenRequest,
     VCCredOffer, WellKnownJwks,
@@ -31,7 +30,6 @@ use std::sync::Arc;
 #[async_trait]
 pub trait CoreIssuerTrait: Send + Sync + 'static {
     fn issuer(&self) -> Arc<dyn IssuerTrait>;
-    fn wallet(&self) -> Arc<dyn WalletTrait>;
     fn repo(&self) -> Arc<dyn RepoTrait>;
     fn vc_builder(&self) -> Arc<dyn VcBuilderTrait>;
     async fn get_cred_offer_data(&self, id: String) -> anyhow::Result<VCCredOffer> {
@@ -57,7 +55,7 @@ pub trait CoreIssuerTrait: Send + Sync + 'static {
     }
 
     fn jwks(&self) -> anyhow::Result<WellKnownJwks> {
-        self.wallet().get_jwks_data()
+        self.issuer().get_jwks_data()
     }
 
     async fn get_token(&self, payload: TokenRequest) -> anyhow::Result<IssuingToken> {
@@ -80,13 +78,11 @@ pub trait CoreIssuerTrait: Send + Sync + 'static {
     ) -> anyhow::Result<GiveVC> {
         let mut iss_model = self.repo().issuing().get_by_token(&token).await?;
 
-        let did = self.wallet().get_did().await?;
-
         self.issuer()
-            .validate_cred_req(&mut iss_model, &payload, &token, &did)?;
+            .validate_cred_req(&mut iss_model, &payload, &token)?;
 
         let claims = self.vc_builder().build_vc(&iss_model)?;
-        let data = self.issuer().issue_cred(claims, &did)?;
+        let data = self.issuer().issue_cred(claims)?;
 
         let req_model = self.repo().request().get_by_id(&iss_model.id).await?;
         let int_model = self.repo().interaction().get_by_id(&iss_model.id).await?;
