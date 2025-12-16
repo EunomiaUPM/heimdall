@@ -27,6 +27,7 @@ pub struct DataSpaceAuthorityConfig {
     vc_model: VcModel,
     vc_data_model: Option<W3cDataModelVersion>,
     dataspace_id: String,
+    federated_catalog_uri: String,
 }
 
 impl DataSpaceAuthorityConfigTrait for DataSpaceAuthorityConfig {
@@ -38,6 +39,9 @@ impl DataSpaceAuthorityConfigTrait for DataSpaceAuthorityConfig {
     }
     fn get_vc_model(&self) -> &VcModel {
         &self.vc_model
+    }
+    fn get_catalog(&self) -> &str {
+        &self.federated_catalog_uri
     }
 }
 
@@ -53,11 +57,16 @@ impl From<CoreApplicationConfig> for DataSpaceAuthorityConfig {
         };
 
         let dataspace_id = dataspace_id.expect("Module not active");
+        let federated_catalog_uri = value
+            .stuff_to_issue
+            .federated_catalog_uri
+            .expect("Module not active");
 
         Self {
             vc_model: value.stuff_to_issue.vc_model,
             vc_data_model: value.stuff_to_issue.w3c_data_model,
             dataspace_id,
+            federated_catalog_uri,
         }
     }
 }

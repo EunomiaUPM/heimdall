@@ -23,4 +23,5 @@ pub trait DataSpaceAuthorityConfigTrait {
     fn get_w3c_data_model(&self) -> &Option<W3cDataModelVersion>;
     fn get_dataspace_id(&self) -> &str;
     fn get_vc_model(&self) -> &VcModel;
+    fn get_catalog(&self) -> &str;
 }

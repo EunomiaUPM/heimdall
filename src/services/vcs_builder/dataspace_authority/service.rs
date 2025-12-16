@@ -65,8 +65,9 @@ impl VcBuilderTrait for DataSpaceAuthorityBuilder {
         let holder_did = get_from_opt(&model.holder_did, "holder did")?;
         let issuer_did = get_from_opt(&model.issuer_did, "issuer did")?;
         let dataspace_id = self.config.get_dataspace_id().to_string();
+        let fed_catalog_uri = self.config.get_catalog().to_string();
 
-        let cred_subj = DataSpaceParticipant::new(holder_did, dataspace_id);
+        let cred_subj = DataSpaceParticipant::new(holder_did, dataspace_id, fed_catalog_uri);
 
         let credential_subject = serde_json::to_value(&cred_subj)?;
         let now = Utc::now();

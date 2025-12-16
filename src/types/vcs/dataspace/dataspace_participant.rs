@@ -16,16 +16,27 @@
  *  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  *
  */
+
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct DataSpaceParticipant {
     pub id: String,
     pub dataspace_id: String,
+    #[serde(rename = "FederatedCatalogUri")]
+    pub federated_catalog_uri: String,
 }
 
 impl DataSpaceParticipant {
-    pub fn new(id: String, dataspace_id: String) -> DataSpaceParticipant {
-        DataSpaceParticipant { id, dataspace_id }
+    pub fn new(
+        id: String,
+        dataspace_id: String,
+        federated_catalog_uri: String,
+    ) -> DataSpaceParticipant {
+        DataSpaceParticipant {
+            id,
+            dataspace_id,
+            federated_catalog_uri,
+        }
     }
 }

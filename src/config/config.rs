@@ -85,7 +85,8 @@ impl Default for CoreApplicationConfig {
             stuff_to_issue: StuffToIssue {
                 vc_model: VcModel::JwtVc,
                 w3c_data_model: Some(W3cDataModelVersion::V2),
-                dataspace_id: Some("rainbow_authority".to_string()),
+                dataspace_id: None,
+                federated_catalog_uri: None,
             },
         }
     }

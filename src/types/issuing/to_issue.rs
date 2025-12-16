@@ -29,6 +29,7 @@ pub struct StuffToIssue {
     pub vc_model: VcModel,
     pub w3c_data_model: Option<W3cDataModelVersion>,
     pub dataspace_id: Option<String>,
+    pub federated_catalog_uri: Option<String>,
 }
 
 #[derive(Deserialize, Serialize, Clone, Debug)]
