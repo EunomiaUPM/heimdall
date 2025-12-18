@@ -10,7 +10,7 @@ services:
       - IPC_LOCK
     volumes:
       - ./vault/config:/vault/config
-      - ./vault/data:/vault/data
+      - ./vault/data:/vault/file
     environment:
       VAULT_LOCAL_CONFIG: >
         {
