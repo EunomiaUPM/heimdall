@@ -1,23 +1,20 @@
 /*
+ * Copyright (C) 2025 - Universidad Politécnica de Madrid - UPM
  *
- *  * Copyright (C) 2025 - Universidad Politécnica de Madrid - UPM
- *  *
- *  * This program is free software: you can redistribute it and/or modify
- *  * it under the terms of the GNU General Public License as published by
- *  * the Free Software Foundation, either version 3 of the License, or
- *  * (at your option) any later version.
- *  *
- *  * This program is distributed in the hope that it will be useful,
- *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  * GNU General Public License for more details.
- *  *
- *  * You should have received a copy of the GNU General Public License
- *  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-use super::super::IntoActiveSet;
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use base64::Engine;
 use rand::Rng;
@@ -25,6 +22,8 @@ use rand_distr::Alphanumeric;
 use sea_orm::entity::prelude::*;
 use sea_orm::ActiveValue;
 use sha2::{Digest, Sha256};
+
+use super::super::IntoActiveSet;
 
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel)]
 #[sea_orm(table_name = "interaction")]
@@ -43,7 +42,7 @@ pub struct Model {
     pub continue_token: String,    // RESPONSE
     pub as_nonce: String,          // RANDOM
     pub interact_ref: String,      // RANDOM
-    pub hash: String,              // RANDOM
+    pub hash: String               // RANDOM
 }
 
 #[derive(Clone, Debug)]
@@ -57,26 +56,17 @@ pub struct NewModel {
     pub hints: Option<String>,       // REQUEST
     pub grant_endpoint: String,      // REQUEST
     pub continue_endpoint: String,   // RESPONSE
-    pub continue_token: String,      // RESPONSE
+    pub continue_token: String       // RESPONSE
 }
 
 impl IntoActiveSet<ActiveModel> for NewModel {
     fn to_active(self) -> ActiveModel {
-        let as_nonce: String = rand::rng()
-            .sample_iter(&Alphanumeric)
-            .take(36)
-            .map(char::from)
-            .collect();
-        let interact_ref: String = rand::rng()
-            .sample_iter(&Alphanumeric)
-            .take(16)
-            .map(char::from)
-            .collect();
-        let continue_id: String = rand::rng()
-            .sample_iter(&Alphanumeric)
-            .take(12)
-            .map(char::from)
-            .collect();
+        let as_nonce: String =
+            rand::rng().sample_iter(&Alphanumeric).take(36).map(char::from).collect();
+        let interact_ref: String =
+            rand::rng().sample_iter(&Alphanumeric).take(16).map(char::from).collect();
+        let continue_id: String =
+            rand::rng().sample_iter(&Alphanumeric).take(12).map(char::from).collect();
 
         let hash_method = self.hash_method.unwrap_or_else(|| "sha-256".to_string()); // TODO
         let hash_input = format!(
@@ -105,7 +95,7 @@ impl IntoActiveSet<ActiveModel> for NewModel {
             continue_token: ActiveValue::Set(self.continue_token),
             as_nonce: ActiveValue::Set(as_nonce),
             interact_ref: ActiveValue::Set(interact_ref),
-            hash: ActiveValue::Set(hash),
+            hash: ActiveValue::Set(hash)
         }
     }
 }
@@ -126,7 +116,7 @@ impl IntoActiveSet<ActiveModel> for Model {
             continue_token: ActiveValue::Set(self.continue_token),
             as_nonce: ActiveValue::Set(self.as_nonce),
             interact_ref: ActiveValue::Set(self.interact_ref),
-            hash: ActiveValue::Set(self.hash),
+            hash: ActiveValue::Set(self.hash)
         }
     }
 }
@@ -138,24 +128,18 @@ pub enum Relation {
     #[sea_orm(has_one = "super::verification::Entity")]
     Verification,
     #[sea_orm(has_one = "super::issuing::Entity")]
-    Issuing,
+    Issuing
 }
 
 impl Related<super::request::Entity> for Entity {
-    fn to() -> RelationDef {
-        Relation::Request.def()
-    }
+    fn to() -> RelationDef { Relation::Request.def() }
 }
 
 impl Related<super::verification::Entity> for Entity {
-    fn to() -> RelationDef {
-        Relation::Verification.def()
-    }
+    fn to() -> RelationDef { Relation::Verification.def() }
 }
 impl Related<super::issuing::Entity> for Entity {
-    fn to() -> RelationDef {
-        Relation::Verification.def()
-    }
+    fn to() -> RelationDef { Relation::Verification.def() }
 }
 
 impl ActiveModelBehavior for ActiveModel {}

@@ -17,8 +17,25 @@
  *
  */
 
-mod dataspace_vc;
-mod identity_vc;
+use std::sync::Arc;
 
-pub use dataspace_vc::*;
-pub use identity_vc::*;
+use async_trait::async_trait;
+
+use super::{
+    CoreApproverTrait, CoreGatekeeperTrait, CoreIssuerTrait, CoreVerifierTrait, CoreWalletTrait
+};
+use crate::config::CoreConfigTrait;
+
+#[async_trait]
+pub trait CoreTrait:
+    CoreVerifierTrait
+    + CoreIssuerTrait
+    + CoreApproverTrait
+    + CoreGatekeeperTrait
+    + CoreWalletTrait
+    + Send
+    + Sync
+    + 'static
+{
+    fn config(&self) -> Arc<dyn CoreConfigTrait>;
+}

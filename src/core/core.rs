@@ -17,21 +17,22 @@
  *
  */
 
-use crate::config::CoreApplicationConfigTrait;
+use std::sync::Arc;
+
+use tracing::error;
+
+use crate::config::CoreConfigTrait;
 use crate::core::traits::{
     CoreApproverTrait, CoreGatekeeperTrait, CoreIssuerTrait, CoreTrait, CoreVerifierTrait,
-    CoreWalletTrait,
+    CoreWalletTrait
 };
-use crate::services::client::ClientServiceTrait;
+use crate::errors::{ErrorLogTrait, Errors};
 use crate::services::gatekeeper::GateKeeperTrait;
 use crate::services::issuer::IssuerTrait;
 use crate::services::repo::RepoTrait;
 use crate::services::vcs_builder::VcBuilderTrait;
 use crate::services::verifier::VerifierTrait;
 use crate::services::wallet::WalletTrait;
-use std::sync::Arc;
-use tracing::error;
-use crate::errors::{ErrorLogTrait, Errors};
 
 pub struct Core {
     wallet: Option<Arc<dyn WalletTrait>>,
@@ -40,9 +41,7 @@ pub struct Core {
     verifier: Arc<dyn VerifierTrait>,
     vc_builder: Arc<dyn VcBuilderTrait>,
     repo: Arc<dyn RepoTrait>,
-    #[allow(dead_code)] // as an orchestrator, it should have access even though it's not used
-    client: Arc<dyn ClientServiceTrait>,
-    config: Arc<dyn CoreApplicationConfigTrait>,
+    config: Arc<dyn CoreConfigTrait>
 }
 
 impl Core {
@@ -53,99 +52,55 @@ impl Core {
         verifier: Arc<dyn VerifierTrait>,
         vc_builder: Arc<dyn VcBuilderTrait>,
         repo: Arc<dyn RepoTrait>,
-        client: Arc<dyn ClientServiceTrait>,
-        config: Arc<dyn CoreApplicationConfigTrait>,
+        config: Arc<dyn CoreConfigTrait>
     ) -> Self {
-        Self {
-            wallet,
-            gatekeeper,
-            issuer,
-            verifier,
-            vc_builder,
-            repo,
-            client,
-            config,
-        }
+        Self { wallet, gatekeeper, issuer, verifier, vc_builder, repo, config }
     }
 }
 
 impl CoreTrait for Core {
-    fn config(&self) -> Arc<dyn CoreApplicationConfigTrait> {
-        self.config.clone()
-    }
+    fn config(&self) -> Arc<dyn CoreConfigTrait> { self.config.clone() }
 }
 impl CoreVerifierTrait for Core {
-    fn gatekeeper(&self) -> Arc<dyn GateKeeperTrait> {
-        self.gatekeeper.clone()
-    }
+    fn gatekeeper(&self) -> Arc<dyn GateKeeperTrait> { self.gatekeeper.clone() }
 
-    fn verifier(&self) -> Arc<dyn VerifierTrait> {
-        self.verifier.clone()
-    }
+    fn verifier(&self) -> Arc<dyn VerifierTrait> { self.verifier.clone() }
 
-    fn repo(&self) -> Arc<dyn RepoTrait> {
-        self.repo.clone()
-    }
+    fn repo(&self) -> Arc<dyn RepoTrait> { self.repo.clone() }
 }
 
 impl CoreIssuerTrait for Core {
-    fn issuer(&self) -> Arc<dyn IssuerTrait> {
-        self.issuer.clone()
-    }
-    fn repo(&self) -> Arc<dyn RepoTrait> {
-        self.repo.clone()
-    }
-    fn vc_builder(&self) -> Arc<dyn VcBuilderTrait> {
-        self.vc_builder.clone()
-    }
+    fn issuer(&self) -> Arc<dyn IssuerTrait> { self.issuer.clone() }
+    fn repo(&self) -> Arc<dyn RepoTrait> { self.repo.clone() }
+    fn vc_builder(&self) -> Arc<dyn VcBuilderTrait> { self.vc_builder.clone() }
 }
 
 impl CoreApproverTrait for Core {
-    fn gatekeeper(&self) -> Arc<dyn GateKeeperTrait> {
-        self.gatekeeper.clone()
-    }
+    fn gatekeeper(&self) -> Arc<dyn GateKeeperTrait> { self.gatekeeper.clone() }
 
-    fn repo(&self) -> Arc<dyn RepoTrait> {
-        self.repo.clone()
-    }
+    fn repo(&self) -> Arc<dyn RepoTrait> { self.repo.clone() }
 }
 
 impl CoreGatekeeperTrait for Core {
-    fn gatekeeper(&self) -> Arc<dyn GateKeeperTrait> {
-        self.gatekeeper.clone()
-    }
+    fn gatekeeper(&self) -> Arc<dyn GateKeeperTrait> { self.gatekeeper.clone() }
 
-    fn verifier(&self) -> Arc<dyn VerifierTrait> {
-        self.verifier.clone()
-    }
+    fn verifier(&self) -> Arc<dyn VerifierTrait> { self.verifier.clone() }
 
-    fn issuer(&self) -> Arc<dyn IssuerTrait> {
-        self.issuer.clone()
-    }
+    fn issuer(&self) -> Arc<dyn IssuerTrait> { self.issuer.clone() }
 
-    fn repo(&self) -> Arc<dyn RepoTrait> {
-        self.repo.clone()
-    }
+    fn repo(&self) -> Arc<dyn RepoTrait> { self.repo.clone() }
 
-    fn vc_builder(&self) -> Arc<dyn VcBuilderTrait> {
-        self.vc_builder.clone()
-    }
+    fn vc_builder(&self) -> Arc<dyn VcBuilderTrait> { self.vc_builder.clone() }
 }
 
 impl CoreWalletTrait for Core {
     fn wallet(&self) -> Arc<dyn WalletTrait> {
-        let wallet = self.wallet.clone();
-        match wallet {
-            Some(_) => {}
-            None => {
-                let error = Errors::module_new("wallet");
-                error!("{:#?}", error.log());
-            }
-        }
-        wallet.expect("module wallet not implemented")
+        self.wallet.clone().unwrap_or_else(|| {
+            let error = Errors::module_new("wallet");
+            error!("{}", error.log());
+            panic!("module wallet not implemented");
+        })
     }
 
-    fn repo(&self) -> Arc<dyn RepoTrait> {
-        self.repo.clone()
-    }
+    fn repo(&self) -> Arc<dyn RepoTrait> { self.repo.clone() }
 }

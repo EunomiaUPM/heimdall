@@ -1,89 +1,91 @@
 /*
+ * Copyright (C) 2025 - Universidad Politécnica de Madrid - UPM
  *
- *  * Copyright (C) 2025 - Universidad Politécnica de Madrid - UPM
- *  *
- *  * This program is free software: you can redistribute it and/or modify
- *  * it under the terms of the GNU General Public License as published by
- *  * the Free Software Foundation, either version 3 of the License, or
- *  * (at your option) any later version.
- *  *
- *  * This program is distributed in the hope that it will be useful,
- *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  * GNU General Public License for more details.
- *  *
- *  * You should have received a copy of the GNU General Public License
- *  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-use super::super::WalletTrait;
-use super::config::{WaltIdConfig, WaltIdConfigTrait};
-use crate::data::entities::minions;
-use crate::errors::{ErrorLogTrait, Errors};
-use crate::services::client::ClientServiceTrait;
-use crate::types::enums::errors::{BadFormat, MissingAction};
-use crate::types::enums::request::Body;
-use crate::types::issuing::WellKnownJwks;
-use crate::types::jwt::AuthJwtClaims;
-use crate::types::wallet::{
-    DidsInfo, KeyDefinition, WalletInfo, WalletInfoResponse, WalletLoginResponse, WalletSession,
-};
+use std::sync::Arc;
+
 use anyhow::bail;
 use async_trait::async_trait;
 use axum::http::header::{ACCEPT, AUTHORIZATION, CONTENT_TYPE};
 use axum::http::HeaderMap;
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use base64::Engine;
-use rsa::pkcs8::DecodePrivateKey;
-use rsa::RsaPrivateKey;
 use serde_json::Value;
-use std::sync::Arc;
 use tokio::sync::Mutex;
 use tracing::{debug, error, info, warn};
+
+use super::super::WalletTrait;
+use super::config::{WaltIdConfig, WaltIdConfigTrait};
+use crate::data::entities::minions;
+use crate::errors::{ErrorLogTrait, Errors};
+use crate::services::client::ClientTrait;
+use crate::services::vault::vault_rs::VaultService;
+use crate::services::vault::VaultTrait;
+use crate::types::enums::errors::{BadFormat, MissingAction};
+use crate::types::enums::request::Body;
+use crate::types::jwt::AuthJwtClaims;
+use crate::types::secrets::{PemHelper, SemiWalletSecrets};
+use crate::types::wallet::{
+    DidsInfo, KeyDefinition, WalletInfo, WalletInfoResponse, WalletLoginResponse, WalletSession
+};
+use crate::utils::expect_from_env;
 
 pub struct WaltIdService {
     wallet_session: Arc<Mutex<WalletSession>>,
     key_data: Arc<Mutex<Vec<KeyDefinition>>>,
-    client: Arc<dyn ClientServiceTrait>,
-    config: WaltIdConfig,
+    client: Arc<dyn ClientTrait>,
+    vault: Arc<VaultService>,
+    config: WaltIdConfig
 }
 
 impl WaltIdService {
-    pub fn new(config: WaltIdConfig, client: Arc<dyn ClientServiceTrait>) -> WaltIdService {
+    pub fn new(
+        config: WaltIdConfig,
+        client: Arc<dyn ClientTrait>,
+        vault: Arc<VaultService>
+    ) -> WaltIdService {
         WaltIdService {
             wallet_session: Arc::new(Mutex::new(WalletSession {
                 account_id: None,
                 token: None,
                 token_exp: None,
-                wallets: vec![],
+                wallets: vec![]
             })),
             key_data: Arc::new(Mutex::new(Vec::new())),
             config,
             client,
+            vault
         }
     }
 }
 
 #[async_trait]
 impl WalletTrait for WaltIdService {
-    // BASIC ----------------------------------------------------------------------------------------------->
+    // BASIC -------------------------------------------------------------------------------------->
     async fn register(&self) -> anyhow::Result<()> {
         info!("Registering in web wallet");
-        let url = format!(
-            "{}/wallet-api/auth/register",
-            self.config.get_wallet_api_url()
-        );
-        let body = self.config.get_wallet_register_data();
+        let url = format!("{}/wallet-api/auth/register", self.config.get_wallet_host());
+        let db_path = expect_from_env("VAULT_WALLET");
+        let body = self.vault.read(None, &db_path).await?;
 
         let mut headers = HeaderMap::new();
         headers.insert(CONTENT_TYPE, "application/json".parse()?);
         headers.insert(ACCEPT, "application/json".parse()?);
 
-        let res = self
-            .client
-            .post(&url, Some(headers), Body::Json(body))
-            .await?;
+        let res = self.client.post(&url, Some(headers), Body::Json(body)).await?;
 
         match res.status().as_u16() {
             201 => {
@@ -97,7 +99,7 @@ impl WalletTrait for WaltIdService {
                     &url,
                     "POST",
                     res.status().as_u16(),
-                    "Petition to register Wallet failed",
+                    "Petition to register Wallet failed"
                 );
                 error!("{}", error.log());
                 bail!(error);
@@ -108,18 +110,17 @@ impl WalletTrait for WaltIdService {
 
     async fn login(&self) -> anyhow::Result<()> {
         info!("Login into web wallet");
-        let url = format!("{}/wallet-api/auth/login", self.config.get_wallet_api_url());
+        let url = format!("{}/wallet-api/auth/login", self.config.get_wallet_host());
 
-        let body = self.config.get_wallet_login_data();
+        let db_path = expect_from_env("VAULT_WALLET");
+        let body: SemiWalletSecrets = self.vault.read(None, &db_path).await?;
+        let body = serde_json::to_value(&body)?;
 
         let mut headers = HeaderMap::new();
         headers.insert(CONTENT_TYPE, "application/json".parse()?);
         headers.insert(ACCEPT, "application/json".parse()?);
 
-        let res = self
-            .client
-            .post(&url, Some(headers), Body::Json(body))
-            .await?;
+        let res = self.client.post(&url, Some(headers), Body::Json(body)).await?;
 
         match res.status().as_u16() {
             200 => {
@@ -135,7 +136,7 @@ impl WalletTrait for WaltIdService {
                 if jwt_parts.len() != 3 {
                     let error = Errors::format_new(
                         BadFormat::Sent,
-                        "The jwt does not have the correct format",
+                        "The jwt does not have the correct format"
                     );
                     error!("{}", error.log());
                     bail!(error);
@@ -153,7 +154,7 @@ impl WalletTrait for WaltIdService {
                     &url,
                     "POST",
                     res.status().as_u16(),
-                    "Petition to login into Wallet failed",
+                    "Petition to login into Wallet failed"
                 );
                 error!("{}", error.log());
                 bail!(error);
@@ -163,10 +164,7 @@ impl WalletTrait for WaltIdService {
 
     async fn logout(&self) -> anyhow::Result<()> {
         info!("Login out of web wallet");
-        let url = format!(
-            "{}/wallet-api/auth/logout",
-            self.config.get_wallet_api_url()
-        );
+        let url = format!("{}/wallet-api/auth/logout", self.config.get_wallet_host());
 
         let mut headers = HeaderMap::new();
         headers.insert(CONTENT_TYPE, "application/json".parse()?);
@@ -185,7 +183,7 @@ impl WalletTrait for WaltIdService {
                     &url,
                     "POST",
                     res.status().as_u16(),
-                    "Petition to logout from Wallet failed",
+                    "Petition to logout from Wallet failed"
                 );
                 error!("{}", error.log());
                 bail!(error);
@@ -240,7 +238,7 @@ impl WalletTrait for WaltIdService {
             base_url: Some(base_url),
             vc_uri: None,
             is_vc_issued: false,
-            is_me: true,
+            is_me: true
         };
 
         info!("Onboarding completed successfully");
@@ -269,7 +267,7 @@ impl WalletTrait for WaltIdService {
             None => {
                 let error = Errors::missing_action_new(
                     MissingAction::Wallet,
-                    "There is no wallet to retrieve dids from",
+                    "There is no wallet to retrieve dids from"
                 );
                 error!("{}", error.log());
                 bail!(error)
@@ -313,7 +311,7 @@ impl WalletTrait for WaltIdService {
             None => {
                 let error = Errors::missing_action_new(
                     MissingAction::Token,
-                    "There is no token available for use",
+                    "There is no token available for use"
                 );
                 error!("{}", error.log());
                 bail!(error);
@@ -348,7 +346,7 @@ impl WalletTrait for WaltIdService {
             None => {
                 let error = Errors::missing_action_new(
                     MissingAction::Key,
-                    "Retrieve keys from wallet first",
+                    "Retrieve keys from wallet first"
                 );
                 error!("{}", error.log());
                 bail!(error)
@@ -356,13 +354,11 @@ impl WalletTrait for WaltIdService {
         }
     }
 
-    // RETRIEVE FROM WALLET ------------------------------------------------------------------------------->
+    // RETRIEVE FROM WALLET
+    // ------------------------------------------------------------------------------->
     async fn retrieve_wallet_info(&self) -> anyhow::Result<()> {
         info!("Retrieving wallet info from web wallet");
-        let url = format!(
-            "{}/wallet-api/wallet/accounts/wallets",
-            self.config.get_wallet_api_url()
-        );
+        let url = format!("{}/wallet-api/wallet/accounts/wallets", self.config.get_wallet_host());
 
         let token = self.get_token().await?;
 
@@ -396,7 +392,7 @@ impl WalletTrait for WaltIdService {
                     &url,
                     "GET",
                     res.status().as_u16(),
-                    "Petition to retrieve Wallet information failed",
+                    "Petition to retrieve Wallet information failed"
                 );
                 error!("{}", error.log());
                 bail!(error);
@@ -413,7 +409,7 @@ impl WalletTrait for WaltIdService {
 
         let url = format!(
             "{}/wallet-api/wallet/{}/keys",
-            self.config.get_wallet_api_url(),
+            self.config.get_wallet_host(),
             &wallet.id
         );
 
@@ -441,7 +437,7 @@ impl WalletTrait for WaltIdService {
                     &url,
                     "POST",
                     res.status().as_u16(),
-                    "Petition to retrieve keys failed",
+                    "Petition to retrieve keys failed"
                 );
                 error!("{}", error.log());
                 bail!(error);
@@ -458,7 +454,7 @@ impl WalletTrait for WaltIdService {
 
         let url = format!(
             "{}/wallet-api/wallet/{}/dids",
-            self.config.get_wallet_api_url(),
+            self.config.get_wallet_host(),
             &wallet.id
         );
 
@@ -489,7 +485,7 @@ impl WalletTrait for WaltIdService {
                     &url,
                     "GET",
                     res.status().as_u16(),
-                    "Petition to retrieve Wallet DIDs failed",
+                    "Petition to retrieve Wallet DIDs failed"
                 );
                 error!("{}", error.log());
                 bail!(error);
@@ -498,25 +494,20 @@ impl WalletTrait for WaltIdService {
         Ok(())
     }
 
-    fn get_jwks_data(&self) -> anyhow::Result<WellKnownJwks> {
-        info!("Retrieving jwks data");
-
-        let n_key = self.config.get_priv_key()?;
-        let key = RsaPrivateKey::from_pkcs8_pem(&n_key)?;
-        Ok(WellKnownJwks::new(key))
-    }
-
-    // REGISTER STUFF IN WALLET ----------------------------------------------------------------------------->
+    // REGISTER STUFF IN WALLET
+    // ----------------------------------------------------------------------------->
     async fn register_key(&self) -> anyhow::Result<()> {
         info!("Registering key in web wallet");
 
         let wallet = self.get_wallet().await?;
         let token = self.get_token().await?;
-        let body = self.config.get_priv_key()?;
+
+        let priv_key = expect_from_env("VAULT_F_PRIV_KEY");
+        let priv_key: PemHelper = self.vault.read(None, &priv_key).await?;
 
         let url = format!(
             "{}/wallet-api/wallet/{}/keys/import",
-            self.config.get_wallet_api_url(),
+            self.config.get_wallet_host(),
             &wallet.id
         );
 
@@ -525,10 +516,7 @@ impl WalletTrait for WaltIdService {
         headers.insert(ACCEPT, "application/json".parse()?);
         headers.insert(AUTHORIZATION, format!("Bearer {}", token).parse()?);
 
-        let res = self
-            .client
-            .post(&url, Some(headers), Body::Raw(body))
-            .await?;
+        let res = self.client.post(&url, Some(headers), Body::Raw(priv_key.inner)).await?;
 
         match res.status().as_u16() {
             201 => {
@@ -541,7 +529,7 @@ impl WalletTrait for WaltIdService {
                     &url,
                     "POST",
                     res.status().as_u16(),
-                    "Petition to register key failed",
+                    "Petition to register key failed"
                 );
                 error!("{}", error.log());
                 bail!(error);
@@ -559,7 +547,7 @@ impl WalletTrait for WaltIdService {
 
         let url = format!(
             "{}/wallet-api/wallet/{}/dids/create/jwk?keyId={}&alias=privatekey",
-            self.config.get_wallet_api_url(),
+            self.config.get_wallet_host(),
             &wallet.id,
             key_data.key_id.id
         );
@@ -585,7 +573,7 @@ impl WalletTrait for WaltIdService {
                     &url,
                     "POST",
                     res.status().as_u16(),
-                    "Petition to register key failed",
+                    "Petition to register key failed"
                 );
                 error!("{}", error.log());
                 bail!(error);
@@ -604,7 +592,7 @@ impl WalletTrait for WaltIdService {
 
         let url = format!(
             "{}/wallet-api/wallet/{}/dids/default?did={}",
-            self.config.get_wallet_api_url(),
+            self.config.get_wallet_host(),
             &wallet.id,
             did
         );
@@ -625,7 +613,7 @@ impl WalletTrait for WaltIdService {
                     &url,
                     "POST",
                     res.status().as_u16(),
-                    "Petition to set did as default failed",
+                    "Petition to set did as default failed"
                 );
                 error!("{}", error.log());
                 bail!(error);
@@ -635,7 +623,8 @@ impl WalletTrait for WaltIdService {
         Ok(())
     }
 
-    // DELETE STUFF FROM WALLET --------------------------------------------------------------------------->
+    // DELETE STUFF FROM WALLET
+    // --------------------------------------------------------------------------->
     async fn delete_key(&self, key_id: KeyDefinition) -> anyhow::Result<()> {
         info!("Deleting key in web wallet and from internal data");
 
@@ -644,7 +633,7 @@ impl WalletTrait for WaltIdService {
 
         let url = format!(
             "{}/wallet-api/wallet/{}/keys/{}",
-            self.config.get_wallet_api_url(),
+            self.config.get_wallet_host(),
             &wallet.id,
             key_id.key_id.id
         );
@@ -669,7 +658,7 @@ impl WalletTrait for WaltIdService {
                     &url,
                     "DELETE",
                     res.status().as_u16(),
-                    "Petition to delete key failed",
+                    "Petition to delete key failed"
                 );
                 error!("{}", error.log());
                 bail!(error);
@@ -685,7 +674,7 @@ impl WalletTrait for WaltIdService {
 
         let url = format!(
             "{}/wallet-api/wallet/{}/dids/{}",
-            self.config.get_wallet_api_url(),
+            self.config.get_wallet_host(),
             &wallet.id,
             did_info.did
         );
@@ -712,7 +701,7 @@ impl WalletTrait for WaltIdService {
                     &url,
                     "DELETE",
                     res.status().as_u16(),
-                    "Petition to delete key failed",
+                    "Petition to delete key failed"
                 );
                 error!("{}", error.log());
                 bail!(error);

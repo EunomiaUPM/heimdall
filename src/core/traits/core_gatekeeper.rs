@@ -1,36 +1,36 @@
 /*
+ * Copyright (C) 2025 - Universidad Politécnica de Madrid - UPM
  *
- *  * Copyright (C) 2025 - Universidad Politécnica de Madrid - UPM
- *  *
- *  * This program is free software: you can redistribute it and/or modify
- *  * it under the terms of the GNU General Public License as published by
- *  * the Free Software Foundation, either version 3 of the License, or
- *  * (at your option) any later version.
- *  *
- *  * This program is distributed in the hope that it will be useful,
- *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  * GNU General Public License for more details.
- *  *
- *  * You should have received a copy of the GNU General Public License
- *  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
+
+use std::str::FromStr;
+use std::sync::Arc;
+
+use anyhow::bail;
+use async_trait::async_trait;
+use tracing::{error, info};
 
 use crate::errors::Errors;
 use crate::services::gatekeeper::GateKeeperTrait;
 use crate::services::issuer::IssuerTrait;
 use crate::services::repo::RepoTrait;
+use crate::services::vcs_builder::VcBuilderTrait;
 use crate::services::verifier::VerifierTrait;
 use crate::types::enums::errors::BadFormat;
 use crate::types::enums::vc_type::VcType;
 use crate::types::gnap::{GrantRequest, GrantResponse, RefBody};
-use anyhow::bail;
-use async_trait::async_trait;
-use std::str::FromStr;
-use std::sync::Arc;
-use tracing::{error, info};
-use crate::services::vcs_builder::VcBuilderTrait;
 
 #[async_trait]
 pub trait CoreGatekeeperTrait: Send + Sync + 'static {
@@ -61,12 +61,12 @@ pub trait CoreGatekeeperTrait: Send + Sync + 'static {
                 int_model.continue_endpoint,
                 int_model.continue_token,
                 int_model.as_nonce,
-                uri,
+                uri
             );
             return Ok(response);
         }
         if int_model.start.contains(&"cross-user".to_string()) {
-            return self.gatekeeper().manage_cross_user(int_model)
+            return self.gatekeeper().manage_cross_user(int_model);
         }
         let error = Errors::format_new(BadFormat::Received, "Interact method not supported");
         error!("{}", error);
@@ -76,7 +76,7 @@ pub trait CoreGatekeeperTrait: Send + Sync + 'static {
         &self,
         cont_id: String,
         payload: RefBody,
-        token: String,
+        token: String
     ) -> anyhow::Result<String> {
         let int_model = self.repo().interaction().get_by_cont_id(&cont_id).await?;
         let mut iss_model = self.repo().issuing().get_by_id(&int_model.id).await?;
@@ -84,8 +84,7 @@ pub trait CoreGatekeeperTrait: Send + Sync + 'static {
 
         let vc_type = VcType::from_str(&req_model.vc_type)?;
 
-        self.gatekeeper()
-            .validate_cont_req(&int_model, payload.interact_ref, token)?;
+        self.gatekeeper().validate_cont_req(&int_model, payload.interact_ref, token)?;
         self.gatekeeper().validate_vc_to_issue(&vc_type)?;
 
         let credential_data = self.vc_builder().gather_data(&req_model)?;

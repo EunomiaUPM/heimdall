@@ -1,0 +1,32 @@
+version: "3.8"
+
+services:
+  vault:
+    image: hashicorp/vault:1.21
+    container_name: vault-prod
+    ports:
+      - "8200:8200"
+    cap_add:
+      - IPC_LOCK
+    volumes:
+      - ./vault/config:/vault/config
+      - ./vault/data:/vault/data
+    environment:
+      VAULT_LOCAL_CONFIG: >
+        {
+          "storage": { "file": { "path": "/vault/file" } },
+          "listener": [
+            {
+              "tcp": {
+                "address": "127.0.0.1:8200",
+                "tls_cert_file": "/vault/config/cert.pem",
+                "tls_key_file": "/vault/config/key.pem",
+                "tls_ca_file": "/vault/config/cert_bundle.pem"
+              }
+            }
+          ],
+          "ui": true,
+          "default_lease_ttl": "168h",
+          "max_lease_ttl": "720h"
+        }
+    command: server
