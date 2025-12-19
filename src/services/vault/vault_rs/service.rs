@@ -19,6 +19,7 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 use async_trait::async_trait;
+use sea_orm::{Database, DatabaseConnection};
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 use serde_json::Value;
@@ -28,9 +29,10 @@ use vaultrs::client::{VaultClient, VaultClientSettingsBuilder};
 use vaultrs::kv2;
 use vaultrs::sys::mount;
 
+use crate::config::{CoreApplicationConfig, CoreConfigTrait};
 use crate::errors::{ErrorLogTrait, Errors};
 use crate::services::vault::VaultTrait;
-use crate::types::secrets::PemHelper;
+use crate::types::secrets::{DbSecrets, PemHelper};
 use crate::utils::{expect_from_env, read, read_json};
 
 pub struct VaultService {
@@ -149,5 +151,12 @@ impl VaultTrait for VaultService {
         map.insert(cert_path, data);
 
         Ok(map)
+    }
+    async fn get_connection(&self, config: &CoreApplicationConfig) -> DatabaseConnection {
+        let db_path = expect_from_env("VAULT_DB");
+
+        let db_secrets: DbSecrets =
+            self.read(None, &db_path).await.expect("Not able to retrieve env files");
+        Database::connect(config.get_full_db(db_secrets)).await.expect("Database can't connect")
     }
 }

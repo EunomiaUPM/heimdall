@@ -18,9 +18,8 @@
 use std::sync::Arc;
 
 use axum::{serve, Router};
-use sea_orm::DatabaseConnection;
 use tokio::net::TcpListener;
-use tracing::info;
+use tracing::{info, warn};
 
 use crate::config::{CoreApplicationConfig, CoreConfigTrait};
 use crate::core::Core;
@@ -30,6 +29,7 @@ use crate::services::gatekeeper::gnap::{config::GnapConfig, GnapService};
 use crate::services::issuer::basic::{config::BasicIssuerConfig, BasicIssuerService};
 use crate::services::repo::postgres::RepoForSql;
 use crate::services::vault::vault_rs::VaultService;
+use crate::services::vault::VaultTrait;
 use crate::services::vcs_builder::dataspace_authority::config::DataSpaceAuthorityConfig;
 use crate::services::vcs_builder::dataspace_authority::DataSpaceAuthorityBuilder;
 use crate::services::vcs_builder::legal_authority::{
@@ -40,14 +40,13 @@ use crate::services::verifier::basic::{config::BasicVerifierConfig, BasicVerifie
 use crate::services::wallet::walt_id::{config::WaltIdConfig, WaltIdService};
 use crate::services::wallet::WalletTrait;
 use crate::types::enums::role::AuthorityRole;
+use crate::types::secrets::PemHelper;
+use crate::utils::expect_from_env;
 
 pub struct AuthorityApplication;
 
 impl AuthorityApplication {
-    pub async fn create_router(
-        config: &CoreApplicationConfig,
-        db_connection: DatabaseConnection
-    ) -> Router {
+    pub async fn create_router(config: &CoreApplicationConfig, vault: VaultService) -> Router {
         // ROLE
         let role = config.get_role();
 
@@ -81,7 +80,8 @@ impl AuthorityApplication {
         let core_config = Arc::new(config.clone());
 
         // SERVICES
-        let vault = Arc::new(VaultService::new());
+        let vault = Arc::new(vault);
+        let db_connection = vault.get_connection(config).await;
         let repo = Arc::new(RepoForSql::new(db_connection));
         let client = Arc::new(BasicClientService::new());
         let access = Arc::new(GnapService::new(gnap_config, client.clone()));
@@ -100,11 +100,11 @@ impl AuthorityApplication {
         RainbowAuthorityRouter::new(Arc::new(core)).router()
     }
 
-    pub async fn run(
+    pub async fn run_basic(
         config: CoreApplicationConfig,
-        db_connection: DatabaseConnection
+        vault: VaultService
     ) -> anyhow::Result<()> {
-        let router = Self::create_router(&config, db_connection).await;
+        let router = Self::create_router(&config, vault).await;
 
         let server_message = format!("Starting Authority server in {}", config.get_host());
         info!("{}", server_message);
@@ -116,5 +116,25 @@ impl AuthorityApplication {
 
         serve(listener, router).await?;
         Ok(())
+    }
+    pub async fn run_tls(
+        config: &CoreApplicationConfig,
+        vault: &VaultService
+    ) -> anyhow::Result<()> {
+        let cert = expect_from_env("VAULT_CLIENT_CERT");
+        let pkey = expect_from_env("VAULT_CLIENT_KEY");
+        let cert: PemHelper = vault.read(None, &cert).await?;
+        let pkey: PemHelper = vault.read(None, &pkey).await?;
+
+        Ok(())
+    }
+    pub async fn run(config: CoreApplicationConfig, vault: VaultService) -> anyhow::Result<()> {
+        match Self::run_tls(&config, &vault).await {
+            Ok(_) => Ok(()),
+            Err(err) => {
+                warn!("TLS failed: {:?}, falling back to basic server", err);
+                Self::run_basic(config, vault).await
+            }
+        }
     }
 }

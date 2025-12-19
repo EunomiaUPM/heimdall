@@ -25,7 +25,6 @@ use crate::services::vault::vault_rs::VaultService;
 use crate::services::vault::VaultTrait;
 use crate::setup::application::AuthorityApplication;
 use crate::setup::database::db_migrations::AuthorityMigration;
-use crate::setup::database::DbConnector;
 
 #[derive(Parser, Debug)]
 #[command(name = "Rainbow Dataspace Authority Server")]
@@ -60,13 +59,13 @@ impl AuthorityCommands {
         match cli.command {
             AuthorityCliCommands::Start(args) => {
                 let config = extract_env_config(args.env_file)?;
-
-                let db_connection = DbConnector::get_connection(&config).await;
-                AuthorityApplication::run(config, db_connection).await?
+                let vault = VaultService::new();
+                AuthorityApplication::run_basic(config, vault).await?
             }
             AuthorityCliCommands::Setup(args) => {
                 let config = extract_env_config(args.env_file)?;
-                let db_connection = DbConnector::get_connection(&config).await;
+                let vault = VaultService::new();
+                let db_connection = vault.get_connection(&config).await;
                 AuthorityMigration::run(db_connection).await?
             }
             AuthorityCliCommands::Vault => {

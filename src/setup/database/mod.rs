@@ -17,11 +17,9 @@
 
 mod config;
 mod config_trait;
-mod connection;
 pub mod db_migrations;
 mod helper;
 
 pub use config::DatabaseConfig;
 pub use config_trait::DbConnectionTrait;
-pub use connection::DbConnector;
 pub use helper::DbType;
