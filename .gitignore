@@ -1,4 +1,4 @@
 /target
 .idea
-/vault
-/envs
+/vault/
+/static/environment/envs/
