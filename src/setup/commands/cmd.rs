@@ -60,7 +60,7 @@ impl AuthorityCommands {
             AuthorityCliCommands::Start(args) => {
                 let config = extract_env_config(args.env_file)?;
                 let vault = VaultService::new();
-                AuthorityApplication::run_basic(config, vault).await?
+                AuthorityApplication::run(config, vault).await?
             }
             AuthorityCliCommands::Setup(args) => {
                 let config = extract_env_config(args.env_file)?;

@@ -35,6 +35,7 @@ use crate::services::vault::VaultTrait;
 use crate::types::secrets::{DbSecrets, PemHelper};
 use crate::utils::{expect_from_env, read, read_json};
 
+#[derive(Clone)]
 pub struct VaultService {
     client: Arc<VaultClient>
 }

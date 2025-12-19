@@ -15,9 +15,11 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
+use std::net::SocketAddr;
 use std::sync::Arc;
 
 use axum::{serve, Router};
+use axum_server::tls_rustls::RustlsConfig;
 use tokio::net::TcpListener;
 use tracing::{info, warn};
 
@@ -119,17 +121,30 @@ impl AuthorityApplication {
     }
     pub async fn run_tls(
         config: &CoreApplicationConfig,
-        vault: &VaultService
+        vault: VaultService
     ) -> anyhow::Result<()> {
         let cert = expect_from_env("VAULT_CLIENT_CERT");
         let pkey = expect_from_env("VAULT_CLIENT_KEY");
         let cert: PemHelper = vault.read(None, &cert).await?;
         let pkey: PemHelper = vault.read(None, &pkey).await?;
 
+        let tls_config = RustlsConfig::from_pem(cert.data().to_vec(), pkey.data().to_vec()).await?;
+
+        let router = Self::create_router(config, vault).await;
+
+        let addr_str = if config.is_local() {
+            format!("127.0.0.1{}", config.get_weird_port())
+        } else {
+            format!("0.0.0.0{}", config.get_weird_port())
+        };
+        let addr: SocketAddr = addr_str.parse()?;
+        info!("Starting Authority server with TLS in {}", addr);
+
+        axum_server::bind_rustls(addr, tls_config).serve(router.into_make_service()).await?;
         Ok(())
     }
     pub async fn run(config: CoreApplicationConfig, vault: VaultService) -> anyhow::Result<()> {
-        match Self::run_tls(&config, &vault).await {
+        match Self::run_tls(&config, vault.clone()).await {
             Ok(_) => Ok(()),
             Err(err) => {
                 warn!("TLS failed: {:?}, falling back to basic server", err);

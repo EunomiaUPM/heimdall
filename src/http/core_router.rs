@@ -44,32 +44,37 @@ impl RainbowAuthorityRouter {
 
     pub fn router(self) -> Router {
         let gatekeeper_router = GateKeeperRouter::new(self.core.clone()).router();
-        let wallet_router = WalletRouter::new(self.core.clone()).router();
         let issuer_router = IssuerRouter::new(self.core.clone()).router();
         let verifier_router = VerifierRouter::new(self.core.clone()).router();
         let approver_router = ApproverRouter::new(self.core.clone()).router();
         let openapi_router = OpenapiRouter::new(self.openapi.clone()).router();
 
         let api_path = self.core.config().get_api_path();
-        Router::new()
+        let mut router = Router::new()
             .route(&format!("{}/status", api_path), get(Self::server_status))
-            .nest(&format!("{}/wallet", api_path), wallet_router)
             .nest(&format!("{}/approver", api_path), approver_router)
             .nest(&format!("{}/gate", api_path), gatekeeper_router)
             .nest(&format!("{}/issuer", api_path), issuer_router)
             .nest(&format!("{}/verifier", api_path), verifier_router)
-            .nest(&format!("{}/docs", api_path), openapi_router)
-            .fallback(Self::fallback)
-            .layer(
-                TraceLayer::new_for_http()
-                    .make_span_with(
-                        |_req: &Request<_>| tracing::info_span!("request", id = %Uuid::new_v4())
-                    )
-                    .on_request(|req: &Request<_>, _span: &tracing::Span| {
-                        info!("{} {}", req.method(), req.uri().path());
-                    })
-                    .on_response(DefaultOnResponse::new().level(Level::TRACE))
-            )
+            .nest(&format!("{}/docs", api_path), openapi_router);
+
+        let router = if self.core.config().is_wallet_active() {
+            let wallet_router = WalletRouter::new(self.core.clone()).router();
+            router.nest(&format!("{}/wallet", api_path), wallet_router)
+        } else {
+            router
+        };
+
+        router.fallback(Self::fallback).layer(
+            TraceLayer::new_for_http()
+                .make_span_with(
+                    |_req: &Request<_>| tracing::info_span!("request", id = %Uuid::new_v4())
+                )
+                .on_request(|req: &Request<_>, _span: &tracing::Span| {
+                    info!("{} {}", req.method(), req.uri().path());
+                })
+                .on_response(DefaultOnResponse::new().level(Level::TRACE))
+        )
     }
 
     async fn server_status() -> impl IntoResponse {

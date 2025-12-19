@@ -3,7 +3,7 @@ host:
   url: 127.0.0.1
   port: 1500
 
-database_config:
+db_config:
   type: Postgres
   url: 127.0.0.1
   port: 1450
@@ -12,9 +12,10 @@ database_config:
 #  name: ds_authority
 
 wallet_config:
-  api_protocol: http
-  api_url: 127.0.0.1
-  api_port: 7001
+  api:
+    protocol: http
+    url: 127.0.0.1
+    port: 7001
 #  type: email
 #  name: RainbowAuthority
 #  email: RainbowAuthority@rainbow.com
