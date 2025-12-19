@@ -31,3 +31,13 @@ services:
           "max_lease_ttl": "720h"
         }
     command: server
+  ds_authority:
+    container_name: "ds_authority"
+    image: "postgres"
+    restart: always
+    environment:
+      POSTGRES_PASSWORD: completar
+      POSTGRES_USER: completar
+      POSTGRES_DB: completar
+    ports:
+      - "1450:5432"
