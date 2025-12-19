@@ -7,24 +7,16 @@ db_config:
   type: Postgres
   url: 127.0.0.1
   port: 1450
-#  user: ds_authority
-#  password: ds_authority
-#  name: ds_authority
 
-wallet_config:
-  api:
-    protocol: http
-    url: 127.0.0.1
-    port: 7001
-#  type: email
-#  name: RainbowAuthority
-#  email: RainbowAuthority@rainbow.com
-#  password: rainbow
-  id: null
+wallet_config: null
+#  api:
+#    protocol: http
+#    url: 127.0.0.1
+#    port: 7001
+#  id: null
 
 role: LegalAuthority
 
-#keys_path: static/certificates/
 is_local: true
 
 api:

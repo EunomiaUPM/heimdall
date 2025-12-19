@@ -50,7 +50,7 @@ impl RainbowAuthorityRouter {
         let openapi_router = OpenapiRouter::new(self.openapi.clone()).router();
 
         let api_path = self.core.config().get_api_path();
-        let mut router = Router::new()
+        let router = Router::new()
             .route(&format!("{}/status", api_path), get(Self::server_status))
             .nest(&format!("{}/approver", api_path), approver_router)
             .nest(&format!("{}/gate", api_path), gatekeeper_router)

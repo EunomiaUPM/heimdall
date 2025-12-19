@@ -74,7 +74,6 @@ impl AuthorityApplication {
         };
 
         // CONFIGS
-        let walt_id_config = WaltIdConfig::from(config.clone());
         let gnap_config = GnapConfig::from(config.clone());
         let issuer_config = BasicIssuerConfig::from(config.clone());
         let verifier_config = BasicVerifierConfig::from(config.clone());
@@ -91,7 +90,10 @@ impl AuthorityApplication {
         let verifier = Arc::new(BasicVerifierService::new(verifier_config));
 
         let wallet: Option<Arc<dyn WalletTrait>> = match config.is_wallet_active() {
-            true => Some(Arc::new(WaltIdService::new(walt_id_config, client.clone(), vault))),
+            true => {
+                let walt_id_config = WaltIdConfig::from(config.clone());
+                Some(Arc::new(WaltIdService::new(walt_id_config, client.clone(), vault)))
+            }
             false => None
         };
 
