@@ -35,7 +35,7 @@ use crate::services::vault::VaultTrait;
 use crate::services::vcs_builder::dataspace_authority::config::DataSpaceAuthorityConfig;
 use crate::services::vcs_builder::dataspace_authority::DataSpaceAuthorityBuilder;
 use crate::services::vcs_builder::legal_authority::{
-    config::LegalAuthorityConfig, LegalAuthorityBuilder
+    config::LegalAuthorityConfig, LegalAuthorityBuilder,
 };
 use crate::services::vcs_builder::VcBuilderTrait;
 use crate::services::verifier::basic::{config::BasicVerifierConfig, BasicVerifierService};
@@ -94,7 +94,7 @@ impl AuthorityApplication {
                 let walt_id_config = WaltIdConfig::from(config.clone());
                 Some(Arc::new(WaltIdService::new(walt_id_config, client.clone(), vault)))
             }
-            false => None
+            false => None,
         };
 
         // CORE
@@ -106,7 +106,7 @@ impl AuthorityApplication {
 
     pub async fn run_basic(
         config: CoreApplicationConfig,
-        vault: VaultService
+        vault: VaultService,
     ) -> anyhow::Result<()> {
         let router = Self::create_router(&config, vault).await;
 
@@ -115,7 +115,7 @@ impl AuthorityApplication {
 
         let listener = match config.is_local() {
             true => TcpListener::bind(format!("127.0.0.1{}", config.get_weird_port())).await?,
-            false => TcpListener::bind(format!("0.0.0.0{}", config.get_weird_port())).await?
+            false => TcpListener::bind(format!("0.0.0.0{}", config.get_weird_port())).await?,
         };
 
         serve(listener, router).await?;
@@ -123,7 +123,7 @@ impl AuthorityApplication {
     }
     pub async fn run_tls(
         config: &CoreApplicationConfig,
-        vault: VaultService
+        vault: VaultService,
     ) -> anyhow::Result<()> {
         let cert = expect_from_env("VAULT_CLIENT_CERT");
         let pkey = expect_from_env("VAULT_CLIENT_KEY");
@@ -134,11 +134,8 @@ impl AuthorityApplication {
 
         let router = Self::create_router(config, vault).await;
 
-        let addr_str = if config.is_local() {
-            format!("127.0.0.1{}", config.get_weird_port())
-        } else {
-            format!("0.0.0.0{}", config.get_weird_port())
-        };
+        let addr_str =
+            if config.is_local() { format!("127.0.0.1:443") } else { format!("0.0.0.0:443") };
         let addr: SocketAddr = addr_str.parse()?;
         info!("Starting Authority server with TLS in {}", addr);
 
