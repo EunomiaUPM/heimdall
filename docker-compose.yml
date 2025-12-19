@@ -18,14 +18,15 @@ services:
           "listener": [
             {
               "tcp": {
-                "address": "127.0.0.1:8200",
-                "tls_cert_file": "/vault/config/cert.pem",
-                "tls_key_file": "/vault/config/key.pem",
-                "tls_ca_file": "/vault/config/cert_bundle.pem"
+                "address": "0.0.0.0:8200",
+                "tls_cert_file": "/vault/config/vault-cert.pem",
+                "tls_key_file": "/vault/config/vault-key.pem",
+                "tls_ca_file": "/vault/config/vault-ca.pem"
               }
             }
           ],
           "ui": true,
+          "api_addr": "https://127.0.0.1:8200"
           "default_lease_ttl": "168h",
           "max_lease_ttl": "720h"
         }

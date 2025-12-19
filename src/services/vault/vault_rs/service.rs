@@ -23,8 +23,10 @@ use serde::de::DeserializeOwned;
 use serde::Serialize;
 use serde_json::Value;
 use tracing::error;
+use vaultrs::api::sys::requests::EnableEngineRequestBuilder;
 use vaultrs::client::{VaultClient, VaultClientSettingsBuilder};
 use vaultrs::kv2;
+use vaultrs::sys::mount;
 
 use crate::errors::{ErrorLogTrait, Errors};
 use crate::services::vault::VaultTrait;
@@ -97,6 +99,18 @@ impl VaultTrait for VaultService {
     }
     async fn write_all_secrets(&self) -> anyhow::Result<()> {
         let mount = expect_from_env("VAULT_MOUNT");
+
+        let mut opts = HashMap::new();
+        opts.insert("version".to_string(), "2".to_string());
+        let mut data = EnableEngineRequestBuilder::default();
+        let data = data.options(opts);
+
+        mount::enable(&*self.client, &mount, "kv", Some(data)).await.map_err(|e| {
+            let error = Errors::vault_new(e.to_string());
+            error!("{}", error.log());
+            error
+        })?;
+
         for (path, secret) in self.secrets()? {
             self.write(Some(&mount), &path, &secret).await?
         }

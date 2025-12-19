@@ -235,7 +235,7 @@ pub fn expect_from_env(env: &str) -> String {
     let data = match result {
         Ok(data) => Some(data),
         Err(e) => {
-            let error = Errors::env_new(e.to_string());
+            let error = Errors::env_new(format!("{} not found -> {}", &env, e.to_string()));
             error!("{}", error.log());
             None
         }
