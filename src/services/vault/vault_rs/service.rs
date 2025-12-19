@@ -151,6 +151,18 @@ impl VaultTrait for VaultService {
         let data = serde_json::to_value(PemHelper::new(data))?;
         map.insert(cert_path, data);
 
+        // REAL CERT
+        let cert_path = expect_from_env("VAULT_CLIENT_CERT");
+        let data = read("/vault/config/vault-cert.pem")?;
+        let data = serde_json::to_value(PemHelper::new(data))?;
+        map.insert(cert_path, data);
+
+        // CERT
+        let cert_path = expect_from_env("VAULT_CLIENT_KEY");
+        let data = read("/vault/config/vault-key.pem")?;
+        let data = serde_json::to_value(PemHelper::new(data))?;
+        map.insert(cert_path, data);
+
         Ok(map)
     }
     async fn get_connection(&self, config: &CoreApplicationConfig) -> DatabaseConnection {
