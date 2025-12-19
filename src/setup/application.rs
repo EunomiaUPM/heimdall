@@ -130,6 +130,10 @@ impl AuthorityApplication {
         let cert: PemHelper = vault.read(None, &cert).await?;
         let pkey: PemHelper = vault.read(None, &pkey).await?;
 
+        rustls::crypto::ring::default_provider()
+            .install_default()
+            .expect("No se pudo instalar el proveedor de criptografía");
+
         let tls_config = RustlsConfig::from_pem(cert.data().to_vec(), pkey.data().to_vec()).await?;
 
         let router = Self::create_router(config, vault).await;
