@@ -15,15 +15,18 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-use std::collections::HashSet;
-
 use anyhow::bail;
+use async_trait::async_trait;
+use axum::http::header::{ACCEPT, CONTENT_TYPE};
+use axum::http::{HeaderMap, StatusCode};
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use base64::Engine;
 use chrono::{DateTime, Utc};
 use jsonwebtoken::jwk::Jwk;
-use jsonwebtoken::{TokenData, Validation};
+use jsonwebtoken::{DecodingKey, TokenData, Validation};
 use serde_json::Value;
+use std::collections::HashSet;
+use std::sync::Arc;
 use tracing::{error, info};
 use urlencoding::encode;
 
@@ -31,27 +34,31 @@ use super::super::VerifierTrait;
 use super::config::{BasicVerifierConfig, BasicVerifierConfigTrait};
 use crate::data::entities::verification;
 use crate::errors::{ErrorLogTrait, Errors};
+use crate::services::client::ClientTrait;
 use crate::types::enums::errors::BadFormat;
 use crate::types::vcs::VPDef;
-use crate::utils::{get_claim, get_opt_claim, split_did};
+use crate::types::wallet::DidType;
+use crate::utils::{get_claim, get_opt_claim, parse_did, split_did};
 
 pub struct BasicVerifierService {
-    config: BasicVerifierConfig
+    client: Arc<dyn ClientTrait>,
+    config: BasicVerifierConfig,
 }
 
 impl BasicVerifierService {
-    pub fn new(config: BasicVerifierConfig) -> BasicVerifierService {
-        BasicVerifierService { config }
+    pub fn new(client: Arc<dyn ClientTrait>, config: BasicVerifierConfig) -> BasicVerifierService {
+        BasicVerifierService { client, config }
     }
 }
 
+#[async_trait]
 impl VerifierTrait for BasicVerifierService {
     fn start_vp(&self, id: &str) -> anyhow::Result<verification::NewModel> {
         info!("Managing OIDC4VP");
         let host_url = self.config.get_host();
         let host_url = match self.config.is_local() {
             true => host_url.replace("127.0.0.1", "host.docker.internal"),
-            false => host_url
+            false => host_url,
         };
 
         let client_id = format!("{}/verify", &host_url);
@@ -75,7 +82,7 @@ impl VerifierTrait for BasicVerifierService {
         let host_url = format!("{}{}/verifier", host_url, self.config.get_api_path());
         let host_url = match self.config.is_local() {
             true => host_url.replace("127.0.0.1", "host.docker.internal"),
-            false => host_url
+            false => host_url,
         };
 
         let base_url = "openid4vp://authorize";
@@ -93,14 +100,14 @@ impl VerifierTrait for BasicVerifierService {
         // authorization_encrypted_response_enc":"A256GCM"}"#;
 
         let uri = format!("{}?response_type={}&client_id={}&response_mode={}&presentation_definition_uri={}&client_id_scheme={}&nonce={}&response_uri={}",
-            base_url,
-            response_type,
-            encoded_client_id,
-            response_mode,
-            encoded_presentation_definition_uri,
-            client_id_scheme,
-            model.nonce,
-            encoded_response_uri);
+                          base_url,
+                          response_type,
+                          encoded_client_id,
+                          response_mode,
+                          encoded_presentation_definition_uri,
+                          client_id_scheme,
+                          model.nonce,
+                          encoded_response_uri);
         info!("Uri generated successfully: {}", uri);
 
         uri
@@ -111,31 +118,31 @@ impl VerifierTrait for BasicVerifierService {
         VPDef::new(ver_model.id, ver_model.vc_type)
     }
 
-    fn verify_all(
+    async fn verify_all(
         &self,
         ver_model: &mut verification::Model,
-        vp_token: String
+        vp_token: String,
     ) -> anyhow::Result<()> {
         info!("Verifying all");
 
-        let (vcs, holder) = self.verify_vp(ver_model, &vp_token)?;
+        let (vcs, holder) = self.verify_vp(ver_model, &vp_token).await?;
         for vc in vcs {
-            self.verify_vc(&vc, &holder)?;
+            self.verify_vc(&vc, &holder).await?;
         }
         info!("VP & VC Validated successfully");
 
         Ok(())
     }
 
-    fn verify_vp(
+    async fn verify_vp(
         &self,
         model: &mut verification::Model,
-        vp_token: &str
+        vp_token: &str,
     ) -> anyhow::Result<(Vec<String>, String)> {
         info!("Verifying vp");
 
         model.vpt = Some(vp_token.to_string());
-        let (token, kid) = self.validate_token(vp_token, Some(&model.state))?;
+        let (token, kid) = self.validate_token(vp_token, Some(&model.state)).await?;
         self.validate_nonce(model, &token)?;
         self.validate_vp_subject(model, &token, &kid)?;
         self.validate_vp_id(model, &token)?;
@@ -158,10 +165,10 @@ impl VerifierTrait for BasicVerifierService {
         Ok((vcs, kid))
     }
 
-    fn verify_vc(&self, vc_token: &str, holder: &str) -> anyhow::Result<()> {
+    async fn verify_vc(&self, vc_token: &str, holder: &str) -> anyhow::Result<()> {
         info!("Verifying vc");
 
-        let (token, kid) = self.validate_token(vc_token, None)?;
+        let (token, kid) = self.validate_token(vc_token, None).await?;
         self.validate_issuer(&token, &kid)?;
         self.validate_vc_id(&token)?;
         self.validate_vc_sub(&token, holder)?;
@@ -181,10 +188,10 @@ impl VerifierTrait for BasicVerifierService {
         Ok(())
     }
 
-    fn validate_token(
+    async fn validate_token(
         &self,
         vp_token: &str,
-        audience: Option<&str>
+        audience: Option<&str>,
     ) -> anyhow::Result<(TokenData<Value>, String)> {
         info!("Validating token");
         let header = jsonwebtoken::decode_header(&vp_token)?;
@@ -218,7 +225,7 @@ impl VerifierTrait for BasicVerifierService {
                 );
                 let audience = match self.config.is_local() {
                     true => audience.replace("127.0.0.1", "host.docker.internal"),
-                    false => audience
+                    false => audience,
                 };
                 val.validate_aud = true;
                 val.set_audience(&[&(audience)]);
@@ -239,10 +246,115 @@ impl VerifierTrait for BasicVerifierService {
         Ok((token, kid.to_string()))
     }
 
+    async fn get_key(&self, did: &str) -> anyhow::Result<DecodingKey> {
+        info!("Retrieving key from did");
+        let key = match parse_did(did) {
+            DidType::Jwk => {
+                let (did_base, _) = split_did(did); 
+
+                let vec = URL_SAFE_NO_PAD.decode(&(did_base.replace("did:jwk:", "")))?;
+                let jwk: Jwk = serde_json::from_slice(&vec)?;
+
+                jsonwebtoken::DecodingKey::from_jwk(&jwk)?
+            }
+            DidType::Web => {
+                let (did_base, kid) = split_did(did);
+
+                let kid = kid.ok_or_else(|| {
+                    let error = Errors::format_new(
+                        BadFormat::Received,
+                        "did:web requires a key id fragment (#...)",
+                    );
+                    error!("{}", error.log());
+                    error
+                })?;
+
+                let domain = did_base.replace("did:web:", "");
+
+                let url = self.parse_domain(&domain);
+
+                info!("Resolving DID Document: {}", url);
+
+                let mut headers = HeaderMap::new();
+                headers.insert(CONTENT_TYPE, "application/json".parse()?);
+                headers.insert(ACCEPT, "application/json".parse()?);
+
+                let res = self.client.get(&url, Some(headers)).await?;
+
+                let doc: Value = match res.status().as_u16() {
+                    200 => {
+                        info!("Did Document retrived succesfully retrieved");
+                        res.json().await?
+                    }
+                    _ => {
+                        let error =
+                            Errors::format_new(BadFormat::Received, "Did Document not retrived");
+                        error!("{}", error.log());
+                        bail!(error)
+                    }
+                };
+
+                let methods = doc["verificationMethod"].as_array().ok_or_else(|| {
+                    let error =
+                        Errors::format_new(BadFormat::Received, "Missing verification method");
+                    error!("{}", error.log());
+                    error
+                })?;
+
+                let full_kid = format!("{}#{}", did_base, kid);
+
+                let method = methods.iter().find(|m| m["id"] == full_kid).ok_or_else(|| {
+                    let error = Errors::format_new(
+                        BadFormat::Received,
+                        &format!("Key not found: {}", full_kid),
+                    );
+                    error!("{}", error.log());
+                    error
+                })?;
+
+                let jwk_value = method["publicKeyJwk"].as_object().ok_or_else(|| {
+                    let error = Errors::format_new(BadFormat::Received, "Missing publicKeyJwk");
+                    error!("{}", error.log());
+                    error
+                })?;
+
+                let jwk: Jwk = serde_json::from_value(jwk_value.clone().into())?;
+
+                jsonwebtoken::DecodingKey::from_jwk(&jwk)?
+            }
+            DidType::Other => {
+                let error = Errors::not_impl_new("did method", &did.to_string());
+                error!("{}", error.log());
+                bail!(error);
+            }
+        };
+        Ok(key)
+    }
+
+    fn parse_domain(&self, domain: &str) -> String {
+        let parts: Vec<&str> = domain.split(':').collect();
+
+        match parts.as_slice() {
+            [domain] => format!(
+                "https://{}/.well-known/did.json",
+                domain
+            ),
+            [domain, path @ ..] => {
+                let path = path.join("/");
+                format!(
+                    "https://{}/{}/did.json",
+                    domain, path
+                )
+            }
+            _ => String::new(),
+        }
+    }
+
+
     fn validate_nonce(
         &self,
         model: &verification::Model,
-        token: &TokenData<Value>
+        token: &TokenData<Value>,
     ) -> anyhow::Result<()> {
         info!("Validating nonce");
 
@@ -261,7 +373,7 @@ impl VerifierTrait for BasicVerifierService {
         &self,
         model: &mut verification::Model,
         token: &TokenData<Value>,
-        kid: &str
+        kid: &str,
     ) -> anyhow::Result<()> {
         info!("Validating subject");
 
@@ -292,7 +404,7 @@ impl VerifierTrait for BasicVerifierService {
         if let Some(sub) = sub {
             if sub != holder {
                 let error = Errors::security_new(
-                    "VCT token sub, credential subject & VP Holder do not match"
+                    "VCT token sub, credential subject & VP Holder do not match",
                 );
                 error!("{}", error.log());
                 bail!(error);
@@ -313,7 +425,7 @@ impl VerifierTrait for BasicVerifierService {
     fn validate_vp_id(
         &self,
         model: &verification::Model,
-        token: &TokenData<Value>
+        token: &TokenData<Value>,
     ) -> anyhow::Result<()> {
         info!("Validating vp id");
 
@@ -332,7 +444,7 @@ impl VerifierTrait for BasicVerifierService {
     fn validate_holder(
         &self,
         model: &verification::Model,
-        token: &TokenData<Value>
+        token: &TokenData<Value>,
     ) -> anyhow::Result<()> {
         info!("Validating holder");
 
@@ -438,7 +550,7 @@ impl VerifierTrait for BasicVerifierService {
     fn retrieve_vcs(&self, token: TokenData<Value>) -> anyhow::Result<Vec<String>> {
         info!("Retrieving VCs");
         let vcs: Vec<String> = serde_json::from_value(
-            token.claims["vp"]["verifiableCredential"].clone()
+            token.claims["vp"]["verifiableCredential"].clone(),
         )
         .map_err(|e| {
             let error = Errors::format_new(
@@ -446,7 +558,7 @@ impl VerifierTrait for BasicVerifierService {
                 &format!(
                     "VPT does not contain the 'verifiableCredential' field -> {}",
                     e.to_string()
-                )
+                ),
             );
             error!("{}", error.log());
             error

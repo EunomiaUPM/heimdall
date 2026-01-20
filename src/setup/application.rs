@@ -87,7 +87,7 @@ impl AuthorityApplication {
         let client = Arc::new(BasicClientService::new());
         let access = Arc::new(GnapService::new(gnap_config, client.clone()));
         let issuer = Arc::new(BasicIssuerService::new(issuer_config, vault.clone()));
-        let verifier = Arc::new(BasicVerifierService::new(verifier_config));
+        let verifier = Arc::new(BasicVerifierService::new(client.clone(), verifier_config));
 
         let wallet: Option<Arc<dyn WalletTrait>> = match config.is_wallet_active() {
             true => {

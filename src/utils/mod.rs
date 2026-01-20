@@ -34,6 +34,7 @@ use tracing::{error, info};
 
 use crate::errors::{ErrorLogTrait, Errors};
 use crate::types::enums::errors::BadFormat;
+use crate::types::wallet::DidType;
 
 pub fn create_opaque_token() -> String {
     let mut bytes = [0u8; 32]; // 256 bits
@@ -72,7 +73,7 @@ pub fn trim_4_base(input: &str) -> String {
 pub fn split_did(did: &str) -> (&str, Option<&str>) {
     match did.split_once('#') {
         Some((did_kid, id)) => (did_kid, Some(id)),
-        None => (did, None)
+        None => (did, None),
     }
 }
 
@@ -108,7 +109,7 @@ pub fn get_opt_claim(claims: &Value, path: Vec<&str>) -> anyhow::Result<Option<S
     for key in path.iter() {
         node = match node.get(key) {
             Some(data) => data,
-            None => return Ok(None)
+            None => return Ok(None),
         };
     }
     let data = validate_data(node, field)?;
@@ -129,13 +130,14 @@ fn validate_data(node: &Value, field: &str) -> anyhow::Result<String> {
 
 pub fn validate_token<T>(
     token: &str,
-    audience: Option<&str>
+    audience: Option<&str>,
 ) -> anyhow::Result<(TokenData<T>, String)>
 where
-    T: Serialize + DeserializeOwned
+    T: Serialize + DeserializeOwned,
 {
     info!("Validating token");
     let header = jsonwebtoken::decode_header(&token)?;
+    info!("{:#?}", header);
     let kid_str = get_from_opt(&header.kid, "kid")?;
     let (kid, _) = split_did(kid_str.as_str()); // TODO KID_ID
     let alg = header.alg;
@@ -177,7 +179,7 @@ where
 
 pub fn get_from_opt<T>(value: &Option<T>, field_name: &str) -> anyhow::Result<T>
 where
-    T: Clone + Serialize + DeserializeOwned
+    T: Clone + Serialize + DeserializeOwned,
 {
     match value {
         Some(v) => Ok(v.clone()),
@@ -224,7 +226,7 @@ pub fn read(path: &str) -> anyhow::Result<String> {
 
 pub fn read_json<T>(path: &str) -> anyhow::Result<T>
 where
-    T: DeserializeOwned
+    T: DeserializeOwned,
 {
     let data = read(path)?;
     let json = serde_json::from_str(&data)?;
@@ -241,4 +243,14 @@ pub fn expect_from_env(env: &str) -> String {
         }
     };
     data.expect("Error with env variable")
+}
+
+pub fn parse_did(did: &str) -> DidType {
+    if did.starts_with("did:web:") {
+        DidType::Web
+    } else if did.starts_with("did:jwk:") {
+        DidType::Jwk
+    } else {
+        DidType::Other
+    }
 }

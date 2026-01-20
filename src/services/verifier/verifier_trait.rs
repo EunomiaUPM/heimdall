@@ -14,33 +14,36 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
-
-use jsonwebtoken::TokenData;
+use async_trait::async_trait;
+use jsonwebtoken::{DecodingKey, TokenData};
 use serde_json::Value;
 
 use crate::data::entities::verification;
 use crate::types::vcs::VPDef;
 
+#[async_trait]
 pub trait VerifierTrait: Send + Sync + 'static {
     fn start_vp(&self, id: &str) -> anyhow::Result<verification::NewModel>;
     fn generate_verification_uri(&self, model: verification::Model) -> String;
     fn generate_vpd(&self, ver_model: verification::Model) -> VPDef;
-    fn verify_all(
+    async fn verify_all(
         &self,
         ver_model: &mut verification::Model,
         vp_token: String
     ) -> anyhow::Result<()>;
-    fn verify_vp(
+    async fn verify_vp(
         &self,
         model: &mut verification::Model,
         vp_token: &str
     ) -> anyhow::Result<(Vec<String>, String)>;
-    fn verify_vc(&self, vc_token: &str, holder: &str) -> anyhow::Result<()>;
-    fn validate_token(
+    async fn verify_vc(&self, vc_token: &str, holder: &str) -> anyhow::Result<()>;
+    async fn validate_token(
         &self,
         vp_token: &str,
         audience: Option<&str>
     ) -> anyhow::Result<(TokenData<Value>, String)>;
+    async fn get_key(&self, did: &str) -> anyhow::Result<DecodingKey>;
+    fn parse_domain(&self, domain: &str) -> String;
     fn validate_nonce(
         &self,
         model: &verification::Model,

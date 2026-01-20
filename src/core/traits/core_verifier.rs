@@ -36,7 +36,7 @@ pub trait CoreVerifierTrait: Send + Sync + 'static {
     }
     async fn verify(&self, state: String, vp_token: String) -> anyhow::Result<Option<String>> {
         let mut ver_model = self.repo().verification().get_by_state(&state).await?;
-        let result = self.verifier().verify_all(&mut ver_model, vp_token);
+        let result = self.verifier().verify_all(&mut ver_model, vp_token).await;
         let int_model = self.repo().interaction().get_by_id(&ver_model.id).await?;
         result?;
         self.repo().verification().update(ver_model).await?;
