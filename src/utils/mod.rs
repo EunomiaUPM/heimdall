@@ -31,10 +31,9 @@ use serde::de::DeserializeOwned;
 use serde::Serialize;
 use serde_json::Value;
 use tracing::{error, info};
-
+use crate::capabilities::DidResolver;
 use crate::errors::{ErrorLogTrait, Errors};
 use crate::types::enums::errors::BadFormat;
-use crate::types::wallet::DidType;
 
 pub fn create_opaque_token() -> String {
     let mut bytes = [0u8; 32]; // 256 bits
@@ -68,13 +67,6 @@ pub fn trim_4_base(input: &str) -> String {
     let cut_index = slashes[2];
 
     input[..cut_index].to_string()
-}
-
-pub fn split_did(did: &str) -> (&str, Option<&str>) {
-    match did.split_once('#') {
-        Some((did_kid, id)) => (did_kid, Some(id)),
-        None => (did, None),
-    }
 }
 
 pub fn trim_path(path: &str) -> String {
@@ -139,7 +131,7 @@ where
     let header = jsonwebtoken::decode_header(&token)?;
     info!("{:#?}", header);
     let kid_str = get_from_opt(&header.kid, "kid")?;
-    let (kid, _) = split_did(kid_str.as_str()); // TODO KID_ID
+    let (kid, _) = DidResolver::split_did_id(kid_str.as_str()); 
     let alg = header.alg;
 
     let vec = URL_SAFE_NO_PAD.decode(&(kid.replace("did:jwk:", "")))?;
@@ -245,12 +237,3 @@ pub fn expect_from_env(env: &str) -> String {
     data.expect("Error with env variable")
 }
 
-pub fn parse_did(did: &str) -> DidType {
-    if did.starts_with("did:web:") {
-        DidType::Web
-    } else if did.starts_with("did:jwk:") {
-        DidType::Jwk
-    } else {
-        DidType::Other
-    }
-}

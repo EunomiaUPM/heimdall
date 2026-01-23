@@ -15,30 +15,24 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-use anyhow::bail;
-use async_trait::async_trait;
-use axum::http::header::{ACCEPT, CONTENT_TYPE};
-use axum::http::{HeaderMap, StatusCode};
-use base64::engine::general_purpose::URL_SAFE_NO_PAD;
-use base64::Engine;
-use chrono::{DateTime, Utc};
-use jsonwebtoken::jwk::Jwk;
-use jsonwebtoken::{DecodingKey, TokenData, Validation};
-use serde_json::Value;
-use std::collections::HashSet;
-use std::sync::Arc;
-use tracing::{error, info};
-use urlencoding::encode;
-
 use super::super::VerifierTrait;
 use super::config::{BasicVerifierConfig, BasicVerifierConfigTrait};
+use crate::capabilities::DidResolver;
 use crate::data::entities::verification;
 use crate::errors::{ErrorLogTrait, Errors};
 use crate::services::client::ClientTrait;
 use crate::types::enums::errors::BadFormat;
 use crate::types::vcs::VPDef;
-use crate::types::wallet::DidType;
-use crate::utils::{get_claim, get_opt_claim, parse_did, split_did};
+use crate::utils::{get_claim, get_opt_claim};
+use anyhow::bail;
+use async_trait::async_trait;
+use chrono::{DateTime, Utc};
+use jsonwebtoken::{TokenData, Validation};
+use serde_json::Value;
+use std::collections::HashSet;
+use std::sync::Arc;
+use tracing::{error, info};
+use urlencoding::encode;
 
 pub struct BasicVerifierService {
     client: Arc<dyn ClientTrait>,
@@ -195,19 +189,15 @@ impl VerifierTrait for BasicVerifierService {
     ) -> anyhow::Result<(TokenData<Value>, String)> {
         info!("Validating token");
         let header = jsonwebtoken::decode_header(&vp_token)?;
-        let kid_str = header.kid.as_ref().ok_or_else(|| {
+        let did = header.kid.as_ref().ok_or_else(|| {
             let error = Errors::format_new(BadFormat::Received, "Jwt does not contain a token");
             error!("{}", error.log());
             error
         })?;
 
-        let (kid, _) = split_did(kid_str.as_str()); // TODO KID_ID
+        let key = DidResolver::get_key(did, self.client.clone()).await?;
+        let (base_did, _) = DidResolver::split_did_id(did);
         let alg = header.alg;
-
-        let vec = URL_SAFE_NO_PAD.decode(&(kid.replace("did:jwk:", "")))?;
-        let jwk: Jwk = serde_json::from_slice(&vec)?;
-
-        let key = jsonwebtoken::DecodingKey::from_jwk(&jwk)?;
 
         let mut val = Validation::new(alg);
 
@@ -243,113 +233,8 @@ impl VerifierTrait for BasicVerifierService {
         })?;
 
         info!("Token signature is correct");
-        Ok((token, kid.to_string()))
+        Ok((token, base_did.to_string()))
     }
-
-    async fn get_key(&self, did: &str) -> anyhow::Result<DecodingKey> {
-        info!("Retrieving key from did");
-        let key = match parse_did(did) {
-            DidType::Jwk => {
-                let (did_base, _) = split_did(did); 
-
-                let vec = URL_SAFE_NO_PAD.decode(&(did_base.replace("did:jwk:", "")))?;
-                let jwk: Jwk = serde_json::from_slice(&vec)?;
-
-                jsonwebtoken::DecodingKey::from_jwk(&jwk)?
-            }
-            DidType::Web => {
-                let (did_base, kid) = split_did(did);
-
-                let kid = kid.ok_or_else(|| {
-                    let error = Errors::format_new(
-                        BadFormat::Received,
-                        "did:web requires a key id fragment (#...)",
-                    );
-                    error!("{}", error.log());
-                    error
-                })?;
-
-                let domain = did_base.replace("did:web:", "");
-
-                let url = self.parse_domain(&domain);
-
-                info!("Resolving DID Document: {}", url);
-
-                let mut headers = HeaderMap::new();
-                headers.insert(CONTENT_TYPE, "application/json".parse()?);
-                headers.insert(ACCEPT, "application/json".parse()?);
-
-                let res = self.client.get(&url, Some(headers)).await?;
-
-                let doc: Value = match res.status().as_u16() {
-                    200 => {
-                        info!("Did Document retrived succesfully retrieved");
-                        res.json().await?
-                    }
-                    _ => {
-                        let error =
-                            Errors::format_new(BadFormat::Received, "Did Document not retrived");
-                        error!("{}", error.log());
-                        bail!(error)
-                    }
-                };
-
-                let methods = doc["verificationMethod"].as_array().ok_or_else(|| {
-                    let error =
-                        Errors::format_new(BadFormat::Received, "Missing verification method");
-                    error!("{}", error.log());
-                    error
-                })?;
-
-                let full_kid = format!("{}#{}", did_base, kid);
-
-                let method = methods.iter().find(|m| m["id"] == full_kid).ok_or_else(|| {
-                    let error = Errors::format_new(
-                        BadFormat::Received,
-                        &format!("Key not found: {}", full_kid),
-                    );
-                    error!("{}", error.log());
-                    error
-                })?;
-
-                let jwk_value = method["publicKeyJwk"].as_object().ok_or_else(|| {
-                    let error = Errors::format_new(BadFormat::Received, "Missing publicKeyJwk");
-                    error!("{}", error.log());
-                    error
-                })?;
-
-                let jwk: Jwk = serde_json::from_value(jwk_value.clone().into())?;
-
-                jsonwebtoken::DecodingKey::from_jwk(&jwk)?
-            }
-            DidType::Other => {
-                let error = Errors::not_impl_new("did method", &did.to_string());
-                error!("{}", error.log());
-                bail!(error);
-            }
-        };
-        Ok(key)
-    }
-
-    fn parse_domain(&self, domain: &str) -> String {
-        let parts: Vec<&str> = domain.split(':').collect();
-
-        match parts.as_slice() {
-            [domain] => format!(
-                "https://{}/.well-known/did.json",
-                domain
-            ),
-            [domain, path @ ..] => {
-                let path = path.join("/");
-                format!(
-                    "https://{}/{}/did.json",
-                    domain, path
-                )
-            }
-            _ => String::new(),
-        }
-    }
-
 
     fn validate_nonce(
         &self,

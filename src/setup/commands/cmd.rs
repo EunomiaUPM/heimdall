@@ -37,7 +37,7 @@ struct AuthorityCli {
 #[derive(Parser, Debug, PartialEq)]
 pub struct AuthCliArgs {
     #[arg(short, long)]
-    env_file: Option<String>
+    env_file: String
 }
 
 #[derive(Subcommand, Debug, PartialEq)]

@@ -14,13 +14,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
+mod did;
 
-use serde::{Deserialize, Serialize};
-
-use crate::types::host::HostConfig;
-
-#[derive(Deserialize, Serialize, Clone, Debug)]
-pub struct WalletConfig {
-    pub api: HostConfig,
-    pub id: Option<String>,
-}
+pub use did::DidResolver;

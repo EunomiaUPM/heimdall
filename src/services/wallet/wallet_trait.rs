@@ -16,6 +16,7 @@
  */
 
 use async_trait::async_trait;
+use reqwest::Response;
 use serde_json::Value;
 
 use crate::data::entities::minions::NewModel;
@@ -43,6 +44,8 @@ pub trait WalletTrait: Send + Sync + 'static {
     // REGISTER STUFF IN WALLET
     async fn register_key(&self) -> anyhow::Result<()>;
     async fn register_did(&self) -> anyhow::Result<()>;
+    async fn reg_did_jwk(&self) -> anyhow::Result<Response>;
+    async fn reg_did_web(&self) -> anyhow::Result<Response>;
     async fn set_default_did(&self) -> anyhow::Result<()>;
     // DELETE STUFF FROM WALLET
     async fn delete_key(&self, key: KeyDefinition) -> anyhow::Result<()>;

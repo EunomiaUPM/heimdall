@@ -23,6 +23,7 @@ use axum::http::header::{ACCEPT, AUTHORIZATION, CONTENT_TYPE};
 use axum::http::HeaderMap;
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use base64::Engine;
+use reqwest::Response;
 use serde_json::Value;
 use tokio::sync::Mutex;
 use tracing::{debug, error, info, warn};
@@ -38,9 +39,7 @@ use crate::types::enums::errors::{BadFormat, MissingAction};
 use crate::types::enums::request::Body;
 use crate::types::jwt::AuthJwtClaims;
 use crate::types::secrets::{PemHelper, SemiWalletSecrets};
-use crate::types::wallet::{
-    DidsInfo, KeyDefinition, WalletInfo, WalletInfoResponse, WalletLoginResponse, WalletSession
-};
+use crate::types::wallet::{DidType, DidsInfo, KeyDefinition, WalletInfo, WalletInfoResponse, WalletLoginResponse, WalletSession};
 use crate::utils::expect_from_env;
 
 pub struct WaltIdService {
@@ -541,23 +540,19 @@ impl WalletTrait for WaltIdService {
     async fn register_did(&self) -> anyhow::Result<()> {
         info!("Registering did in web wallet");
 
-        let wallet = self.get_wallet().await?;
-        let token = self.get_token().await?;
-        let key_data = self.get_key().await?;
-
-        let url = format!(
-            "{}/wallet-api/wallet/{}/dids/create/jwk?keyId={}&alias=privatekey",
-            self.config.get_wallet_host(),
-            &wallet.id,
-            key_data.key_id.id
-        );
-
-        let mut headers = HeaderMap::new();
-        headers.insert(CONTENT_TYPE, "application/json".parse()?);
-        headers.insert(ACCEPT, "application/json".parse()?);
-        headers.insert(AUTHORIZATION, format!("Bearer {}", token).parse()?);
-
-        let res = self.client.post(&url, Some(headers), Body::None).await?;
+        let res = match self.config.get_did_type() {
+            DidType::Web => {
+                self.reg_did_web().await?
+            }
+            DidType::Jwk => {
+                self.reg_did_jwk().await?
+            }
+            DidType::Other => {
+                let error = Errors::not_impl_new("Other did type","Trying to use other did type that is not registered");
+                error!("{}", error.log());
+                bail!(error)
+            }
+        };
 
         match res.status().as_u16() {
             200 => {
@@ -570,7 +565,7 @@ impl WalletTrait for WaltIdService {
             }
             _ => {
                 let error = Errors::wallet_new(
-                    &url,
+                    "http://register_did_in_wallet",
                     "POST",
                     res.status().as_u16(),
                     "Petition to register key failed"
@@ -581,6 +576,56 @@ impl WalletTrait for WaltIdService {
         }
 
         Ok(())
+    }
+
+    async fn reg_did_jwk(&self) -> anyhow::Result<Response> {
+        let wallet = self.get_wallet().await?;
+        let token = self.get_token().await?;
+        let key_data = self.get_key().await?;
+
+        let url = format!(
+            "{}/wallet-api/wallet/{}/dids/create/jwk?keyId={}&alias=jwk",
+            self.config.get_wallet_host(),
+            &wallet.id,
+            key_data.key_id.id
+        );
+
+        let mut headers = HeaderMap::new();
+        headers.insert(CONTENT_TYPE, "application/json".parse()?);
+        headers.insert(ACCEPT, "application/json".parse()?);
+        headers.insert(AUTHORIZATION, format!("Bearer {}", token).parse()?);
+
+        self.client.post(&url, Some(headers), Body::None).await
+
+    }
+
+    async fn reg_did_web(&self) -> anyhow::Result<Response> {
+        let wallet = self.get_wallet().await?;
+        let token = self.get_token().await?;
+        let key_data = self.get_key().await?;
+
+        let path = match self.config.get_did_web_path() {
+            Some(path) => {format!("&path={}", path)}
+            None => {"".to_string()}
+        };
+
+        let domain = self.config.get_did_web_domain();
+
+        let url = format!(
+            "{}/wallet-api/wallet/{}/dids/create/web?keyId={}&alias=web&domain={}{}",
+            self.config.get_wallet_host(),
+            &wallet.id,
+            &key_data.key_id.id,
+            domain,
+            path
+        );
+
+        let mut headers = HeaderMap::new();
+        headers.insert(CONTENT_TYPE, "application/json".parse()?);
+        headers.insert(ACCEPT, "application/json".parse()?);
+        headers.insert(AUTHORIZATION, format!("Bearer {}", token).parse()?);
+
+        self.client.post(&url, Some(headers), Body::None).await
     }
 
     async fn set_default_did(&self) -> anyhow::Result<()> {

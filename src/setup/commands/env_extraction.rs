@@ -19,7 +19,7 @@ use tracing::info;
 
 use crate::config::CoreApplicationConfig;
 
-pub fn extract_env_config(env_file: Option<String>) -> anyhow::Result<CoreApplicationConfig> {
+pub fn extract_env_config(env_file: String) -> anyhow::Result<CoreApplicationConfig> {
     let config = CoreApplicationConfig::load(env_file);
     let table =
         json_to_table::json_to_table(&serde_json::to_value(&config)?).collapse().to_string();
