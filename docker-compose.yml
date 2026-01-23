@@ -1,0 +1,43 @@
+version: "3.8"
+
+services:
+  vault:
+    image: hashicorp/vault:1.21
+    container_name: vault
+    ports:
+      - "8200:8200"
+    cap_add:
+      - IPC_LOCK
+    volumes:
+      - ./vault/consumer/config:/vault/config
+      - ./vault/consumer/data:/vault/file
+    environment:
+      VAULT_CACERT: /vault/config/root-ca.pem
+      VAULT_LOCAL_CONFIG: >
+        {
+          "storage": { "file": { "path": "/vault/file" } },
+          "listener": [{
+            "tcp": {
+              "address": "0.0.0.0:8200",
+              "tls_cert_file": "/vault/config/vault-cert.pem",
+              "tls_key_file": "/vault/config/vault-key.pem",
+              "tls_client_ca_file": "/vault/config/vault-ca.pem"
+            }
+          }],
+          "ui": true,
+          "api_addr": "https://127.0.0.1:8200",
+          "default_lease_ttl": "168h",
+          "max_lease_ttl": "720h"
+        }
+    command: server
+
+  db:
+    container_name: "db"
+    image: "postgres"
+    restart: always
+    environment:
+      POSTGRES_PASSWORD: completar
+      POSTGRES_USER: completar
+      POSTGRES_DB: completar
+    ports:
+      - "1450:5432"

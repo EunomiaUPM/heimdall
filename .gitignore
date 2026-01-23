@@ -1,2 +1,13 @@
-/target
-.idea
+# COMMON
+/target/
+/.idea/
+
+# VAULT
+vault/**
+!vault/**/
+!vault/**/*.example
+!vault/**/*.gitkeep
+
+# ENVIROMENT
+static/environment/envs/**
+!static/environment/envs/**/*.example

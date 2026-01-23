@@ -1,50 +1,51 @@
 /*
+ * Copyright (C) 2025 - Universidad Politécnica de Madrid - UPM
  *
- *  * Copyright (C) 2025 - Universidad Politécnica de Madrid - UPM
- *  *
- *  * This program is free software: you can redistribute it and/or modify
- *  * it under the terms of the GNU General Public License as published by
- *  * the Free Software Foundation, either version 3 of the License, or
- *  * (at your option) any later version.
- *  *
- *  * This program is distributed in the hope that it will be useful,
- *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  * GNU General Public License for more details.
- *  *
- *  * You should have received a copy of the GNU General Public License
- *  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
 use super::super::VerifierTrait;
 use super::config::{BasicVerifierConfig, BasicVerifierConfigTrait};
+use crate::capabilities::DidResolver;
 use crate::data::entities::verification;
 use crate::errors::{ErrorLogTrait, Errors};
+use crate::services::client::ClientTrait;
 use crate::types::enums::errors::BadFormat;
 use crate::types::vcs::VPDef;
-use crate::utils::{get_claim, get_opt_claim, split_did};
+use crate::utils::{get_claim, get_opt_claim};
 use anyhow::bail;
-use base64::engine::general_purpose::URL_SAFE_NO_PAD;
-use base64::Engine;
+use async_trait::async_trait;
 use chrono::{DateTime, Utc};
-use jsonwebtoken::jwk::Jwk;
 use jsonwebtoken::{TokenData, Validation};
 use serde_json::Value;
 use std::collections::HashSet;
+use std::sync::Arc;
 use tracing::{error, info};
 use urlencoding::encode;
 
 pub struct BasicVerifierService {
+    client: Arc<dyn ClientTrait>,
     config: BasicVerifierConfig,
 }
 
 impl BasicVerifierService {
-    pub fn new(config: BasicVerifierConfig) -> BasicVerifierService {
-        BasicVerifierService { config }
+    pub fn new(client: Arc<dyn ClientTrait>, config: BasicVerifierConfig) -> BasicVerifierService {
+        BasicVerifierService { client, config }
     }
 }
 
+#[async_trait]
 impl VerifierTrait for BasicVerifierService {
     fn start_vp(&self, id: &str) -> anyhow::Result<verification::NewModel> {
         info!("Managing OIDC4VP");
@@ -62,11 +63,8 @@ impl VerifierTrait for BasicVerifierService {
             bail!(error)
         }
         let vc_type = serde_json::to_string(&requested_vcs)?;
-        let new_verification_model = verification::NewModel {
-            id: id.to_string(),
-            audience: client_id,
-            vc_type,
-        };
+        let new_verification_model =
+            verification::NewModel { id: id.to_string(), audience: client_id, vc_type };
 
         Ok(new_verification_model)
     }
@@ -91,7 +89,9 @@ impl VerifierTrait for BasicVerifierService {
         let response_mode = "direct_post";
         let client_id_scheme = "redirect_uri";
 
-        // TODO let client_metadata = r#"{"authorization_encrypted_response_alg":"ECDH-ES","authorization_encrypted_response_enc":"A256GCM"}"#;
+        // TODO let client_metadata =
+        // r#"{"authorization_encrypted_response_alg":"ECDH-ES","
+        // authorization_encrypted_response_enc":"A256GCM"}"#;
 
         let uri = format!("{}?response_type={}&client_id={}&response_mode={}&presentation_definition_uri={}&client_id_scheme={}&nonce={}&response_uri={}",
                           base_url,
@@ -112,23 +112,23 @@ impl VerifierTrait for BasicVerifierService {
         VPDef::new(ver_model.id, ver_model.vc_type)
     }
 
-    fn verify_all(
+    async fn verify_all(
         &self,
         ver_model: &mut verification::Model,
         vp_token: String,
     ) -> anyhow::Result<()> {
         info!("Verifying all");
 
-        let (vcs, holder) = self.verify_vp(ver_model, &vp_token)?;
+        let (vcs, holder) = self.verify_vp(ver_model, &vp_token).await?;
         for vc in vcs {
-            self.verify_vc(&vc, &holder)?;
+            self.verify_vc(&vc, &holder).await?;
         }
         info!("VP & VC Validated successfully");
 
         Ok(())
     }
 
-    fn verify_vp(
+    async fn verify_vp(
         &self,
         model: &mut verification::Model,
         vp_token: &str,
@@ -136,7 +136,7 @@ impl VerifierTrait for BasicVerifierService {
         info!("Verifying vp");
 
         model.vpt = Some(vp_token.to_string());
-        let (token, kid) = self.validate_token(vp_token, Some(&model.state))?;
+        let (token, kid) = self.validate_token(vp_token, Some(&model.state)).await?;
         self.validate_nonce(model, &token)?;
         self.validate_vp_subject(model, &token, &kid)?;
         self.validate_vp_id(model, &token)?;
@@ -159,10 +159,10 @@ impl VerifierTrait for BasicVerifierService {
         Ok((vcs, kid))
     }
 
-    fn verify_vc(&self, vc_token: &str, holder: &str) -> anyhow::Result<()> {
+    async fn verify_vc(&self, vc_token: &str, holder: &str) -> anyhow::Result<()> {
         info!("Verifying vc");
 
-        let (token, kid) = self.validate_token(vc_token, None)?;
+        let (token, kid) = self.validate_token(vc_token, None).await?;
         self.validate_issuer(&token, &kid)?;
         self.validate_vc_id(&token)?;
         self.validate_vc_sub(&token, holder)?;
@@ -182,29 +182,22 @@ impl VerifierTrait for BasicVerifierService {
         Ok(())
     }
 
-    fn validate_token(
+    async fn validate_token(
         &self,
         vp_token: &str,
         audience: Option<&str>,
     ) -> anyhow::Result<(TokenData<Value>, String)> {
         info!("Validating token");
         let header = jsonwebtoken::decode_header(&vp_token)?;
-        let kid_str = match header.kid.as_ref() {
-            Some(data) => data,
-            None => {
-                let error = Errors::format_new(BadFormat::Received, "Jwt does not contain a token");
-                error!("{}", error.log());
-                bail!(error);
-            }
-        };
+        let did = header.kid.as_ref().ok_or_else(|| {
+            let error = Errors::format_new(BadFormat::Received, "Jwt does not contain a token");
+            error!("{}", error.log());
+            error
+        })?;
 
-        let (kid, _) = split_did(kid_str.as_str()); // TODO KID_ID
+        let key = DidResolver::get_key(did, self.client.clone()).await?;
+        let (base_did, _) = DidResolver::split_did_id(did);
         let alg = header.alg;
-
-        let vec = URL_SAFE_NO_PAD.decode(&(kid.replace("did:jwk:", "")))?;
-        let jwk: Jwk = serde_json::from_slice(&vec)?;
-
-        let key = jsonwebtoken::DecodingKey::from_jwk(&jwk)?;
 
         let mut val = Validation::new(alg);
 
@@ -232,20 +225,15 @@ impl VerifierTrait for BasicVerifierService {
             }
         };
 
-        let token = match jsonwebtoken::decode::<Value>(&vp_token, &key, &val) {
-            Ok(token) => token,
-            Err(e) => {
-                let error = Errors::security_new(&format!(
-                    "VPT signature is incorrect -> {}",
-                    e.to_string()
-                ));
-                error!("{}", error.log());
-                bail!(error);
-            }
-        };
+        let token = jsonwebtoken::decode::<Value>(&vp_token, &key, &val).map_err(|e| {
+            let error =
+                Errors::security_new(&format!("VPT signature is incorrect -> {}", e.to_string()));
+            error!("{}", error.log());
+            error
+        })?;
 
         info!("Token signature is correct");
-        Ok((token, kid.to_string()))
+        Ok((token, base_did.to_string()))
     }
 
     fn validate_nonce(
@@ -277,28 +265,16 @@ impl VerifierTrait for BasicVerifierService {
         let sub = get_opt_claim(&token.claims, vec!["sub"])?;
         let iss = get_opt_claim(&token.claims, vec!["iss"])?;
 
-        match sub {
-            Some(sub) => {
-                if sub != kid {
-                    let error = Errors::security_new("VPT token subject & kid does not match");
-                    error!("{}", error.log());
-                    bail!(error);
-                }
-                info!("VPT subject & kid matches");
+        if let Some(sub) = sub {
+            if sub != kid {
+                let error = Errors::security_new("VPT token subject & kid does not match");
+                error!("{}", error.log());
+                bail!(error);
             }
-            None => {}
-        }
-        match iss {
-            Some(iss) => {
-                if iss != kid {
-                    let error = Errors::security_new("VPT token issuer & kid does not match");
-                    error!("{}", error.log());
-                    bail!(error);
-                }
-                info!("VPT issuer & kid matches");
-            }
-            None => {}
-        }
+            info!("VPT subject & kid matches");
+        };
+
+        check_iss(iss, kid)?;
 
         model.holder = Some(kid.to_string());
         Ok(())
@@ -310,19 +286,16 @@ impl VerifierTrait for BasicVerifierService {
         let sub = get_opt_claim(&token.claims, vec!["sub"])?;
         let cred_sub_id = get_claim(&token.claims, vec!["vc", "CredentialSubject", "id"])?;
 
-        match sub {
-            Some(sub) => {
-                if sub != holder {
-                    let error = Errors::security_new(
-                        "VCT token sub, credential subject & VP Holder do not match",
-                    );
-                    error!("{}", error.log());
-                    bail!(error);
-                }
-                info!("Sub & Holder match");
+        if let Some(sub) = sub {
+            if sub != holder {
+                let error = Errors::security_new(
+                    "VCT token sub, credential subject & VP Holder do not match",
+                );
+                error!("{}", error.log());
+                bail!(error);
             }
-            None => {}
-        }
+            info!("Sub & Holder match");
+        };
 
         if holder != cred_sub_id {
             let error =
@@ -378,18 +351,7 @@ impl VerifierTrait for BasicVerifierService {
         let iss = get_opt_claim(&token.claims, vec!["iss"])?;
         let vc_iss_id = get_claim(&token.claims, vec!["vc", "issuer", "id"])?;
 
-        match iss {
-            Some(iss) => {
-                if iss != kid {
-                    // VALIDATE IF ISSUER IS THE SAME AS KID
-                    let error = Errors::security_new("VCT token issuer & kid does not match");
-                    error!("{}", error.log());
-                    bail!(error);
-                }
-                info!("VC iss and kid matches")
-            }
-            None => {}
-        }
+        check_iss(iss, kid)?;
 
         if vc_iss_id != kid {
             // VALIDATE IF ISSUER IS THE SAME AS KID
@@ -407,17 +369,14 @@ impl VerifierTrait for BasicVerifierService {
         let vc_id = get_claim(&token.claims, vec!["vc", "id"])?;
         let jti = get_opt_claim(&token.claims, vec!["jti"])?;
 
-        match jti {
-            Some(jti) => {
-                if jti != vc_id {
-                    // VALIDATE ID MATCHES JTI
-                    let error = Errors::security_new("Invalid id, it does not match");
-                    error!("{}", error.log());
-                    bail!(error);
-                }
-                info!("VCT jti & VC id match");
+        if let Some(jti) = jti {
+            if jti != vc_id {
+                // VALIDATE ID MATCHES JTI
+                let error = Errors::security_new("Invalid id, it does not match");
+                error!("{}", error.log());
+                bail!(error);
             }
-            None => {}
+            info!("VCT jti & VC id match");
         }
 
         Ok(())
@@ -428,28 +387,21 @@ impl VerifierTrait for BasicVerifierService {
 
         let valid_from = get_opt_claim(&token.claims, vec!["vc", "validFrom"])?;
 
-        match valid_from {
-            Some(valid_from) => {
-                match DateTime::parse_from_rfc3339(&valid_from) {
-                    Ok(parsed_date) => {
-                        if parsed_date > Utc::now() {
-                            let error = Errors::security_new("VC is not valid yet");
-                            error!("{}", error.log());
-                            bail!(error)
-                        }
-                    }
-                    Err(e) => {
-                        let error = Errors::security_new(&format!(
-                            "VC iat and issuanceDate do not match -> {}",
-                            e
-                        ));
-                        error!("{}", error.log());
-                        bail!(error);
-                    }
-                };
-                info!("VC has started its validity period correct");
+        if let Some(valid_from) = valid_from {
+            let date = DateTime::parse_from_rfc3339(&valid_from).map_err(|e| {
+                let error = Errors::security_new(&format!(
+                    "wrong format for field valid_from : {}",
+                    e.to_string()
+                ));
+                error!("{}", error.log());
+                error
+            })?;
+            if date > Utc::now() {
+                let error = Errors::security_new("VC is not valid yet");
+                error!("{}", error.log());
+                bail!(error)
             }
-            None => {}
+            info!("VC has started its validity period correct");
         }
 
         Ok(())
@@ -459,30 +411,22 @@ impl VerifierTrait for BasicVerifierService {
         info!("Validating expiration date");
 
         let valid_until = get_opt_claim(&token.claims, vec!["vc", "validUntil"])?;
-        // let valid_until = get_claim(&token.claims, vec!["vc", "validUntil"])?;
 
-        match valid_until {
-            Some(valid_until) => {
-                match DateTime::parse_from_rfc3339(&valid_until) {
-                    Ok(parsed_date) => {
-                        if Utc::now() > parsed_date {
-                            let error = Errors::security_new("VC has expired");
-                            error!("{}", error.log());
-                            bail!(error)
-                        }
-                    }
-                    Err(e) => {
-                        let error = Errors::security_new(&format!(
-                            "VC validUntil has invalid format -> {}",
-                            e
-                        ));
-                        error!("{}", error.log());
-                        bail!(error);
-                    }
-                }
-                info!("VC has not expired yet");
+        if let Some(valid_until) = valid_until {
+            let date = DateTime::parse_from_rfc3339(&valid_until).map_err(|e| {
+                let error = Errors::security_new(&format!(
+                    "wrong format for field valid_until : {}",
+                    e.to_string()
+                ));
+                error!("{}", error.log());
+                error
+            })?;
+            if Utc::now() > date {
+                let error = Errors::security_new("VC has expired");
+                error!("{}", error.log());
+                bail!(error)
             }
-            None => {}
+            info!("VC has not expired yet");
         }
 
         Ok(())
@@ -490,21 +434,33 @@ impl VerifierTrait for BasicVerifierService {
 
     fn retrieve_vcs(&self, token: TokenData<Value>) -> anyhow::Result<Vec<String>> {
         info!("Retrieving VCs");
-        let vcs: Vec<String> =
-            match serde_json::from_value(token.claims["vp"]["verifiableCredential"].clone()) {
-                Ok(data) => data,
-                Err(e) => {
-                    let error = Errors::format_new(
-                        BadFormat::Received,
-                        &format!(
-                            "VPT does not contain the 'verifiableCredential' field -> {}",
-                            e.to_string()
-                        ),
-                    );
-                    error!("{}", error.log());
-                    bail!(error);
-                }
-            };
+        let vcs: Vec<String> = serde_json::from_value(
+            token.claims["vp"]["verifiableCredential"].clone(),
+        )
+        .map_err(|e| {
+            let error = Errors::format_new(
+                BadFormat::Received,
+                &format!(
+                    "VPT does not contain the 'verifiableCredential' field -> {}",
+                    e.to_string()
+                ),
+            );
+            error!("{}", error.log());
+            error
+        })?;
+
         Ok(vcs)
     }
+}
+
+fn check_iss(iss: Option<String>, kid: &str) -> anyhow::Result<()> {
+    if let Some(iss) = iss {
+        if iss != kid {
+            let error = Errors::security_new("VPT token issuer & kid does not match");
+            error!("{}", error.log());
+            bail!(error);
+        }
+        info!("VPT issuer & kid matches");
+    }
+    Ok(())
 }

@@ -1,43 +1,41 @@
 /*
+ * Copyright (C) 2025 - Universidad Politécnica de Madrid - UPM
  *
- *  * Copyright (C) 2025 - Universidad Politécnica de Madrid - UPM
- *  *
- *  * This program is free software: you can redistribute it and/or modify
- *  * it under the terms of the GNU General Public License as published by
- *  * the Free Software Foundation, either version 3 of the License, or
- *  * (at your option) any later version.
- *  *
- *  * This program is distributed in the hope that it will be useful,
- *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  * GNU General Public License for more details.
- *  *
- *  * You should have received a copy of the GNU General Public License
- *  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-use crate::core::traits::CoreGatekeeperTrait;
-use crate::errors::{CustomToResponse, ErrorLogTrait, Errors};
-use crate::types::gnap::{GrantRequest, RefBody};
-use crate::utils::extract_gnap_token;
+use std::sync::Arc;
+
 use axum::extract::rejection::JsonRejection;
 use axum::extract::{Path, State};
 use axum::http::{HeaderMap, StatusCode};
 use axum::response::IntoResponse;
 use axum::routing::post;
 use axum::{Json, Router};
-use std::sync::Arc;
 use tracing::error;
 
+use crate::core::traits::CoreGatekeeperTrait;
+use crate::errors::{CustomToResponse, ErrorLogTrait, Errors};
+use crate::types::gnap::{GrantRequest, RefBody};
+use crate::utils::extract_gnap_token;
+
 pub struct GateKeeperRouter {
-    gatekeeper: Arc<dyn CoreGatekeeperTrait>,
+    gatekeeper: Arc<dyn CoreGatekeeperTrait>
 }
 
 impl GateKeeperRouter {
-    pub fn new(gatekeeper: Arc<dyn CoreGatekeeperTrait>) -> Self {
-        Self { gatekeeper }
-    }
+    pub fn new(gatekeeper: Arc<dyn CoreGatekeeperTrait>) -> Self { Self { gatekeeper } }
 
     pub fn router(self) -> Router {
         Router::new()
@@ -48,16 +46,16 @@ impl GateKeeperRouter {
 
     async fn access_req(
         State(gatekeeper): State<Arc<dyn CoreGatekeeperTrait>>,
-        payload: Result<Json<GrantRequest>, JsonRejection>,
+        payload: Result<Json<GrantRequest>, JsonRejection>
     ) -> impl IntoResponse {
         let payload = match payload {
             Ok(Json(data)) => data,
-            Err(e) => return e.into_response(),
+            Err(e) => return e.into_response()
         };
 
         match gatekeeper.manage_req(payload).await {
             Ok(data) => (StatusCode::OK, Json(data)).into_response(),
-            Err(e) => e.to_response(),
+            Err(e) => e.to_response()
         }
     }
 
@@ -65,7 +63,7 @@ impl GateKeeperRouter {
         State(authority): State<Arc<dyn CoreGatekeeperTrait>>,
         headers: HeaderMap,
         Path(id): Path<String>,
-        payload: Result<Json<RefBody>, JsonRejection>,
+        payload: Result<Json<RefBody>, JsonRejection>
     ) -> impl IntoResponse {
         let token = match extract_gnap_token(headers) {
             Some(token) => token,
@@ -78,12 +76,12 @@ impl GateKeeperRouter {
 
         let payload = match payload {
             Ok(Json(data)) => data,
-            Err(e) => return e.into_response(),
+            Err(e) => return e.into_response()
         };
 
         match authority.manage_cont_req(id, payload, token).await {
             Ok(data) => data.into_response(),
-            Err(e) => e.to_response(),
+            Err(e) => e.to_response()
         }
     }
 }

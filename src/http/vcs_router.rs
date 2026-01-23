@@ -1,41 +1,39 @@
 /*
+ * Copyright (C) 2025 - Universidad Politécnica de Madrid - UPM
  *
- *  * Copyright (C) 2025 - Universidad Politécnica de Madrid - UPM
- *  *
- *  * This program is free software: you can redistribute it and/or modify
- *  * it under the terms of the GNU General Public License as published by
- *  * the Free Software Foundation, either version 3 of the License, or
- *  * (at your option) any later version.
- *  *
- *  * This program is distributed in the hope that it will be useful,
- *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  * GNU General Public License for more details.
- *  *
- *  * You should have received a copy of the GNU General Public License
- *  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-use crate::core::traits::CoreApproverTrait;
-use crate::errors::CustomToResponse;
-use crate::types::vcs::VcDecisionApproval;
+use std::sync::Arc;
+
 use axum::extract::rejection::JsonRejection;
 use axum::extract::{Path, State};
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::routing::{get, post};
 use axum::{Json, Router};
-use std::sync::Arc;
+
+use crate::core::traits::CoreApproverTrait;
+use crate::errors::CustomToResponse;
+use crate::types::vcs::VcDecisionApproval;
 
 pub struct ApproverRouter {
-    approver: Arc<dyn CoreApproverTrait>,
+    approver: Arc<dyn CoreApproverTrait>
 }
 
 impl ApproverRouter {
-    pub fn new(approver: Arc<dyn CoreApproverTrait>) -> Self {
-        Self { approver }
-    }
+    pub fn new(approver: Arc<dyn CoreApproverTrait>) -> Self { Self { approver } }
     pub fn router(self) -> Router {
         Router::new()
             .route("/all", get(Self::get_all_requests))
@@ -44,36 +42,38 @@ impl ApproverRouter {
             .with_state(self.approver)
     }
 
-    async fn get_all_requests(State(approver): State<Arc<dyn CoreApproverTrait>>) -> impl IntoResponse {
+    async fn get_all_requests(
+        State(approver): State<Arc<dyn CoreApproverTrait>>
+    ) -> impl IntoResponse {
         match approver.get_all().await {
             Ok(data) => (StatusCode::OK, Json(data)).into_response(),
-            Err(e) => e.to_response(),
+            Err(e) => e.to_response()
         }
     }
 
     async fn get_one_request(
         State(approver): State<Arc<dyn CoreApproverTrait>>,
-        Path(id): Path<String>,
+        Path(id): Path<String>
     ) -> impl IntoResponse {
         match approver.get_by_id(id).await {
             Ok(data) => (StatusCode::OK, Json(data)).into_response(),
-            Err(e) => e.to_response(),
+            Err(e) => e.to_response()
         }
     }
 
     async fn manage_request(
         State(approver): State<Arc<dyn CoreApproverTrait>>,
         Path(id): Path<String>,
-        payload: Result<Json<VcDecisionApproval>, JsonRejection>,
+        payload: Result<Json<VcDecisionApproval>, JsonRejection>
     ) -> impl IntoResponse {
         let payload = match payload {
             Ok(Json(data)) => data,
-            Err(e) => return e.into_response(),
+            Err(e) => return e.into_response()
         };
 
         match approver.manage_req(id, payload).await {
             Ok(_) => StatusCode::OK.into_response(),
-            Err(e) => e.to_response(),
+            Err(e) => e.to_response()
         }
     }
 }

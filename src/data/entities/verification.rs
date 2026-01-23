@@ -1,27 +1,26 @@
 /*
+ * Copyright (C) 2025 - Universidad Politécnica de Madrid - UPM
  *
- *  * Copyright (C) 2025 - Universidad Politécnica de Madrid - UPM
- *  *
- *  * This program is free software: you can redistribute it and/or modify
- *  * it under the terms of the GNU General Public License as published by
- *  * the Free Software Foundation, either version 3 of the License, or
- *  * (at your option) any later version.
- *  *
- *  * This program is distributed in the hope that it will be useful,
- *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  * GNU General Public License for more details.
- *  *
- *  * You should have received a copy of the GNU General Public License
- *  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-use super::super::IntoActiveSet;
 use rand::Rng;
 use rand_distr::Alphanumeric;
 use sea_orm::entity::prelude::*;
 use sea_orm::ActiveValue;
+
+use super::super::IntoActiveSet;
 
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel)]
 #[sea_orm(table_name = "verification")]
@@ -37,28 +36,22 @@ pub struct Model {
     pub success: Option<bool>,                   // RESPONSE
     pub status: String,                          // DEFAULT
     pub created_at: chrono::NaiveDateTime,       // DEFAULT
-    pub ended_at: Option<chrono::NaiveDateTime>, // RESPONSE
+    pub ended_at: Option<chrono::NaiveDateTime>  // RESPONSE
 }
 
 #[derive(Clone, Debug)]
 pub struct NewModel {
     pub id: String,       // REQUEST
     pub audience: String, // SEMI-RANDOM
-    pub vc_type: String,  // REQUEST
+    pub vc_type: String   // REQUEST
 }
 
 impl IntoActiveSet<ActiveModel> for NewModel {
     fn to_active(self) -> ActiveModel {
-        let state: String = rand::rng()
-            .sample_iter(&Alphanumeric)
-            .take(12)
-            .map(char::from)
-            .collect();
-        let nonce: String = rand::rng()
-            .sample_iter(&Alphanumeric)
-            .take(12)
-            .map(char::from)
-            .collect();
+        let state: String =
+            rand::rng().sample_iter(&Alphanumeric).take(12).map(char::from).collect();
+        let nonce: String =
+            rand::rng().sample_iter(&Alphanumeric).take(12).map(char::from).collect();
         let audience = format!("{}/{}", self.audience, &state);
         ActiveModel {
             id: ActiveValue::Set(self.id),
@@ -71,7 +64,7 @@ impl IntoActiveSet<ActiveModel> for NewModel {
             success: ActiveValue::Set(None),
             status: ActiveValue::Set("Pending".to_string()),
             created_at: ActiveValue::Set(chrono::Utc::now().naive_utc()),
-            ended_at: ActiveValue::Set(None),
+            ended_at: ActiveValue::Set(None)
         }
     }
 }
@@ -89,7 +82,7 @@ impl IntoActiveSet<ActiveModel> for Model {
             success: ActiveValue::Set(self.success),
             status: ActiveValue::Set(self.status),
             created_at: ActiveValue::Set(self.created_at),
-            ended_at: ActiveValue::Set(self.ended_at),
+            ended_at: ActiveValue::Set(self.ended_at)
         }
     }
 }
@@ -101,23 +94,17 @@ pub enum Relation {
     #[sea_orm(has_one = "super::interaction::Entity")]
     Interaction,
     #[sea_orm(has_one = "super::issuing::Entity")]
-    Issuing,
+    Issuing
 }
 
 impl Related<super::request::Entity> for Entity {
-    fn to() -> RelationDef {
-        Relation::Request.def()
-    }
+    fn to() -> RelationDef { Relation::Request.def() }
 }
 impl Related<super::interaction::Entity> for Entity {
-    fn to() -> RelationDef {
-        Relation::Interaction.def()
-    }
+    fn to() -> RelationDef { Relation::Interaction.def() }
 }
 
 impl Related<super::issuing::Entity> for Entity {
-    fn to() -> RelationDef {
-        Relation::Issuing.def()
-    }
+    fn to() -> RelationDef { Relation::Issuing.def() }
 }
 impl ActiveModelBehavior for ActiveModel {}

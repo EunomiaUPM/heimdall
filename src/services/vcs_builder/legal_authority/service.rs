@@ -1,53 +1,46 @@
 /*
+ * Copyright (C) 2025 - Universidad Politécnica de Madrid - UPM
  *
- *  * Copyright (C) 2025 - Universidad Politécnica de Madrid - UPM
- *  *
- *  * This program is free software: you can redistribute it and/or modify
- *  * it under the terms of the GNU General Public License as published by
- *  * the Free Software Foundation, either version 3 of the License, or
- *  * (at your option) any later version.
- *  *
- *  * This program is distributed in the hope that it will be useful,
- *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  * GNU General Public License for more details.
- *  *
- *  * You should have received a copy of the GNU General Public License
- *  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
+
+use std::str::FromStr;
+
+use anyhow::bail;
+use base64::engine::general_purpose::STANDARD;
+use base64::Engine;
+use serde_json::Value;
+use tracing::{error, info};
+use x509_parser::parse_x509_certificate;
 
 use super::super::VcBuilderTrait;
 use crate::data::entities::{issuing, request};
 use crate::errors::{ErrorLogTrait, Errors};
-use crate::services::vcs_builder::legal_authority::config::{
-    LegalAuthorityConfig, LegalAuthorityConfigTrait,
-};
-use crate::types::enums::data_model::VcDataModelVersion;
+use crate::services::vcs_builder::legal_authority::config::LegalAuthorityConfig;
 use crate::types::enums::errors::BadFormat;
 use crate::types::enums::vc_type::VcType;
 use crate::types::vcs::legal_authority::{
-    LegalRegistrationNumberCredSubj, LegalRegistrationNumberTypes, VCData,
+    LegalRegistrationNumberCredSubj, LegalRegistrationNumberTypes, VCData
 };
-use crate::types::vcs::{VCClaimsV1, VCClaimsV2, VCFromClaimsV1, VCIssuer};
 use crate::utils::get_from_opt;
-use anyhow::bail;
-use base64::engine::general_purpose::STANDARD;
-use base64::Engine;
-use chrono::{Duration, Utc};
-use serde_json::Value;
-use std::str::FromStr;
-use tracing::{error, info};
-use x509_parser::parse_x509_certificate;
 
 pub struct LegalAuthorityBuilder {
-    config: LegalAuthorityConfig,
+    config: LegalAuthorityConfig
 }
 
 impl LegalAuthorityBuilder {
-    pub fn new(config: LegalAuthorityConfig) -> Self {
-        Self { config }
-    }
+    pub fn new(config: LegalAuthorityConfig) -> Self { Self { config } }
 }
 
 impl VcBuilderTrait for LegalAuthorityBuilder {
@@ -58,7 +51,6 @@ impl VcBuilderTrait for LegalAuthorityBuilder {
         let vc_data: VCData =
             serde_json::from_str(&get_from_opt(&model.credential_data, "credential data")?)?;
         let holder_did = get_from_opt(&model.holder_did, "holder did")?;
-        let issuer_did = get_from_opt(&model.issuer_did, "issuer did")?;
 
         let mut cred_subj = LegalRegistrationNumberCredSubj::default();
         cred_subj.id = holder_did;
@@ -96,56 +88,16 @@ impl VcBuilderTrait for LegalAuthorityBuilder {
         }
 
         let credential_subject = serde_json::to_value(&cred_subj)?;
-        let now = Utc::now();
-        let vc_type = VcType::from_str(&model.vc_type)?;
-        let vc = match self.config.get_data_model() {
-            VcDataModelVersion::V1 => serde_json::to_value(VCClaimsV1 {
-                exp: None,
-                iat: None,
-                iss: None,
-                sub: None,
-                vc: VCFromClaimsV1 {
-                    context: vec!["https://www.w3.org/ns/credentials/v1".to_string()],
-                    r#type: vec!["VerifiableCredential".to_string(), vc_type.name()],
-                    id: model.credential_id.clone(),
-                    credential_subject,
-                    issuer: VCIssuer {
-                        id: issuer_did,
-                        name: "RainbowAuthority".to_string(),
-                    },
-                    valid_from: Some(now),
-                    valid_until: Some(now + Duration::days(365)),
-                },
-            })?,
-            VcDataModelVersion::V2 => serde_json::to_value(VCClaimsV2 {
-                exp: None,
-                iat: None,
-                iss: None,
-                sub: None,
-                context: vec!["https://www.w3.org/ns/credentials/v2".to_string()],
-                r#type: vec!["VerifiableCredential".to_string(), vc_type.name()],
-                id: model.credential_id.clone(),
-                credential_subject,
-                issuer: VCIssuer {
-                    id: issuer_did,
-                    name: "RainbowAuthority".to_string(),
-                },
-                valid_from: Some(now),
-                valid_until: Some(now + Duration::days(365)),
-            })?,
-        };
 
-        Ok(vc)
+        self.just_build(&model, credential_subject, &self.config)
     }
 
     fn gather_data(&self, req_model: &request::Model) -> anyhow::Result<String> {
         info!("Gathering data to issue vc");
 
         let base_cert = req_model.cert.as_ref().ok_or_else(|| {
-            let error = Errors::format_new(
-                BadFormat::Received,
-                "There was no cert in the Grant Request",
-            );
+            let error =
+                Errors::format_new(BadFormat::Received, "There was no cert in the Grant Request");
             error!("{}", error.log());
             error
         })?;
@@ -166,7 +118,7 @@ impl VcBuilderTrait for LegalAuthorityBuilder {
                     None => {
                         let error = Errors::format_new(
                             BadFormat::Received,
-                            "No organizational identifier found in certificate",
+                            "No organizational identifier found in certificate"
                         );
                         error!("{}", error.log());
                         bail!(error)
@@ -182,12 +134,12 @@ impl VcBuilderTrait for LegalAuthorityBuilder {
                         LegalRegistrationNumberTypes::Euid => part.starts_with("EUID"),
                         LegalRegistrationNumberTypes::Eori => part.starts_with("EORI"),
                         LegalRegistrationNumberTypes::VatId => part.starts_with("VAT"),
-                        LegalRegistrationNumberTypes::LeiCode => part.starts_with("LEI"),
+                        LegalRegistrationNumberTypes::LeiCode => part.starts_with("LEI")
                     })
                     .ok_or_else(|| {
                         let error = Errors::format_new(
                             BadFormat::Received,
-                            &format!("No matching code found in cert for {:?}", data),
+                            &format!("No matching code found in cert for {:?}", data)
                         );
                         error!("{}", error.log());
                         error

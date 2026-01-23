@@ -1,24 +1,24 @@
 /*
+ * Copyright (C) 2025 - Universidad Politécnica de Madrid - UPM
  *
- *  * Copyright (C) 2025 - Universidad Politécnica de Madrid - UPM
- *  *
- *  * This program is free software: you can redistribute it and/or modify
- *  * it under the terms of the GNU General Public License as published by
- *  * the Free Software Foundation, either version 3 of the License, or
- *  * (at your option) any later version.
- *  *
- *  * This program is distributed in the hope that it will be useful,
- *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  * GNU General Public License for more details.
- *  *
- *  * You should have received a copy of the GNU General Public License
- *  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-use crate::errors::{ErrorLogTrait, Errors};
-use crate::types::enums::errors::BadFormat;
+use std::collections::HashSet;
+use std::path::PathBuf;
+use std::{env, fs};
+
 use anyhow::bail;
 use axum::http::HeaderMap;
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
@@ -30,10 +30,10 @@ use rand::Rng;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 use serde_json::Value;
-use std::collections::HashSet;
-use std::fs;
-use std::path::PathBuf;
 use tracing::{error, info};
+use crate::capabilities::DidResolver;
+use crate::errors::{ErrorLogTrait, Errors};
+use crate::types::enums::errors::BadFormat;
 
 pub fn create_opaque_token() -> String {
     let mut bytes = [0u8; 32]; // 256 bits
@@ -67,13 +67,6 @@ pub fn trim_4_base(input: &str) -> String {
     let cut_index = slashes[2];
 
     input[..cut_index].to_string()
-}
-
-pub fn split_did(did: &str) -> (&str, Option<&str>) {
-    match did.split_once('#') {
-        Some((did_kid, id)) => (did_kid, Some(id)),
-        None => (did, None),
-    }
 }
 
 pub fn trim_path(path: &str) -> String {
@@ -119,10 +112,8 @@ fn validate_data(node: &Value, field: &str) -> anyhow::Result<String> {
     match node.as_str() {
         Some(data) => Ok(data.to_string()),
         None => {
-            let error = Errors::format_new(
-                BadFormat::Received,
-                &format!("Field '{}' not a string", field),
-            );
+            let error =
+                Errors::format_new(BadFormat::Received, &format!("Field '{}' not a string", field));
             error!("{}", error.log());
             bail!(error)
         }
@@ -138,8 +129,9 @@ where
 {
     info!("Validating token");
     let header = jsonwebtoken::decode_header(&token)?;
+    info!("{:#?}", header);
     let kid_str = get_from_opt(&header.kid, "kid")?;
-    let (kid, _) = split_did(kid_str.as_str()); // TODO KID_ID
+    let (kid, _) = DidResolver::split_did_id(kid_str.as_str()); 
     let alg = header.alg;
 
     let vec = URL_SAFE_NO_PAD.decode(&(kid.replace("did:jwk:", "")))?;
@@ -216,12 +208,32 @@ pub fn has_expired(exp: u64) -> anyhow::Result<()> {
 pub fn read(path: &str) -> anyhow::Result<String> {
     let manifest_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     let full_path = format!("{}/{}", manifest_dir.display(), path);
-    match fs::read_to_string(&full_path) {
-        Ok(data) => Ok(data),
-        Err(e) => {
-            let error = Errors::read_new(path, &e.to_string());
-            error!("{}", error);
-            bail!(error)
-        }
-    }
+    let data = fs::read_to_string(&full_path).map_err(|e| {
+        let error = Errors::read_new(path, &e.to_string());
+        error!("{}", error);
+        error
+    })?;
+    Ok(data)
 }
+
+pub fn read_json<T>(path: &str) -> anyhow::Result<T>
+where
+    T: DeserializeOwned,
+{
+    let data = read(path)?;
+    let json = serde_json::from_str(&data)?;
+    Ok(json)
+}
+pub fn expect_from_env(env: &str) -> String {
+    let result = env::var(env);
+    let data = match result {
+        Ok(data) => Some(data),
+        Err(e) => {
+            let error = Errors::env_new(format!("{} not found -> {}", &env, e.to_string()));
+            error!("{}", error.log());
+            None
+        }
+    };
+    data.expect("Error with env variable")
+}
+

@@ -1,34 +1,34 @@
 /*
+ * Copyright (C) 2025 - Universidad Politécnica de Madrid - UPM
  *
- *  * Copyright (C) 2025 - Universidad Politécnica de Madrid - UPM
- *  *
- *  * This program is free software: you can redistribute it and/or modify
- *  * it under the terms of the GNU General Public License as published by
- *  * the Free Software Foundation, either version 3 of the License, or
- *  * (at your option) any later version.
- *  *
- *  * This program is distributed in the hope that it will be useful,
- *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  * GNU General Public License for more details.
- *  *
- *  * You should have received a copy of the GNU General Public License
- *  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-use super::super::ClientServiceTrait;
-use crate::errors::{ErrorLogTrait, Errors};
-use crate::types::enums::request::Body;
+use std::time::Duration;
+
 use anyhow::bail;
 use async_trait::async_trait;
 use axum::http::HeaderMap;
 use reqwest::{Client, RequestBuilder, Response};
-use std::time::Duration;
 use tracing::error;
 
+use super::super::ClientTrait;
+use crate::errors::{ErrorLogTrait, Errors};
+use crate::types::enums::request::Body;
+
 pub struct BasicClientService {
-    client: Client,
+    client: Client
 }
 
 impl BasicClientService {
@@ -37,14 +37,14 @@ impl BasicClientService {
             client: Client::builder()
                 .timeout(Duration::from_secs(10))
                 .build()
-                .expect("Failed to build request client"),
+                .expect("Failed to build request client")
         }
     }
     async fn send_request(
         &self,
         req: RequestBuilder,
         method: &str,
-        url: &str,
+        url: &str
     ) -> anyhow::Result<Response> {
         match req.send().await {
             Ok(resp) => Ok(resp),
@@ -60,13 +60,13 @@ impl BasicClientService {
         match body {
             Body::Json(value) => req.json(&value),
             Body::Raw(s) => req.body(s),
-            Body::None => req,
+            Body::None => req
         }
     }
 }
 
 #[async_trait]
-impl ClientServiceTrait for BasicClientService {
+impl ClientTrait for BasicClientService {
     async fn get(&self, url: &str, headers: Option<HeaderMap>) -> anyhow::Result<Response> {
         let req = if let Some(h) = headers {
             self.client.get(url).headers(h)
@@ -80,7 +80,7 @@ impl ClientServiceTrait for BasicClientService {
         &self,
         url: &str,
         headers: Option<HeaderMap>,
-        body: Body,
+        body: Body
     ) -> anyhow::Result<Response> {
         let req = if let Some(h) = headers {
             self.client.post(url).headers(h)
@@ -95,7 +95,7 @@ impl ClientServiceTrait for BasicClientService {
         &self,
         url: &str,
         headers: Option<HeaderMap>,
-        body: Body,
+        body: Body
     ) -> anyhow::Result<Response> {
         let req = if let Some(h) = headers {
             self.client.put(url).headers(h)
@@ -110,7 +110,7 @@ impl ClientServiceTrait for BasicClientService {
         &self,
         url: &str,
         headers: Option<HeaderMap>,
-        body: Body,
+        body: Body
     ) -> anyhow::Result<Response> {
         let req = if let Some(h) = headers {
             self.client.delete(url).headers(h)
