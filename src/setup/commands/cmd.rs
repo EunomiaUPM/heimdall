@@ -16,6 +16,7 @@
  */
 
 use std::cmp::PartialEq;
+use std::sync::Arc;
 
 use clap::{Parser, Subcommand};
 use tracing::debug;
@@ -43,8 +44,7 @@ pub struct AuthCliArgs {
 #[derive(Subcommand, Debug, PartialEq)]
 pub enum AuthorityCliCommands {
     Start(AuthCliArgs),
-    Setup(AuthCliArgs),
-    Vault
+    Setup(AuthCliArgs)
 }
 
 pub struct AuthorityCommands;
@@ -54,23 +54,19 @@ impl AuthorityCommands {
         // parse command line
         debug!("Init the command line application");
         let cli = AuthorityCli::parse();
+        let vault = Arc::new(VaultService::new());
 
         // run scripts
         match cli.command {
             AuthorityCliCommands::Start(args) => {
                 let config = extract_env_config(args.env_file)?;
-                let vault = VaultService::new();
                 AuthorityApplication::run(config, vault).await?
             }
             AuthorityCliCommands::Setup(args) => {
                 let config = extract_env_config(args.env_file)?;
-                let vault = VaultService::new();
                 let db_connection = vault.get_connection(&config).await;
+                vault.write_all_secrets().await?;
                 AuthorityMigration::run(db_connection).await?
-            }
-            AuthorityCliCommands::Vault => {
-                let vault = VaultService::new();
-                vault.write_all_secrets().await?
             }
         }
 

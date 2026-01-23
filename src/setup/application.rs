@@ -35,7 +35,7 @@ use crate::services::vault::VaultTrait;
 use crate::services::vcs_builder::dataspace_authority::config::DataSpaceAuthorityConfig;
 use crate::services::vcs_builder::dataspace_authority::DataSpaceAuthorityBuilder;
 use crate::services::vcs_builder::legal_authority::{
-    config::LegalAuthorityConfig, LegalAuthorityBuilder,
+    config::LegalAuthorityConfig, LegalAuthorityBuilder
 };
 use crate::services::vcs_builder::VcBuilderTrait;
 use crate::services::verifier::basic::{config::BasicVerifierConfig, BasicVerifierService};
@@ -48,7 +48,7 @@ use crate::utils::expect_from_env;
 pub struct AuthorityApplication;
 
 impl AuthorityApplication {
-    pub async fn create_router(config: &CoreApplicationConfig, vault: VaultService) -> Router {
+    pub async fn create_router(config: &CoreApplicationConfig, vault: Arc<VaultService>) -> Router {
         // ROLE
         let role = config.get_role();
 
@@ -81,12 +81,12 @@ impl AuthorityApplication {
         let core_config = Arc::new(config.clone());
 
         // SERVICES
-        let vault = Arc::new(vault);
         let db_connection = vault.get_connection(config).await;
         let repo = Arc::new(RepoForSql::new(db_connection));
         let client = Arc::new(BasicClientService::new());
         let access = Arc::new(GnapService::new(gnap_config, client.clone()));
-        let issuer = Arc::new(BasicIssuerService::new(issuer_config, vault.clone()));
+        let issuer =
+            Arc::new(BasicIssuerService::new(issuer_config, client.clone(), vault.clone()));
         let verifier = Arc::new(BasicVerifierService::new(client.clone(), verifier_config));
 
         let wallet: Option<Arc<dyn WalletTrait>> = match config.is_wallet_active() {
@@ -94,7 +94,7 @@ impl AuthorityApplication {
                 let walt_id_config = WaltIdConfig::from(config.clone());
                 Some(Arc::new(WaltIdService::new(walt_id_config, client.clone(), vault)))
             }
-            false => None,
+            false => None
         };
 
         // CORE
@@ -106,7 +106,7 @@ impl AuthorityApplication {
 
     pub async fn run_basic(
         config: CoreApplicationConfig,
-        vault: VaultService,
+        vault: Arc<VaultService>
     ) -> anyhow::Result<()> {
         let router = Self::create_router(&config, vault).await;
 
@@ -115,7 +115,7 @@ impl AuthorityApplication {
 
         let listener = match config.is_local() {
             true => TcpListener::bind(format!("127.0.0.1{}", config.get_weird_port())).await?,
-            false => TcpListener::bind(format!("0.0.0.0{}", config.get_weird_port())).await?,
+            false => TcpListener::bind(format!("0.0.0.0{}", config.get_weird_port())).await?
         };
 
         serve(listener, router).await?;
@@ -123,7 +123,7 @@ impl AuthorityApplication {
     }
     pub async fn run_tls(
         config: &CoreApplicationConfig,
-        vault: VaultService,
+        vault: Arc<VaultService>
     ) -> anyhow::Result<()> {
         let cert = expect_from_env("VAULT_CLIENT_CERT");
         let pkey = expect_from_env("VAULT_CLIENT_KEY");
@@ -132,21 +132,23 @@ impl AuthorityApplication {
 
         rustls::crypto::ring::default_provider()
             .install_default()
-            .expect("No se pudo instalar el proveedor de criptografía");
+            .expect("Unable to install cryptography provider");
 
         let tls_config = RustlsConfig::from_pem(cert.data().to_vec(), pkey.data().to_vec()).await?;
 
         let router = Self::create_router(config, vault).await;
 
-        let addr_str =
-            if config.is_local() { format!("127.0.0.1:443") } else { format!("0.0.0.0:443") };
+        let addr_str = if config.is_local() { "127.0.0.1:443" } else { "0.0.0.0:443" };
         let addr: SocketAddr = addr_str.parse()?;
         info!("Starting Authority server with TLS in {}", addr);
 
         axum_server::bind_rustls(addr, tls_config).serve(router.into_make_service()).await?;
         Ok(())
     }
-    pub async fn run(config: CoreApplicationConfig, vault: VaultService) -> anyhow::Result<()> {
+    pub async fn run(
+        config: CoreApplicationConfig,
+        vault: Arc<VaultService>
+    ) -> anyhow::Result<()> {
         match Self::run_tls(&config, vault.clone()).await {
             Ok(_) => Ok(()),
             Err(err) => {

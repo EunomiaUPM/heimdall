@@ -17,6 +17,7 @@
 
 use std::collections::HashSet;
 use std::path::PathBuf;
+use std::sync::Arc;
 use std::{env, fs};
 
 use anyhow::bail;
@@ -24,15 +25,16 @@ use axum::http::HeaderMap;
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use base64::Engine;
 use chrono::Utc;
-use jsonwebtoken::jwk::Jwk;
 use jsonwebtoken::{TokenData, Validation};
 use rand::Rng;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 use serde_json::Value;
 use tracing::{error, info};
+
 use crate::capabilities::DidResolver;
 use crate::errors::{ErrorLogTrait, Errors};
+use crate::services::client::ClientTrait;
 use crate::types::enums::errors::BadFormat;
 
 pub fn create_opaque_token() -> String {
@@ -101,7 +103,7 @@ pub fn get_opt_claim(claims: &Value, path: Vec<&str>) -> anyhow::Result<Option<S
     for key in path.iter() {
         node = match node.get(key) {
             Some(data) => data,
-            None => return Ok(None),
+            None => return Ok(None)
         };
     }
     let data = validate_data(node, field)?;
@@ -120,24 +122,22 @@ fn validate_data(node: &Value, field: &str) -> anyhow::Result<String> {
     }
 }
 
-pub fn validate_token<T>(
+pub async fn validate_token<T>(
     token: &str,
     audience: Option<&str>,
+    client: Arc<dyn ClientTrait>
 ) -> anyhow::Result<(TokenData<T>, String)>
 where
-    T: Serialize + DeserializeOwned,
+    T: Serialize + DeserializeOwned
 {
     info!("Validating token");
     let header = jsonwebtoken::decode_header(&token)?;
     info!("{:#?}", header);
     let kid_str = get_from_opt(&header.kid, "kid")?;
-    let (kid, _) = DidResolver::split_did_id(kid_str.as_str()); 
     let alg = header.alg;
 
-    let vec = URL_SAFE_NO_PAD.decode(&(kid.replace("did:jwk:", "")))?;
-    let jwk: Jwk = serde_json::from_slice(&vec)?;
-
-    let key = jsonwebtoken::DecodingKey::from_jwk(&jwk)?;
+    let key = DidResolver::get_key(&kid_str, client).await?;
+    let (kid, _) = DidResolver::split_did_id(&kid_str);
 
     let mut val = Validation::new(alg);
 
@@ -171,7 +171,7 @@ where
 
 pub fn get_from_opt<T>(value: &Option<T>, field_name: &str) -> anyhow::Result<T>
 where
-    T: Clone + Serialize + DeserializeOwned,
+    T: Clone + Serialize + DeserializeOwned
 {
     match value {
         Some(v) => Ok(v.clone()),
@@ -218,7 +218,7 @@ pub fn read(path: &str) -> anyhow::Result<String> {
 
 pub fn read_json<T>(path: &str) -> anyhow::Result<T>
 where
-    T: DeserializeOwned,
+    T: DeserializeOwned
 {
     let data = read(path)?;
     let json = serde_json::from_str(&data)?;
@@ -236,4 +236,3 @@ pub fn expect_from_env(env: &str) -> String {
     };
     data.expect("Error with env variable")
 }
-

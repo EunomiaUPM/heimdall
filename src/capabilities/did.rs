@@ -15,10 +15,7 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 use std::sync::Arc;
-use crate::errors::{ErrorLogTrait, Errors};
-use crate::services::client::ClientTrait;
-use crate::types::enums::errors::BadFormat;
-use crate::types::wallet::DidType;
+
 use anyhow::bail;
 use axum::http::header::{ACCEPT, CONTENT_TYPE};
 use axum::http::HeaderMap;
@@ -29,13 +26,18 @@ use jsonwebtoken::DecodingKey;
 use serde_json::Value;
 use tracing::{error, info};
 
+use crate::errors::{ErrorLogTrait, Errors};
+use crate::services::client::ClientTrait;
+use crate::types::enums::errors::BadFormat;
+use crate::types::wallet::DidType;
+
 pub struct DidResolver;
 
 impl DidResolver {
     pub fn split_did_id(did: &str) -> (&str, Option<&str>) {
         match did.split_once('#') {
             Some((did_kid, id)) => (did_kid, Some(id)),
-            None => (did, None),
+            None => (did, None)
         }
     }
 
@@ -56,7 +58,7 @@ impl DidResolver {
                 let kid = kid.ok_or_else(|| {
                     let error = Errors::format_new(
                         BadFormat::Received,
-                        "did:web requires a key id fragment (#...)",
+                        "did:web requires a key id fragment (#...)"
                     );
                     error!("{}", error.log());
                     error
@@ -99,7 +101,7 @@ impl DidResolver {
                 let method = methods.iter().find(|m| m["id"] == full_kid).ok_or_else(|| {
                     let error = Errors::format_new(
                         BadFormat::Received,
-                        &format!("Key not found: {}", full_kid),
+                        &format!("Key not found: {}", full_kid)
                     );
                     error!("{}", error.log());
                     error
@@ -142,7 +144,7 @@ impl DidResolver {
                 let path = path.join("/");
                 format!("https://{}/{}/did.json", domain, path)
             }
-            _ => String::new(),
+            _ => String::new()
         }
     }
 }

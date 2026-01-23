@@ -66,7 +66,7 @@ pub trait CoreIssuerTrait: Send + Sync + 'static {
     ) -> anyhow::Result<GiveVC> {
         let mut iss_model = self.repo().issuing().get_by_token(&token).await?;
 
-        self.issuer().validate_cred_req(&mut iss_model, &payload, &token)?;
+        self.issuer().validate_cred_req(&mut iss_model, &payload, &token).await?;
 
         let claims = self.vc_builder().build_vc(&iss_model)?;
         let data = self.issuer().issue_cred(claims).await?;

@@ -26,25 +26,25 @@ pub struct DidsInfo {
     pub key_id: String,
     pub default: bool,
     #[serde(rename = "createdOn")]
-    pub created_on: String,
+    pub created_on: String
 }
 
 #[derive(Deserialize, Serialize, Clone, Debug)]
 pub enum DidType {
     Web,
     Jwk,
-    Other,
+    Other
 }
 
 #[derive(Deserialize, Serialize, Clone, Debug)]
 pub struct DidConfig {
     pub did: String,
     pub r#type: DidType,
-    pub did_web_options: Option<DidWebOptions>,
+    pub did_web_options: Option<DidWebOptions>
 }
 
 #[derive(Deserialize, Serialize, Clone, Debug)]
 pub struct DidWebOptions {
     pub domain: String,
-    pub path: Option<String>,
+    pub path: Option<String>
 }

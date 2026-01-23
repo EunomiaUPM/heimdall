@@ -15,17 +15,18 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
+use tracing::error;
+
 use super::WaltIdConfigTrait;
 use crate::config::CoreApplicationConfig;
 use crate::errors::{ErrorLogTrait, Errors};
 use crate::types::host::{HostConfig, HostConfigTrait};
 use crate::types::wallet::{DidConfig, DidType, WalletConfig};
-use tracing::error;
 
 pub struct WaltIdConfig {
     host: HostConfig,
     ssi_wallet_config: WalletConfig,
-    did_config: DidConfig,
+    did_config: DidConfig
 }
 
 impl From<CoreApplicationConfig> for WaltIdConfig {
@@ -33,24 +34,16 @@ impl From<CoreApplicationConfig> for WaltIdConfig {
         WaltIdConfig {
             host: config.host,
             ssi_wallet_config: config.wallet_config.clone().expect("Module not active"),
-            did_config: config.did_config,
+            did_config: config.did_config
         }
     }
 }
 
 impl WaltIdConfigTrait for WaltIdConfig {
-    fn get_raw_wallet_config(&self) -> WalletConfig {
-        self.ssi_wallet_config.clone()
-    }
-    fn get_wallet_host(&self) -> String {
-        self.ssi_wallet_config.api.get_host()
-    }
-    fn get_host(&self) -> String {
-        self.host.get_host()
-    }
-    fn get_did_type(&self) -> DidType {
-        self.did_config.r#type.clone()
-    }
+    fn get_raw_wallet_config(&self) -> WalletConfig { self.ssi_wallet_config.clone() }
+    fn get_wallet_host(&self) -> String { self.ssi_wallet_config.api.get_host() }
+    fn get_host(&self) -> String { self.host.get_host() }
+    fn get_did_type(&self) -> DidType { self.did_config.r#type.clone() }
     fn get_did_web_path(&self) -> Option<String> {
         match self.did_config.r#type {
             DidType::Web => self.did_config.did_web_options.as_ref()?.path.clone(),

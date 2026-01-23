@@ -42,7 +42,7 @@ pub struct CoreApplicationConfig {
     pub role: AuthorityRole,
     pub api: ApiConfig,
     pub stuff_to_issue: StuffToIssue,
-    pub requirements_to_verify: RequirementsToVerify,
+    pub requirements_to_verify: RequirementsToVerify
 }
 
 impl CoreApplicationConfig {
@@ -59,13 +59,9 @@ impl CoreConfigTrait for CoreApplicationConfig {
     fn get_full_db(&self, db_secrets: DbSecrets) -> String {
         self.db_config.get_full_db(db_secrets)
     }
-    fn get_host(&self) -> String {
-        self.host.get_host()
-    }
+    fn get_host(&self) -> String { self.host.get_host() }
 
-    fn is_local(&self) -> bool {
-        self.is_local
-    }
+    fn is_local(&self) -> bool { self.is_local }
 
     fn get_weird_port(&self) -> String {
         let host = self.host.clone();
@@ -73,20 +69,12 @@ impl CoreConfigTrait for CoreApplicationConfig {
             Some(data) => {
                 format!(":{}", data)
             }
-            None => "".to_string(),
+            None => "".to_string()
         }
     }
-    fn get_role(&self) -> AuthorityRole {
-        self.role.clone()
-    }
+    fn get_role(&self) -> AuthorityRole { self.role.clone() }
 
-    fn get_openapi_json(&self) -> anyhow::Result<String> {
-        read(&self.api.openapi_path)
-    }
-    fn get_api_path(&self) -> String {
-        format!("/api/{}", self.api.version)
-    }
-    fn is_wallet_active(&self) -> bool {
-        self.wallet_config.is_some()
-    }
+    fn get_openapi_json(&self) -> anyhow::Result<String> { read(&self.api.openapi_path) }
+    fn get_api_path(&self) -> String { format!("/api/{}", self.api.version) }
+    fn is_wallet_active(&self) -> bool { self.wallet_config.is_some() }
 }
