@@ -15,15 +15,24 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-use temporal_name::setup::commands::cmd::AuthorityCommands;
+use heimdall::setup::commands::cmd::AuthorityCommands;
 use tracing::info;
 use tracing_subscriber::filter::LevelFilter;
 use tracing_subscriber::EnvFilter;
 
 const INFO: &str = r"
 ----------
-Starting Authority Server
-UPM Authority implementation
+ _   _  _____ ________  ________  ___   _      _     
+| | | ||  ___|_   _|  \/  |  _  \/ _ \ | |    | |    
+| |_| || |__   | | | .  . | | | / /_\ \| |    | |    
+|  _  ||  __|  | | | |\/| | | | |  _  || |    | |    
+| | | || |___ _| |_| |  | | |/ /| | | || |____| |____
+\_| |_/\____/ \___/\_|  |_/___/ \_| |_/\_____/\_____/
+
+Starting Heimdall Dataspace Authority ⚡🛡️
+UPM Dataspace multistack agent
+Show some love on https://github.com/EunomiaUPM/heimdall
+
 ----------
 
 ";

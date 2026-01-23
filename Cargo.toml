@@ -1,15 +1,15 @@
 [package]
-name = "temporal-name"
+name = "heimdall"
 version = "0.1.0"
 edition = "2021"
 authors = ["Rodrigo Menéndez <rodrigo.menendez@upm.es>"]
 
 [lib]
-name = "temporal_name"
+name = "heimdall"
 path = "src/lib.rs"
 
 [[bin]]
-name = "temporal-name"
+name = "heimdall"
 path = "src/main.rs"
 
 [dependencies]
