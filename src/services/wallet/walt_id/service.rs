@@ -39,7 +39,10 @@ use crate::types::enums::errors::{BadFormat, MissingAction};
 use crate::types::enums::request::Body;
 use crate::types::jwt::AuthJwtClaims;
 use crate::types::secrets::{PemHelper, SemiWalletSecrets};
-use crate::types::wallet::{DidType, DidsInfo, KeyDefinition, WalletInfo, WalletInfoResponse, WalletLoginResponse, WalletSession};
+use crate::types::wallet::{
+    DidType, DidsInfo, KeyDefinition, WalletInfo, WalletInfoResponse, WalletLoginResponse,
+    WalletSession
+};
 use crate::utils::expect_from_env;
 
 pub struct WaltIdService {
@@ -541,14 +544,13 @@ impl WalletTrait for WaltIdService {
         info!("Registering did in web wallet");
 
         let res = match self.config.get_did_type() {
-            DidType::Web => {
-                self.reg_did_web().await?
-            }
-            DidType::Jwk => {
-                self.reg_did_jwk().await?
-            }
+            DidType::Web => self.reg_did_web().await?,
+            DidType::Jwk => self.reg_did_jwk().await?,
             DidType::Other => {
-                let error = Errors::not_impl_new("Other did type","Trying to use other did type that is not registered");
+                let error = Errors::not_impl_new(
+                    "Other did type",
+                    "Trying to use other did type that is not registered"
+                );
                 error!("{}", error.log());
                 bail!(error)
             }
@@ -596,7 +598,6 @@ impl WalletTrait for WaltIdService {
         headers.insert(AUTHORIZATION, format!("Bearer {}", token).parse()?);
 
         self.client.post(&url, Some(headers), Body::None).await
-
     }
 
     async fn reg_did_web(&self) -> anyhow::Result<Response> {
@@ -605,8 +606,10 @@ impl WalletTrait for WaltIdService {
         let key_data = self.get_key().await?;
 
         let path = match self.config.get_did_web_path() {
-            Some(path) => {format!("&path={}", path)}
-            None => {"".to_string()}
+            Some(path) => {
+                format!("&path={}", path)
+            }
+            None => "".to_string()
         };
 
         let domain = self.config.get_did_web_domain();

@@ -31,6 +31,7 @@ use super::super::IssuerTrait;
 use super::config::{BasicIssuerConfig, BasicIssuerConfigTrait};
 use crate::data::entities::{interaction, issuing, minions, request};
 use crate::errors::{ErrorLogTrait, Errors};
+use crate::services::client::ClientTrait;
 use crate::services::vault::vault_rs::VaultService;
 use crate::services::vault::VaultTrait;
 use crate::types::enums::errors::BadFormat;
@@ -46,12 +47,17 @@ use crate::utils::{
 
 pub struct BasicIssuerService {
     config: BasicIssuerConfig,
+    client: Arc<dyn ClientTrait>,
     vault: Arc<VaultService>
 }
 
 impl BasicIssuerService {
-    pub fn new(config: BasicIssuerConfig, vault: Arc<VaultService>) -> BasicIssuerService {
-        BasicIssuerService { config, vault }
+    pub fn new(
+        config: BasicIssuerConfig,
+        client: Arc<dyn ClientTrait>,
+        vault: Arc<VaultService>
+    ) -> BasicIssuerService {
+        BasicIssuerService { config, client, vault }
     }
 }
 
@@ -197,7 +203,7 @@ impl IssuerTrait for BasicIssuerService {
         Ok(GiveVC { format: "jwt_vc_json".to_string(), credential: vc_jwt })
     }
 
-    fn validate_cred_req(
+    async fn validate_cred_req(
         &self,
         model: &mut issuing::Model,
         cred_req: &CredentialRequest,
@@ -230,7 +236,12 @@ impl IssuerTrait for BasicIssuerService {
         }
 
         let did = self.config.get_did();
-        let (token, kid) = validate_token::<DidPossession>(&cred_req.proof.jwt, Some(&model.aud))?;
+        let (token, kid) = validate_token::<DidPossession>(
+            &cred_req.proof.jwt,
+            Some(&model.aud),
+            self.client.clone()
+        )
+        .await?;
         self.validate_did_possession(&token, &kid)?;
         model.holder_did = Some(kid);
         model.issuer_did = Some(did);

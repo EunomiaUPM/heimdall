@@ -39,7 +39,7 @@ pub trait IssuerTrait: Send + Sync + 'static {
         payload: &TokenRequest
     ) -> anyhow::Result<()>;
     async fn issue_cred(&self, claims: Value) -> anyhow::Result<GiveVC>;
-    fn validate_cred_req(
+    async fn validate_cred_req(
         &self,
         model: &mut issuing::Model,
         cred_req: &CredentialRequest,

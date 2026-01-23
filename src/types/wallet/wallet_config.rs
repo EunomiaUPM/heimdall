@@ -22,5 +22,5 @@ use crate::types::host::HostConfig;
 #[derive(Deserialize, Serialize, Clone, Debug)]
 pub struct WalletConfig {
     pub api: HostConfig,
-    pub id: Option<String>,
+    pub id: Option<String>
 }

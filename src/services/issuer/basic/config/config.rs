@@ -26,7 +26,7 @@ pub struct BasicIssuerConfig {
     is_local: bool,
     api_path: String,
     w3c_vc_data_model: Option<W3cDataModelVersion>,
-    did_config: DidConfig,
+    did_config: DidConfig
 }
 
 impl From<CoreApplicationConfig> for BasicIssuerConfig {
@@ -37,7 +37,7 @@ impl From<CoreApplicationConfig> for BasicIssuerConfig {
             is_local: config.is_local,
             api_path,
             w3c_vc_data_model: config.stuff_to_issue.w3c_data_model,
-            did_config: config.did_config,
+            did_config: config.did_config
         }
     }
 }
