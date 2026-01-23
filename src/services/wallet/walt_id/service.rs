@@ -80,7 +80,7 @@ impl WalletTrait for WaltIdService {
     async fn register(&self) -> anyhow::Result<()> {
         info!("Registering in web wallet");
         let url = format!("{}/wallet-api/auth/register", self.config.get_wallet_host());
-        let db_path = expect_from_env("VAULT_WALLET");
+        let db_path = expect_from_env("VAULT_APP_WALLET");
         let body = self.vault.read(None, &db_path).await?;
 
         let mut headers = HeaderMap::new();
@@ -114,7 +114,7 @@ impl WalletTrait for WaltIdService {
         info!("Login into web wallet");
         let url = format!("{}/wallet-api/auth/login", self.config.get_wallet_host());
 
-        let db_path = expect_from_env("VAULT_WALLET");
+        let db_path = expect_from_env("VAULT_APP_WALLET");
         let body: SemiWalletSecrets = self.vault.read(None, &db_path).await?;
         let body = serde_json::to_value(&body)?;
 
@@ -504,7 +504,7 @@ impl WalletTrait for WaltIdService {
         let wallet = self.get_wallet().await?;
         let token = self.get_token().await?;
 
-        let priv_key = expect_from_env("VAULT_F_PRIV_KEY");
+        let priv_key = expect_from_env("VAULT_APP_PRIV_KEY");
         let priv_key: PemHelper = self.vault.read(None, &priv_key).await?;
 
         let url = format!(

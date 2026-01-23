@@ -16,7 +16,7 @@
  */
 
 use std::collections::HashSet;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::{env, fs};
 
@@ -205,20 +205,25 @@ pub fn has_expired(exp: u64) -> anyhow::Result<()> {
     }
 }
 
-pub fn read(path: &str) -> anyhow::Result<String> {
-    let manifest_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    let full_path = format!("{}/{}", manifest_dir.display(), path);
-    let data = fs::read_to_string(&full_path).map_err(|e| {
-        let error = Errors::read_new(path, &e.to_string());
-        error!("{}", error);
-        error
-    })?;
-    Ok(data)
+pub fn read<P>(path: P) -> anyhow::Result<String>
+where
+    P: AsRef<Path>
+{
+    let path_ref = path.as_ref();
+    match fs::read_to_string(path_ref) {
+        Ok(data) => Ok(data),
+        Err(e) => {
+            let error = Errors::read_new(&path_ref.display().to_string(), &e.to_string());
+            error!("{}", error.log());
+            bail!(error)
+        }
+    }
 }
 
-pub fn read_json<T>(path: &str) -> anyhow::Result<T>
+pub fn read_json<T, P>(path: P) -> anyhow::Result<T>
 where
-    T: DeserializeOwned
+    T: DeserializeOwned,
+    P: AsRef<Path>
 {
     let data = read(path)?;
     let json = serde_json::from_str(&data)?;

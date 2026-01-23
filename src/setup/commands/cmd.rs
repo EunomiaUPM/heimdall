@@ -64,7 +64,7 @@ impl AuthorityCommands {
             }
             AuthorityCliCommands::Setup(args) => {
                 let config = extract_env_config(args.env_file)?;
-                let db_connection = vault.get_connection(&config).await;
+                let db_connection = vault.get_db_connection(&config).await;
                 vault.write_all_secrets().await?;
                 AuthorityMigration::run(db_connection).await?
             }
