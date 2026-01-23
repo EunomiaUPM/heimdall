@@ -179,7 +179,7 @@ impl IssuerTrait for BasicIssuerService {
         let did = self.config.get_did();
         let mut header = Header::new(Algorithm::RS256);
         header.kid = Some(did.to_string());
-        let priv_key = expect_from_env("VAULT_F_PRIV_KEY");
+        let priv_key = expect_from_env("VAULT_APP_PRIV_KEY");
         let priv_key: PemHelper = self.vault.read(None, &priv_key).await?;
 
         let key = EncodingKey::from_rsa_pem(priv_key.data()).map_err(|e| {
@@ -285,7 +285,7 @@ impl IssuerTrait for BasicIssuerService {
     async fn get_jwks_data(&self) -> anyhow::Result<WellKnownJwks> {
         info!("Retrieving jwks data");
 
-        let pub_key = expect_from_env("VAULT_F_PUB_PKEY");
+        let pub_key = expect_from_env("VAULT_APP_PUB_PKEY");
         let pub_key: PemHelper = self.vault.read(None, &pub_key).await?;
 
         let key = RsaPublicKey::from_pkcs1_pem(&pub_key.inner).map_err(|e| {

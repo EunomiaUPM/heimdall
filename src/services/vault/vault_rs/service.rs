@@ -16,14 +16,16 @@
  */
 
 use std::collections::HashMap;
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
+use anyhow::bail;
 use async_trait::async_trait;
 use sea_orm::{Database, DatabaseConnection};
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 use serde_json::Value;
-use tracing::error;
+use tracing::{error, info};
 use vaultrs::api::sys::requests::EnableEngineRequestBuilder;
 use vaultrs::client::{VaultClient, VaultClientSettingsBuilder};
 use vaultrs::kv2;
@@ -35,7 +37,6 @@ use crate::services::vault::VaultTrait;
 use crate::types::secrets::{DbSecrets, PemHelper};
 use crate::utils::{expect_from_env, read, read_json};
 
-#[derive(Clone)]
 pub struct VaultService {
     client: Arc<VaultClient>
 }
@@ -62,8 +63,6 @@ impl VaultService {
         Self { client: Arc::new(client) }
     }
 }
-
-impl VaultService {}
 
 #[async_trait]
 impl VaultTrait for VaultService {
@@ -100,73 +99,99 @@ impl VaultTrait for VaultService {
 
         Ok(())
     }
+
     async fn write_all_secrets(&self) -> anyhow::Result<()> {
-        let mount = expect_from_env("VAULT_MOUNT");
+        let mount_name = expect_from_env("VAULT_MOUNT");
 
-        let mut opts = HashMap::new();
-        opts.insert("version".to_string(), "2".to_string());
-        let mut data = EnableEngineRequestBuilder::default();
-        let data = data.options(opts);
-
-        mount::enable(&*self.client, &mount, "kv", Some(data)).await.map_err(|e| {
-            let error = Errors::vault_new(e.to_string());
-            error!("{}", error.log());
-            error
+        let existing_mounts = mount::list(&*self.client).await.map_err(|e| {
+            error!("Error listing mounts: {}", e);
+            Errors::vault_new(e.to_string())
         })?;
 
-        for (path, secret) in self.secrets()? {
-            self.write(Some(&mount), &path, &secret).await?
+        let mount_path = format!("{}/", mount_name);
+        if !existing_mounts.contains_key(&mount_path) {
+            let mut opts = HashMap::new();
+            opts.insert("version".to_string(), "2".to_string());
+            let mut data = EnableEngineRequestBuilder::default();
+            let data = data.options(opts);
+
+            mount::enable(&*self.client, &mount_name, "kv", Some(data)).await.map_err(|e| {
+                let error = Errors::vault_new(e.to_string());
+                error!("{}", error.log());
+                error
+            })?;
+
+            info!("Mount '{}' created successfully", mount_name);
+        } else {
+            info!("Mount '{}' already exists, omitting step", mount_name);
+        }
+
+        // 3. Escribir secretos
+        for (path, secret) in Self::secrets()? {
+            self.write(Some(&mount_name), &path, &secret).await?
         }
         Ok(())
     }
-    fn secrets(&self) -> anyhow::Result<HashMap<String, Value>> {
+    fn secrets() -> anyhow::Result<HashMap<String, Value>> {
         let mut map: HashMap<String, Value> = HashMap::new();
 
-        // DB -----------------------------------------------
-        let db_path = expect_from_env("VAULT_DB");
-        let db_json = read_json("/vault/secrets/db.json")?;
-        map.insert(db_path, db_json);
+        let secret_path = PathBuf::from(expect_from_env("VAULT_PATH")).join("secrets");
+        let config_path = PathBuf::from(expect_from_env("VAULT_PATH")).join("config");
 
-        // WALLET  -----------------------------------------------
-        if let Ok(data) = read_json("/vault/secrets/wallet.json") {
-            let db_path = expect_from_env("VAULT_WALLET");
-            map.insert(db_path, data);
-        }
+        Self::insert_json(&mut map, secret_path.join("db.json"), "VAULT_APP_DB", true)?;
+        Self::insert_json(&mut map, secret_path.join("wallet.json"), "VAULT_APP_WALLET", false)?;
 
-        // PRIV_KEY
-        let priv_key_path = expect_from_env("VAULT_F_PRIV_KEY");
-        let data = read("/vault/secrets/private_key.pem")?;
-        let data = serde_json::to_value(PemHelper::new(data))?;
-        map.insert(priv_key_path, data);
+        Self::insert_pem(&mut map, secret_path.join("private_key.pem"), "VAULT_APP_PRIV_KEY")?;
+        Self::insert_pem(&mut map, secret_path.join("public_key.pem"), "VAULT_APP_PUB_PKEY")?;
+        Self::insert_pem(&mut map, secret_path.join("cert.pem"), "VAULT_APP_CERT")?;
 
-        // PUB_KEY
-        let pub_key_path = expect_from_env("VAULT_F_PUB_PKEY");
-        let data = read("/vault/secrets/public_key.pem")?;
-        let data = serde_json::to_value(PemHelper::new(data))?;
-        map.insert(pub_key_path, data);
-
-        // CERT
-        let cert_path = expect_from_env("VAULT_F_CERT");
-        let data = read("/vault/secrets/cert.pem")?;
-        let data = serde_json::to_value(PemHelper::new(data))?;
-        map.insert(cert_path, data);
-
-        // REAL CERT
-        let cert_path = expect_from_env("VAULT_CLIENT_CERT");
-        let data = read("/vault/config/vault-cert.pem")?;
-        let data = serde_json::to_value(PemHelper::new(data))?;
-        map.insert(cert_path, data);
-
-        // CERT
-        let cert_path = expect_from_env("VAULT_CLIENT_KEY");
-        let data = read("/vault/config/vault-key.pem")?;
-        let data = serde_json::to_value(PemHelper::new(data))?;
-        map.insert(cert_path, data);
+        Self::insert_pem(&mut map, config_path.join("vault-cert.pem"), "VAULT_APP_CLIENT_CERT")?;
+        Self::insert_pem(&mut map, config_path.join("vault-key.pem"), "VAULT_APP_CLIENT_KEY")?;
+        Self::insert_pem(
+            &mut map,
+            config_path.join("vault-ca.pem"),
+            "VAULT_APP_ROOT_CLIENT_KEY"
+        )?;
 
         Ok(map)
     }
-    async fn get_connection(&self, config: &CoreApplicationConfig) -> DatabaseConnection {
-        let db_path = expect_from_env("VAULT_DB");
+
+    fn insert_json<T>(
+        mapa: &mut HashMap<String, Value>,
+        to_read: T,
+        env: &str,
+        required: bool
+    ) -> anyhow::Result<()>
+    where
+        T: AsRef<Path>
+    {
+        let vault_path = expect_from_env(env);
+        let db_json = match read_json(to_read) {
+            Ok(db_json) => db_json,
+            Err(e) => {
+                if required {
+                    bail!(e)
+                } else {
+                    return Ok(());
+                }
+            }
+        };
+        mapa.insert(vault_path, db_json);
+        Ok(())
+    }
+
+    fn insert_pem<T>(mapa: &mut HashMap<String, Value>, to_read: T, env: &str) -> anyhow::Result<()>
+    where
+        T: AsRef<Path>
+    {
+        let vault_path = expect_from_env(env);
+        let data = read(to_read)?;
+        let data = serde_json::to_value(PemHelper::new(data))?;
+        mapa.insert(vault_path, data);
+        Ok(())
+    }
+    async fn get_db_connection(&self, config: &CoreApplicationConfig) -> DatabaseConnection {
+        let db_path = expect_from_env("VAULT_APP_DB");
 
         let db_secrets: DbSecrets =
             self.read(None, &db_path).await.expect("Not able to retrieve env files");

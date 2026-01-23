@@ -81,7 +81,7 @@ impl AuthorityApplication {
         let core_config = Arc::new(config.clone());
 
         // SERVICES
-        let db_connection = vault.get_connection(config).await;
+        let db_connection = vault.get_db_connection(config).await;
         let repo = Arc::new(RepoForSql::new(db_connection));
         let client = Arc::new(BasicClientService::new());
         let access = Arc::new(GnapService::new(gnap_config, client.clone()));
@@ -125,8 +125,8 @@ impl AuthorityApplication {
         config: &CoreApplicationConfig,
         vault: Arc<VaultService>
     ) -> anyhow::Result<()> {
-        let cert = expect_from_env("VAULT_CLIENT_CERT");
-        let pkey = expect_from_env("VAULT_CLIENT_KEY");
+        let cert = expect_from_env("VAULT_APP_ROOT_CLIENT_KEY");
+        let pkey = expect_from_env("VAULT_APP_CLIENT_KEY ");
         let cert: PemHelper = vault.read(None, &cert).await?;
         let pkey: PemHelper = vault.read(None, &pkey).await?;
 
