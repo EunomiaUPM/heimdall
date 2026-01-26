@@ -23,17 +23,17 @@ use base64::Engine;
 use serde_json::Value;
 use tracing::{error, info};
 use x509_parser::parse_x509_certificate;
-
-use super::super::VcBuilderTrait;
-use crate::data::entities::{issuing, request};
-use crate::errors::{ErrorLogTrait, Errors};
-use crate::services::vcs_builder::legal_authority::config::LegalAuthorityConfig;
-use crate::types::enums::errors::BadFormat;
-use crate::types::enums::vc_type::VcType;
-use crate::types::vcs::legal_authority::{
+use ymir::data::entities::{issuing, vc_request};
+use ymir::errors::{ErrorLogTrait, Errors};
+use ymir::types::errors::BadFormat;
+use ymir::types::vcs::vc_specs::legal_authority::{
     LegalRegistrationNumberCredSubj, LegalRegistrationNumberTypes, VCData
 };
-use crate::utils::get_from_opt;
+use ymir::types::vcs::VcType;
+use ymir::utils::get_from_opt;
+
+use super::super::VcBuilderTrait;
+use crate::services::vcs_builder::legal_authority::config::LegalAuthorityConfig;
 
 pub struct LegalAuthorityBuilder {
     config: LegalAuthorityConfig
@@ -92,7 +92,7 @@ impl VcBuilderTrait for LegalAuthorityBuilder {
         self.just_build(&model, credential_subject, &self.config)
     }
 
-    fn gather_data(&self, req_model: &request::Model) -> anyhow::Result<String> {
+    fn gather_data(&self, req_model: &vc_request::Model) -> anyhow::Result<String> {
         info!("Gathering data to issue vc");
 
         let base_cert = req_model.cert.as_ref().ok_or_else(|| {

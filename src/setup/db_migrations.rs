@@ -15,8 +15,26 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-mod config;
-mod config_trait;
+use sea_orm::DatabaseConnection;
+use sea_orm_migration::{MigrationTrait, MigratorTrait};
 
-pub use config::*;
-pub use config_trait::*;
+use crate::data::Migrator;
+
+pub struct AuthorityMigration;
+
+impl MigratorTrait for AuthorityMigration {
+    fn migrations() -> Vec<Box<dyn MigrationTrait>> {
+        let mut migrations: Vec<Box<dyn MigrationTrait>> = vec![];
+        let mut authority = Migrator::migrations();
+
+        migrations.append(&mut authority);
+        migrations
+    }
+}
+
+impl AuthorityMigration {
+    pub async fn run(db_connection: DatabaseConnection) -> anyhow::Result<()> {
+        Self::refresh(&db_connection).await?;
+        Ok(())
+    }
+}

@@ -17,6 +17,7 @@
 
 mod config;
 mod config_trait;
+mod parse_from;
 
 pub use config::CoreApplicationConfig;
 pub use config_trait::CoreConfigTrait;

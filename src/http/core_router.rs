@@ -25,11 +25,10 @@ use axum::Router;
 use tower_http::trace::{DefaultOnResponse, TraceLayer};
 use tracing::{error, info, Level};
 use uuid::Uuid;
+use ymir::http::{OpenapiRouter, WalletRouter};
 
 use crate::core::traits::CoreTrait;
-use crate::http::{
-    ApproverRouter, GateKeeperRouter, IssuerRouter, OpenapiRouter, VerifierRouter, WalletRouter
-};
+use crate::http::{ApproverRouter, GateKeeperRouter, IssuerRouter, VerifierRouter};
 
 pub struct RainbowAuthorityRouter {
     core: Arc<dyn CoreTrait>,
@@ -38,7 +37,7 @@ pub struct RainbowAuthorityRouter {
 
 impl RainbowAuthorityRouter {
     pub fn new(core: Arc<dyn CoreTrait>) -> Self {
-        let openapi = core.config().get_openapi_json().expect("Invalid openapi path");
+        let openapi = core.config().get_openapi().expect("Invalid openapi path");
         Self { core, openapi }
     }
 
@@ -49,7 +48,7 @@ impl RainbowAuthorityRouter {
         let approver_router = ApproverRouter::new(self.core.clone()).router();
         let openapi_router = OpenapiRouter::new(self.openapi.clone()).router();
 
-        let api_path = self.core.config().get_api_path();
+        let api_path = self.core.config().get_api_version();
         let router = Router::new()
             .route(&format!("{}/status", api_path), get(Self::server_status))
             .nest(&format!("{}/approver", api_path), approver_router)

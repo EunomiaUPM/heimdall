@@ -23,10 +23,10 @@ use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::routing::{get, post};
 use axum::{Json, Router};
+use ymir::errors::CustomToResponse;
+use ymir::types::vcs::vc_decision_approval::VcDecisionApproval;
 
 use crate::core::traits::CoreApproverTrait;
-use crate::errors::CustomToResponse;
-use crate::types::vcs::VcDecisionApproval;
 
 pub struct ApproverRouter {
     approver: Arc<dyn CoreApproverTrait>

@@ -22,8 +22,7 @@ use std::str::FromStr;
 use anyhow::bail;
 use serde::{Deserialize, Serialize};
 use tracing::error;
-
-use crate::errors::{ErrorLogTrait, Errors};
+use ymir::errors::{ErrorLogTrait, Errors};
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub enum AuthorityRole {

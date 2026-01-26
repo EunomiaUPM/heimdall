@@ -21,16 +21,18 @@ use std::sync::Arc;
 use anyhow::bail;
 use async_trait::async_trait;
 use tracing::{error, info};
+use ymir::errors::Errors;
+use ymir::services::issuer::IssuerTrait;
+use ymir::services::verifier::VerifierTrait;
+use ymir::types::errors::BadFormat;
+use ymir::types::gnap::grant_request::GrantRequest;
+use ymir::types::gnap::grant_response::GrantResponse;
+use ymir::types::gnap::{GRMethod, RefBody};
+use ymir::types::vcs::VcType;
 
-use crate::errors::Errors;
 use crate::services::gatekeeper::GateKeeperTrait;
-use crate::services::issuer::IssuerTrait;
 use crate::services::repo::RepoTrait;
 use crate::services::vcs_builder::VcBuilderTrait;
-use crate::services::verifier::VerifierTrait;
-use crate::types::enums::errors::BadFormat;
-use crate::types::enums::vc_type::VcType;
-use crate::types::gnap::{GrantRequest, GrantResponse, RefBody};
 
 #[async_trait]
 pub trait CoreGatekeeperTrait: Send + Sync + 'static {
@@ -56,13 +58,8 @@ pub trait CoreGatekeeperTrait: Send + Sync + 'static {
 
             let uri = self.verifier().generate_verification_uri(ver_model);
 
-            let response = GrantResponse::default4oidc4vp(
-                int_model.id,
-                int_model.continue_endpoint,
-                int_model.continue_token,
-                int_model.as_nonce,
-                uri
-            );
+            let response = GrantResponse::new(GRMethod::Oidc, &int_model, Some(uri));
+
             return Ok(response);
         }
         if int_model.start.contains(&"cross-user".to_string()) {
@@ -76,7 +73,7 @@ pub trait CoreGatekeeperTrait: Send + Sync + 'static {
         &self,
         cont_id: String,
         payload: RefBody,
-        token: String
+        token: String,
     ) -> anyhow::Result<String> {
         let int_model = self.repo().interaction().get_by_cont_id(&cont_id).await?;
         let mut iss_model = self.repo().issuing().get_by_id(&int_model.id).await?;

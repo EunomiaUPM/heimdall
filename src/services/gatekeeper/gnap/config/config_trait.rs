@@ -14,12 +14,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
+use ymir::config::types::CommonHostsConfig;
 
-use crate::types::enums::role::AuthorityRole;
+use crate::types::role::AuthorityRole;
 
 pub trait GnapConfigTrait {
-    fn get_host(&self) -> String;
-    fn get_host_without_protocol(&self) -> String;
+    fn hosts(&self) -> &CommonHostsConfig;
     fn get_role(&self) -> &AuthorityRole;
     fn get_api_path(&self) -> String;
     fn is_cert_allowed(&self) -> bool;

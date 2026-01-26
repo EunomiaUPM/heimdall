@@ -16,31 +16,34 @@
  */
 
 use async_trait::async_trait;
-
-use crate::data::entities::{interaction, request};
-use crate::types::enums::vc_type::VcType;
-use crate::types::gnap::{GrantRequest, GrantResponse, Interact4GR};
+use ymir::data::entities::{recv_interaction, vc_request};
+use ymir::types::gnap::grant_request::{GrantRequest, Interact4GR};
+use ymir::types::gnap::grant_response::GrantResponse;
+use ymir::types::vcs::VcType;
 
 #[async_trait]
 pub trait GateKeeperTrait: Send + Sync + 'static {
     fn start(
         &self,
-        grant_request: GrantRequest
-    ) -> anyhow::Result<(request::NewModel, interaction::NewModel)>;
+        grant_request: GrantRequest,
+    ) -> anyhow::Result<(vc_request::NewModel, recv_interaction::NewModel)>;
     fn validate_acc_req(&self, payload: &GrantRequest) -> anyhow::Result<Interact4GR>;
     fn validate_vc_to_issue(&self, vc_type: &VcType) -> anyhow::Result<()>;
     fn validate_cont_req(
         &self,
-        int_model: &interaction::Model,
+        int_model: &recv_interaction::Model,
         int_ref: String,
-        token: String
+        token: String,
     ) -> anyhow::Result<()>;
-    async fn end_verification(&self, model: interaction::Model) -> anyhow::Result<Option<String>>;
+    async fn end_verification(
+        &self,
+        model: recv_interaction::Model,
+    ) -> anyhow::Result<Option<String>>;
     async fn apprv_dny_req(
         &self,
         approve: bool,
-        req_model: &mut request::Model,
-        int_model: &interaction::Model
+        req_model: &mut vc_request::Model,
+        int_model: &recv_interaction::Model,
     ) -> anyhow::Result<()>;
-    fn manage_cross_user(&self, model: interaction::Model) -> anyhow::Result<GrantResponse>;
+    fn manage_cross_user(&self, model: recv_interaction::Model) -> anyhow::Result<GrantResponse>;
 }

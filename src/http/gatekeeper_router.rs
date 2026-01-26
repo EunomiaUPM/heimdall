@@ -24,18 +24,21 @@ use axum::response::IntoResponse;
 use axum::routing::post;
 use axum::{Json, Router};
 use tracing::error;
+use ymir::errors::{CustomToResponse, ErrorLogTrait, Errors};
+use ymir::types::gnap::grant_request::GrantRequest;
+use ymir::types::gnap::RefBody;
+use ymir::utils::extract_gnap_token;
 
 use crate::core::traits::CoreGatekeeperTrait;
-use crate::errors::{CustomToResponse, ErrorLogTrait, Errors};
-use crate::types::gnap::{GrantRequest, RefBody};
-use crate::utils::extract_gnap_token;
 
 pub struct GateKeeperRouter {
-    gatekeeper: Arc<dyn CoreGatekeeperTrait>
+    gatekeeper: Arc<dyn CoreGatekeeperTrait>,
 }
 
 impl GateKeeperRouter {
-    pub fn new(gatekeeper: Arc<dyn CoreGatekeeperTrait>) -> Self { Self { gatekeeper } }
+    pub fn new(gatekeeper: Arc<dyn CoreGatekeeperTrait>) -> Self {
+        Self { gatekeeper }
+    }
 
     pub fn router(self) -> Router {
         Router::new()
@@ -46,16 +49,16 @@ impl GateKeeperRouter {
 
     async fn access_req(
         State(gatekeeper): State<Arc<dyn CoreGatekeeperTrait>>,
-        payload: Result<Json<GrantRequest>, JsonRejection>
+        payload: Result<Json<GrantRequest>, JsonRejection>,
     ) -> impl IntoResponse {
         let payload = match payload {
             Ok(Json(data)) => data,
-            Err(e) => return e.into_response()
+            Err(e) => return e.into_response(),
         };
 
         match gatekeeper.manage_req(payload).await {
             Ok(data) => (StatusCode::OK, Json(data)).into_response(),
-            Err(e) => e.to_response()
+            Err(e) => e.to_response(),
         }
     }
 
@@ -63,7 +66,7 @@ impl GateKeeperRouter {
         State(authority): State<Arc<dyn CoreGatekeeperTrait>>,
         headers: HeaderMap,
         Path(id): Path<String>,
-        payload: Result<Json<RefBody>, JsonRejection>
+        payload: Result<Json<RefBody>, JsonRejection>,
     ) -> impl IntoResponse {
         let token = match extract_gnap_token(headers) {
             Some(token) => token,
@@ -76,12 +79,12 @@ impl GateKeeperRouter {
 
         let payload = match payload {
             Ok(Json(data)) => data,
-            Err(e) => return e.into_response()
+            Err(e) => return e.into_response(),
         };
 
         match authority.manage_cont_req(id, payload, token).await {
             Ok(data) => data.into_response(),
-            Err(e) => e.to_response()
+            Err(e) => e.to_response(),
         }
     }
 }

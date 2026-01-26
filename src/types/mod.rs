@@ -15,13 +15,14 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-pub mod api;
-pub mod enums;
-pub mod gnap;
-pub mod host;
-pub mod issuing;
-pub mod jwt;
-pub mod secrets;
-pub mod vcs;
-pub mod verifying;
-pub mod wallet;
+// pub mod api;
+// pub mod enums;
+// pub mod gnap;
+// pub mod host;
+// pub mod issuing;
+// pub mod jwt;
+// pub mod secrets;
+// pub mod vcs;
+// pub mod verifying;
+// pub mod wallet;
+pub mod role;

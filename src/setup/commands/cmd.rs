@@ -20,12 +20,12 @@ use std::sync::Arc;
 
 use clap::{Parser, Subcommand};
 use tracing::debug;
+use ymir::services::vault::vault_rs::VaultService;
+use ymir::services::vault::VaultTrait;
 
 use super::env_extraction::extract_env_config;
-use crate::services::vault::vault_rs::VaultService;
-use crate::services::vault::VaultTrait;
 use crate::setup::application::AuthorityApplication;
-use crate::setup::database::db_migrations::AuthorityMigration;
+use crate::setup::db_migrations::AuthorityMigration;
 
 #[derive(Parser, Debug)]
 #[command(name = "Rainbow Dataspace Authority Server")]

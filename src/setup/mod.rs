@@ -17,4 +17,5 @@
 
 pub mod application;
 pub mod commands;
-pub mod database;
+pub mod db_migrations;
+

@@ -21,24 +21,25 @@ use anyhow::bail;
 use chrono::{Duration, Utc};
 use serde_json::Value;
 use tracing::error;
+use ymir::data::entities::{issuing, vc_request};
+use ymir::errors::{ErrorLogTrait, Errors};
+use ymir::types::issuing::VcModel;
+use ymir::types::vcs::claims_v1::{VCClaimsV1, VCFromClaimsV1};
+use ymir::types::vcs::claims_v2::VCClaimsV2;
+use ymir::types::vcs::vc_issuer::VCIssuer;
+use ymir::types::vcs::{VcType, W3cDataModelVersion};
+use ymir::utils::get_from_opt;
 
-use crate::data::entities::{issuing, request};
-use crate::errors::{ErrorLogTrait, Errors};
 use crate::services::vcs_builder::ConfigMinTrait;
-use crate::types::enums::data_model::W3cDataModelVersion;
-use crate::types::enums::vc_type::VcType;
-use crate::types::issuing::VcModel;
-use crate::types::vcs::{VCClaimsV1, VCClaimsV2, VCFromClaimsV1, VCIssuer};
-use crate::utils::get_from_opt;
 
 pub trait VcBuilderTrait: Send + Sync + 'static {
     fn build_vc(&self, model: &issuing::Model) -> anyhow::Result<Value>;
-    fn gather_data(&self, req_model: &request::Model) -> anyhow::Result<String>;
+    fn gather_data(&self, req_model: &vc_request::Model) -> anyhow::Result<String>;
     fn just_build(
         &self,
         model: &issuing::Model,
         credential_subject: Value,
-        config: &dyn ConfigMinTrait
+        config: &dyn ConfigMinTrait,
     ) -> anyhow::Result<Value> {
         let now = Utc::now();
         let vc_type = VcType::from_str(&model.vc_type)?;
@@ -64,11 +65,11 @@ pub trait VcBuilderTrait: Send + Sync + 'static {
                             credential_subject,
                             issuer: VCIssuer {
                                 id: issuer_did,
-                                name: "RainbowAuthority".to_string()
+                                name: Some("RainbowAuthority".to_string()),
                             },
                             valid_from: Some(now),
-                            valid_until: Some(now + Duration::days(365))
-                        }
+                            valid_until: Some(now + Duration::days(365)),
+                        },
                     })?,
                     W3cDataModelVersion::V2 => serde_json::to_value(VCClaimsV2 {
                         exp: None,
@@ -79,10 +80,13 @@ pub trait VcBuilderTrait: Send + Sync + 'static {
                         r#type: vec!["VerifiableCredential".to_string(), vc_type.name()],
                         id: model.credential_id.clone(),
                         credential_subject,
-                        issuer: VCIssuer { id: issuer_did, name: "RainbowAuthority".to_string() },
+                        issuer: VCIssuer {
+                            id: issuer_did,
+                            name: Some("RainbowAuthority".to_string()),
+                        },
                         valid_from: Some(now),
-                        valid_until: Some(now + Duration::days(365))
-                    })?
+                        valid_until: Some(now + Duration::days(365)),
+                    })?,
                 };
                 Ok(vc)
             }

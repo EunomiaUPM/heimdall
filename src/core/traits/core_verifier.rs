@@ -18,15 +18,13 @@
 use std::sync::Arc;
 
 use async_trait::async_trait;
+use ymir::services::verifier::VerifierTrait;
+use ymir::types::vcs::VPDef;
 
-use crate::services::gatekeeper::GateKeeperTrait;
 use crate::services::repo::RepoTrait;
-use crate::services::verifier::VerifierTrait;
-use crate::types::vcs::VPDef;
 
 #[async_trait]
 pub trait CoreVerifierTrait: Send + Sync + 'static {
-    fn gatekeeper(&self) -> Arc<dyn GateKeeperTrait>;
     fn verifier(&self) -> Arc<dyn VerifierTrait>;
     fn repo(&self) -> Arc<dyn RepoTrait>;
     async fn get_vp_def(&self, state: String) -> anyhow::Result<VPDef> {
@@ -40,6 +38,6 @@ pub trait CoreVerifierTrait: Send + Sync + 'static {
         let int_model = self.repo().interaction().get_by_id(&ver_model.id).await?;
         result?;
         self.repo().verification().update(ver_model).await?;
-        self.gatekeeper().end_verification(int_model).await
+        self.verifier().end_verification(&int_model).await
     }
 }

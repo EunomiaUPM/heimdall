@@ -22,28 +22,33 @@ use axum::{serve, Router};
 use axum_server::tls_rustls::RustlsConfig;
 use tokio::net::TcpListener;
 use tracing::{info, warn};
+use ymir::config::traits::HostsConfigTrait;
+use ymir::config::types::HostType;
+use ymir::services::client::basic::BasicClientService;
+use ymir::services::issuer::basic::config::BasicIssuerConfig;
+use ymir::services::issuer::basic::BasicIssuerService;
+use ymir::services::vault::vault_rs::VaultService;
+use ymir::services::vault::VaultTrait;
+use ymir::services::verifier::basic::config::BasicVerifierConfig;
+use ymir::services::verifier::basic::BasicVerifierService;
+use ymir::services::wallet::walt_id::config::WaltIdConfig;
+use ymir::services::wallet::walt_id::WaltIdService;
+use ymir::services::wallet::WalletTrait;
+use ymir::types::secrets::StringHelper;
+use ymir::utils::expect_from_env;
 
 use crate::config::{CoreApplicationConfig, CoreConfigTrait};
 use crate::core::Core;
 use crate::http::RainbowAuthorityRouter;
-use crate::services::client::basic::BasicClientService;
 use crate::services::gatekeeper::gnap::{config::GnapConfig, GnapService};
-use crate::services::issuer::basic::{config::BasicIssuerConfig, BasicIssuerService};
-use crate::services::repo::postgres::RepoForSql;
-use crate::services::vault::vault_rs::VaultService;
-use crate::services::vault::VaultTrait;
+use crate::services::repo::RepoForSql;
 use crate::services::vcs_builder::dataspace_authority::config::DataSpaceAuthorityConfig;
 use crate::services::vcs_builder::dataspace_authority::DataSpaceAuthorityBuilder;
 use crate::services::vcs_builder::legal_authority::{
-    config::LegalAuthorityConfig, LegalAuthorityBuilder
+    config::LegalAuthorityConfig, LegalAuthorityBuilder,
 };
 use crate::services::vcs_builder::VcBuilderTrait;
-use crate::services::verifier::basic::{config::BasicVerifierConfig, BasicVerifierService};
-use crate::services::wallet::walt_id::{config::WaltIdConfig, WaltIdService};
-use crate::services::wallet::WalletTrait;
-use crate::types::enums::role::AuthorityRole;
-use crate::types::secrets::PemHelper;
-use crate::utils::expect_from_env;
+use crate::types::role::AuthorityRole;
 
 pub struct AuthorityApplication;
 
@@ -94,7 +99,7 @@ impl AuthorityApplication {
                 let walt_id_config = WaltIdConfig::from(config.clone());
                 Some(Arc::new(WaltIdService::new(walt_id_config, client.clone(), vault)))
             }
-            false => None
+            false => None,
         };
 
         // CORE
@@ -106,16 +111,31 @@ impl AuthorityApplication {
 
     pub async fn run_basic(
         config: CoreApplicationConfig,
-        vault: Arc<VaultService>
+        vault: Arc<VaultService>,
     ) -> anyhow::Result<()> {
         let router = Self::create_router(&config, vault).await;
 
-        let server_message = format!("Starting Authority server in {}", config.get_host());
+        let server_message = format!(
+            "Starting Authority server in {}",
+            config.hosts().get_host(HostType::Http)
+        );
         info!("{}", server_message);
 
         let listener = match config.is_local() {
-            true => TcpListener::bind(format!("127.0.0.1{}", config.get_weird_port())).await?,
-            false => TcpListener::bind(format!("0.0.0.0{}", config.get_weird_port())).await?
+            true => {
+                TcpListener::bind(format!(
+                    "127.0.0.1{}",
+                    config.hosts().get_weird_port(HostType::Http)
+                ))
+                .await?
+            }
+            false => {
+                TcpListener::bind(format!(
+                    "0.0.0.0{}",
+                    config.hosts().get_weird_port(HostType::Http)
+                ))
+                .await?
+            }
         };
 
         serve(listener, router).await?;
@@ -123,18 +143,22 @@ impl AuthorityApplication {
     }
     pub async fn run_tls(
         config: &CoreApplicationConfig,
-        vault: Arc<VaultService>
+        vault: Arc<VaultService>,
     ) -> anyhow::Result<()> {
         let cert = expect_from_env("VAULT_APP_ROOT_CLIENT_KEY");
         let pkey = expect_from_env("VAULT_APP_CLIENT_KEY ");
-        let cert: PemHelper = vault.read(None, &cert).await?;
-        let pkey: PemHelper = vault.read(None, &pkey).await?;
+        let cert: StringHelper = vault.read(None, &cert).await?;
+        let pkey: StringHelper = vault.read(None, &pkey).await?;
 
         rustls::crypto::ring::default_provider()
             .install_default()
             .expect("Unable to install cryptography provider");
 
-        let tls_config = RustlsConfig::from_pem(cert.data().to_vec(), pkey.data().to_vec()).await?;
+        let tls_config = RustlsConfig::from_pem(
+            cert.data().as_bytes().to_vec(),
+            pkey.data().as_bytes().to_vec(),
+        )
+        .await?;
 
         let router = Self::create_router(config, vault).await;
 
@@ -147,7 +171,7 @@ impl AuthorityApplication {
     }
     pub async fn run(
         config: CoreApplicationConfig,
-        vault: Arc<VaultService>
+        vault: Arc<VaultService>,
     ) -> anyhow::Result<()> {
         match Self::run_tls(&config, vault.clone()).await {
             Ok(_) => Ok(()),

@@ -18,20 +18,20 @@
 use std::sync::Arc;
 
 use async_trait::async_trait;
+use ymir::data::entities::vc_request;
+use ymir::types::vcs::vc_decision_approval::VcDecisionApproval;
 
-use crate::data::entities::request;
 use crate::services::gatekeeper::GateKeeperTrait;
 use crate::services::repo::RepoTrait;
-use crate::types::vcs::VcDecisionApproval;
 
 #[async_trait]
 pub trait CoreApproverTrait: Send + Sync + 'static {
     fn gatekeeper(&self) -> Arc<dyn GateKeeperTrait>;
     fn repo(&self) -> Arc<dyn RepoTrait>;
-    async fn get_all(&self) -> anyhow::Result<Vec<request::Model>> {
+    async fn get_all(&self) -> anyhow::Result<Vec<vc_request::Model>> {
         self.repo().request().get_all(None, None).await
     }
-    async fn get_by_id(&self, id: String) -> anyhow::Result<request::Model> {
+    async fn get_by_id(&self, id: String) -> anyhow::Result<vc_request::Model> {
         self.repo().request().get_by_id(&id).await
     }
     async fn manage_req(&self, id: String, payload: VcDecisionApproval) -> anyhow::Result<()> {

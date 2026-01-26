@@ -18,15 +18,11 @@
 mod core_router;
 mod gatekeeper_router;
 mod issuer_router;
-mod openapi_router;
 mod vcs_router;
 mod verifier_router;
-mod wallet_router;
 
 pub use core_router::RainbowAuthorityRouter;
 pub use gatekeeper_router::GateKeeperRouter;
 pub use issuer_router::IssuerRouter;
-pub use openapi_router::OpenapiRouter;
 pub use vcs_router::ApproverRouter;
 pub use verifier_router::VerifierRouter;
-pub use wallet_router::WalletRouter;

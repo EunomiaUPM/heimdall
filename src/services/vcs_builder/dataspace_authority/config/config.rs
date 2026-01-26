@@ -16,14 +16,14 @@
  */
 
 use tracing::error;
+use ymir::errors::{ErrorLogTrait, Errors};
+use ymir::types::issuing::VcModel;
+use ymir::types::vcs::W3cDataModelVersion;
 
 use super::config_trait::DataSpaceAuthorityConfigTrait;
 use crate::config::CoreApplicationConfig;
-use crate::errors::{ErrorLogTrait, Errors};
 use crate::services::vcs_builder::min_builder_config::MinConfig;
 use crate::services::vcs_builder::ConfigMinTrait;
-use crate::types::enums::data_model::W3cDataModelVersion;
-use crate::types::issuing::VcModel;
 
 pub struct DataSpaceAuthorityConfig {
     min_config: MinConfig,
