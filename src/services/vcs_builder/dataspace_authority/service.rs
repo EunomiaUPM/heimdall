@@ -31,15 +31,15 @@ use crate::services::vcs_builder::dataspace_authority::config::{
     DataSpaceAuthorityConfig, DataSpaceAuthorityConfigTrait
 };
 
-pub struct DataSpaceAuthorityBuilder {
+pub struct DataSpaceAuthorityVcBuilder {
     config: DataSpaceAuthorityConfig
 }
 
-impl DataSpaceAuthorityBuilder {
+impl DataSpaceAuthorityVcBuilder {
     pub fn new(config: DataSpaceAuthorityConfig) -> Self { Self { config } }
 }
 
-impl VcBuilderTrait for DataSpaceAuthorityBuilder {
+impl VcBuilderTrait for DataSpaceAuthorityVcBuilder {
     fn build_vc(&self, model: &issuing::Model) -> anyhow::Result<Value> {
         let vc_type = VcType::from_str(&model.vc_type)?;
 

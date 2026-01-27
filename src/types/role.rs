@@ -30,6 +30,7 @@ pub enum AuthorityRole {
     ClearingHouse,
     ClearingHouseProxy,
     DataSpaceAuthority
+    // AllRoles,
 }
 
 impl FromStr for AuthorityRole {
@@ -41,6 +42,7 @@ impl FromStr for AuthorityRole {
             "ClearingHouseProxy" => Ok(Self::ClearingHouseProxy),
             "DataSpaceAuthority" => Ok(Self::DataSpaceAuthority),
             "DataspaceAuthority" => Ok(Self::DataSpaceAuthority),
+            // "AllRoles" => Ok(Self::AllRoles),
             _ => {
                 let error = Errors::parse_new("Invalid Authority role");
                 error!("{}", error.log());
@@ -57,6 +59,7 @@ impl fmt::Display for AuthorityRole {
             AuthorityRole::ClearingHouse => "ClearingHouse",
             AuthorityRole::ClearingHouseProxy => "ClearingHouseProxy",
             AuthorityRole::DataSpaceAuthority => "DataSpaceAuthority"
+            // AuthorityRole::AllRoles => "AllRoles",
         };
 
         write!(f, "{s}")

@@ -18,4 +18,3 @@
 pub mod application;
 pub mod commands;
 pub mod db_migrations;
-

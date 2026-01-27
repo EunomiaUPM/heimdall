@@ -35,15 +35,15 @@ use ymir::utils::get_from_opt;
 use super::super::VcBuilderTrait;
 use crate::services::vcs_builder::legal_authority::config::LegalAuthorityConfig;
 
-pub struct LegalAuthorityBuilder {
+pub struct LegalAuthorityVcBuilder {
     config: LegalAuthorityConfig
 }
 
-impl LegalAuthorityBuilder {
+impl LegalAuthorityVcBuilder {
     pub fn new(config: LegalAuthorityConfig) -> Self { Self { config } }
 }
 
-impl VcBuilderTrait for LegalAuthorityBuilder {
+impl VcBuilderTrait for LegalAuthorityVcBuilder {
     fn build_vc(&self, model: &issuing::Model) -> anyhow::Result<Value> {
         let vc_type = VcType::from_str(&model.vc_type)?;
         info!("Building {} credential", vc_type.to_string());

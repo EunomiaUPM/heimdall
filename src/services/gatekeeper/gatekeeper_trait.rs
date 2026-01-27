@@ -25,7 +25,7 @@ use ymir::types::vcs::VcType;
 pub trait GateKeeperTrait: Send + Sync + 'static {
     fn start(
         &self,
-        grant_request: GrantRequest,
+        grant_request: GrantRequest
     ) -> anyhow::Result<(vc_request::NewModel, recv_interaction::NewModel)>;
     fn validate_acc_req(&self, payload: &GrantRequest) -> anyhow::Result<Interact4GR>;
     fn validate_vc_to_issue(&self, vc_type: &VcType) -> anyhow::Result<()>;
@@ -33,17 +33,17 @@ pub trait GateKeeperTrait: Send + Sync + 'static {
         &self,
         int_model: &recv_interaction::Model,
         int_ref: String,
-        token: String,
+        token: String
     ) -> anyhow::Result<()>;
     async fn end_verification(
         &self,
-        model: recv_interaction::Model,
+        model: recv_interaction::Model
     ) -> anyhow::Result<Option<String>>;
     async fn apprv_dny_req(
         &self,
         approve: bool,
         req_model: &mut vc_request::Model,
-        int_model: &recv_interaction::Model,
+        int_model: &recv_interaction::Model
     ) -> anyhow::Result<()>;
     fn manage_cross_user(&self, model: recv_interaction::Model) -> anyhow::Result<GrantResponse>;
 }

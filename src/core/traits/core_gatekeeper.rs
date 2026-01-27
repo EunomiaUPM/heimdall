@@ -25,9 +25,9 @@ use ymir::errors::Errors;
 use ymir::services::issuer::IssuerTrait;
 use ymir::services::verifier::VerifierTrait;
 use ymir::types::errors::BadFormat;
-use ymir::types::gnap::grant_request::GrantRequest;
+use ymir::types::gnap::grant_request::{GrantRequest, InteractStart};
 use ymir::types::gnap::grant_response::GrantResponse;
-use ymir::types::gnap::{GRMethod, RefBody};
+use ymir::types::gnap::RefBody;
 use ymir::types::vcs::VcType;
 
 use crate::services::gatekeeper::GateKeeperTrait;
@@ -51,18 +51,18 @@ pub trait CoreGatekeeperTrait: Send + Sync + 'static {
 
         let _iss_model = self.repo().issuing().create(iss_model).await?;
 
-        if int_model.start.contains(&"oidc4vp".to_string()) {
+        if int_model.start.contains(&InteractStart::Oidc4VP.to_string()) {
             let n_ver_model = self.verifier().start_vp(&int_model.id)?;
 
             let ver_model = self.repo().verification().create(n_ver_model).await?;
 
             let uri = self.verifier().generate_verification_uri(ver_model);
 
-            let response = GrantResponse::new(GRMethod::Oidc, &int_model, Some(uri));
+            let response = GrantResponse::new(InteractStart::Oidc4VP, &int_model, Some(uri));
 
             return Ok(response);
         }
-        if int_model.start.contains(&"cross-user".to_string()) {
+        if int_model.start.contains(&InteractStart::CrossUser.to_string()) {
             return self.gatekeeper().manage_cross_user(int_model);
         }
         let error = Errors::format_new(BadFormat::Received, "Interact method not supported");
@@ -73,7 +73,7 @@ pub trait CoreGatekeeperTrait: Send + Sync + 'static {
         &self,
         cont_id: String,
         payload: RefBody,
-        token: String,
+        token: String
     ) -> anyhow::Result<String> {
         let int_model = self.repo().interaction().get_by_cont_id(&cont_id).await?;
         let mut iss_model = self.repo().issuing().get_by_id(&int_model.id).await?;
