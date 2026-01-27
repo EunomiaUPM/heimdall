@@ -9,23 +9,39 @@ services:
     cap_add:
       - IPC_LOCK
     volumes:
-      - ./vault/consumer/config:/vault/config
-      - ./vault/consumer/data:/vault/file
+      - ./vault/config:/vault/config
+      - ./vault/data:/vault/file
     environment:
-      VAULT_CACERT: /vault/config/root-ca.pem
+#      VAULT_CACERT: /vault/config/root-ca.pem
+#      VAULT_LOCAL_CONFIG: >
+#        {
+#          "storage": { "file": { "path": "/vault/file" } },
+#          "listener": [{
+#            "tcp": {
+#              "address": "0.0.0.0:8200",
+#              "tls_cert_file": "/vault/config/vault-cert.pem",
+#              "tls_key_file": "/vault/config/vault-key.pem",
+#              "tls_client_ca_file": "/vault/config/vault-ca.pem"
+#            }
+#          }],
+#          "ui": true,
+#          "api_addr": "https://127.0.0.1:8200",
+#          "default_lease_ttl": "168h",
+#          "max_lease_ttl": "720h"
+#        }
       VAULT_LOCAL_CONFIG: >
         {
           "storage": { "file": { "path": "/vault/file" } },
           "listener": [{
             "tcp": {
               "address": "0.0.0.0:8200",
-              "tls_cert_file": "/vault/config/vault-cert.pem",
-              "tls_key_file": "/vault/config/vault-key.pem",
-              "tls_client_ca_file": "/vault/config/vault-ca.pem"
+              "tls_disable": 1
+
+
             }
           }],
           "ui": true,
-          "api_addr": "https://127.0.0.1:8200",
+          "api_addr": "http://127.0.0.1:8200",
           "default_lease_ttl": "168h",
           "max_lease_ttl": "720h"
         }
@@ -36,8 +52,8 @@ services:
     image: "postgres"
     restart: always
     environment:
-      POSTGRES_PASSWORD: completar
-      POSTGRES_USER: completar
-      POSTGRES_DB: completar
+      POSTGRES_PASSWORD: ds_authority
+      POSTGRES_USER: ds_authority
+      POSTGRES_DB: ds_authority
     ports:
       - "1450:5432"

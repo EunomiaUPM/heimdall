@@ -20,6 +20,9 @@ use std::sync::Arc;
 
 use clap::{Parser, Subcommand};
 use tracing::debug;
+use ymir::config::traits::HostsConfigTrait;
+use ymir::config::types::HostType;
+use ymir::data::seeders::MinionSeeder;
 use ymir::services::vault::vault_rs::VaultService;
 use ymir::services::vault::VaultTrait;
 
@@ -32,19 +35,19 @@ use crate::setup::db_migrations::AuthorityMigration;
 #[command(version = "0.1")]
 struct AuthorityCli {
     #[command(subcommand)]
-    command: AuthorityCliCommands
+    command: AuthorityCliCommands,
 }
 
 #[derive(Parser, Debug, PartialEq)]
 pub struct AuthCliArgs {
     #[arg(short, long)]
-    env_file: String
+    env_file: String,
 }
 
 #[derive(Subcommand, Debug, PartialEq)]
 pub enum AuthorityCliCommands {
     Start(AuthCliArgs),
-    Setup(AuthCliArgs)
+    Setup(AuthCliArgs),
 }
 
 pub struct AuthorityCommands;
@@ -64,9 +67,15 @@ impl AuthorityCommands {
             }
             AuthorityCliCommands::Setup(args) => {
                 let config = extract_env_config(args.env_file)?;
+                vault.write_all_secrets(None).await?;
                 let db_connection = vault.get_db_connection(&config).await;
-                vault.write_all_secrets().await?;
-                AuthorityMigration::run(db_connection).await?
+                AuthorityMigration::run(&db_connection).await?;
+
+                let did = config.did_config.did;
+                let url = config.hosts.get_host(HostType::Http);
+                MinionSeeder::seed(&db_connection, did, url).await?
+
+
             }
         }
 

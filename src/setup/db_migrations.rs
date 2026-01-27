@@ -33,8 +33,8 @@ impl MigratorTrait for AuthorityMigration {
 }
 
 impl AuthorityMigration {
-    pub async fn run(db_connection: DatabaseConnection) -> anyhow::Result<()> {
-        Self::refresh(&db_connection).await?;
+    pub async fn run(db_connection: &DatabaseConnection) -> anyhow::Result<()> {
+        Self::refresh(db_connection).await?;
         Ok(())
     }
 }
