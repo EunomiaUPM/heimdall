@@ -15,7 +15,8 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-pub mod postgres;
 mod repo_trait;
-mod subtraits;
+mod service;
+
 pub use repo_trait::RepoTrait;
+pub use service::RepoForSql;

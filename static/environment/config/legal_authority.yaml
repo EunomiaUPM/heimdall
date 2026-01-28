@@ -1,12 +1,24 @@
-host:
+# ==========================
+# COMMON ANCHORS
+# ==========================
+http_host: &http_host
   protocol: "http"
   url: "127.0.0.1"
   port: "1500"
 
+# ==========================
+# CONFIG
+# ==========================
+
+hosts:
+  http: *http_host
+  grpc: null
+  graphql: null
+
 is_local: true
 
 db_config:
-  type: Postgres
+  db_type: Postgres
   url: "127.0.0.1"
   port: "1450"
 

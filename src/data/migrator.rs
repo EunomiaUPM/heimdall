@@ -15,18 +15,22 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-use serde::{Deserialize, Serialize};
+use sea_orm_migration::{MigrationTrait, MigratorTrait};
+use ymir::data::migrations::{
+    m20250403_094651_issuing, m20250403_094651_minions, m20250403_094651_recv_interaction,
+    m20250403_094651_recv_verification, m20250403_094651_vc_request
+};
 
-use crate::types::vcs::input_descriptor::InputDescriptor;
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct VPDef {
-    pub id: String,
-    pub input_descriptors: Vec<InputDescriptor>
-}
-
-impl VPDef {
-    pub fn new(id: String, vc_type: String) -> Self {
-        VPDef { id, input_descriptors: vec![InputDescriptor::new(vc_type)] }
+pub struct Migrator;
+#[async_trait::async_trait]
+impl MigratorTrait for Migrator {
+    fn migrations() -> Vec<Box<dyn MigrationTrait>> {
+        vec![
+            Box::new(m20250403_094651_vc_request::Migration),
+            Box::new(m20250403_094651_recv_interaction::Migration),
+            Box::new(m20250403_094651_recv_verification::Migration),
+            Box::new(m20250403_094651_issuing::Migration),
+            Box::new(m20250403_094651_minions::Migration),
+        ]
     }
 }

@@ -20,21 +20,19 @@ use std::{env, fs};
 
 use serde::{Deserialize, Serialize};
 use tracing::debug;
+use ymir::config::traits::{ApiConfigTrait, DatabaseConfigTrait};
+use ymir::config::types::{ApiConfig, CommonHostsConfig, DatabaseConfig};
+use ymir::types::dids::did_config::DidConfig;
+use ymir::types::issuing::StuffToIssue;
+use ymir::types::verifying::RequirementsToVerify;
+use ymir::types::wallet::WalletConfig;
 
 use super::CoreConfigTrait;
-use crate::setup::database::{DatabaseConfig, DbConnectionTrait};
-use crate::types::api::ApiConfig;
-use crate::types::enums::role::AuthorityRole;
-use crate::types::host::{HostConfig, HostConfigTrait};
-use crate::types::issuing::StuffToIssue;
-use crate::types::secrets::DbSecrets;
-use crate::types::verifying::RequirementsToVerify;
-use crate::types::wallet::{DidConfig, WalletConfig};
-use crate::utils::read;
+use crate::types::role::AuthorityRole;
 
 #[derive(Deserialize, Serialize, Clone, Debug)]
 pub struct CoreApplicationConfig {
-    pub host: HostConfig,
+    pub hosts: CommonHostsConfig,
     pub is_local: bool,
     pub db_config: DatabaseConfig,
     pub wallet_config: Option<WalletConfig>,
@@ -55,26 +53,24 @@ impl CoreApplicationConfig {
     }
 }
 
+impl CoreApplicationConfig {
+    pub fn get_did(&self) -> String { self.did_config.did.clone() }
+}
+
+impl DatabaseConfigTrait for CoreApplicationConfig {
+    fn db(&self) -> &DatabaseConfig { &self.db_config }
+}
+
+impl ApiConfigTrait for CoreApplicationConfig {
+    fn api(&self) -> &ApiConfig { &self.api }
+}
+
 impl CoreConfigTrait for CoreApplicationConfig {
-    fn get_full_db(&self, db_secrets: DbSecrets) -> String {
-        self.db_config.get_full_db(db_secrets)
-    }
-    fn get_host(&self) -> String { self.host.get_host() }
+    fn hosts(&self) -> &CommonHostsConfig { &self.hosts }
 
     fn is_local(&self) -> bool { self.is_local }
 
-    fn get_weird_port(&self) -> String {
-        let host = self.host.clone();
-        match host.port {
-            Some(data) => {
-                format!(":{}", data)
-            }
-            None => "".to_string()
-        }
-    }
     fn get_role(&self) -> AuthorityRole { self.role.clone() }
 
-    fn get_openapi_json(&self) -> anyhow::Result<String> { read(&self.api.openapi_path) }
-    fn get_api_path(&self) -> String { format!("/api/{}", self.api.version) }
     fn is_wallet_active(&self) -> bool { self.wallet_config.is_some() }
 }

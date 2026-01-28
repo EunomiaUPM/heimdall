@@ -20,12 +20,15 @@ use std::sync::Arc;
 
 use clap::{Parser, Subcommand};
 use tracing::debug;
+use ymir::config::traits::HostsConfigTrait;
+use ymir::config::types::HostType;
+use ymir::data::seeders::MinionSeeder;
+use ymir::services::vault::vault_rs::VaultService;
+use ymir::services::vault::VaultTrait;
 
 use super::env_extraction::extract_env_config;
-use crate::services::vault::vault_rs::VaultService;
-use crate::services::vault::VaultTrait;
 use crate::setup::application::AuthorityApplication;
-use crate::setup::database::db_migrations::AuthorityMigration;
+use crate::setup::db_migrations::AuthorityMigration;
 
 #[derive(Parser, Debug)]
 #[command(name = "Rainbow Dataspace Authority Server")]
@@ -63,10 +66,14 @@ impl AuthorityCommands {
                 AuthorityApplication::run(config, vault).await?
             }
             AuthorityCliCommands::Setup(args) => {
+                vault.write_all_secrets(None).await?;
                 let config = extract_env_config(args.env_file)?;
                 let db_connection = vault.get_db_connection(&config).await;
-                vault.write_all_secrets().await?;
-                AuthorityMigration::run(db_connection).await?
+                AuthorityMigration::run(&db_connection).await?;
+
+                let did = config.did_config.did;
+                let url = config.hosts.get_host(HostType::Http);
+                MinionSeeder::seed(&db_connection, did, url).await?
             }
         }
 

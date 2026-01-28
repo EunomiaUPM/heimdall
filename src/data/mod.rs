@@ -15,7 +15,6 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-pub mod entities;
-mod into_active_trait;
-pub mod migrations;
-pub use into_active_trait::IntoActiveSet;
+mod migrator;
+
+pub use migrator::Migrator;

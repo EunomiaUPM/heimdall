@@ -20,10 +20,9 @@
 use std::sync::Arc;
 
 use async_trait::async_trait;
+use ymir::core_traits::CoreWalletTrait;
 
-use super::{
-    CoreApproverTrait, CoreGatekeeperTrait, CoreIssuerTrait, CoreVerifierTrait, CoreWalletTrait
-};
+use super::{CoreApproverTrait, CoreGatekeeperTrait, CoreIssuerTrait, CoreVerifierTrait};
 use crate::config::CoreConfigTrait;
 
 #[async_trait]

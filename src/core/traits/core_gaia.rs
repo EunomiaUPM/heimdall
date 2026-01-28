@@ -18,10 +18,10 @@
 use std::sync::Arc;
 
 use async_trait::async_trait;
+use ymir::services::issuer::IssuerTrait;
+use ymir::services::verifier::VerifierTrait;
 
-use crate::services::issuer::IssuerTrait;
 use crate::services::repo::RepoTrait;
-use crate::services::verifier::VerifierTrait;
 
 #[async_trait]
 pub trait GaiaCoreTrait: Send + Sync + 'static {

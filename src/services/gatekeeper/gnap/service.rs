@@ -23,20 +23,22 @@ use async_trait::async_trait;
 use axum::http::header::{ACCEPT, CONTENT_TYPE};
 use axum::http::HeaderMap;
 use tracing::{error, info};
+use ymir::config::traits::HostsConfigTrait;
+use ymir::config::types::HostType;
+use ymir::data::entities::{recv_interaction, vc_request};
+use ymir::errors::{ErrorLogTrait, Errors};
+use ymir::services::client::ClientTrait;
+use ymir::types::errors::BadFormat;
+use ymir::types::gnap::grant_request::{GrantRequest, Interact4GR, InteractStart};
+use ymir::types::gnap::grant_response::GrantResponse;
+use ymir::types::gnap::{ApprovedCallbackBody, RejectedCallbackBody};
+use ymir::types::http::Body;
+use ymir::types::vcs::VcType;
+use ymir::utils::create_opaque_token;
 
 use super::config::{GnapConfig, GnapConfigTrait};
-use crate::data::entities::{interaction, request};
-use crate::errors::{ErrorLogTrait, Errors};
-use crate::services::client::ClientTrait;
 use crate::services::gatekeeper::GateKeeperTrait;
-use crate::types::enums::errors::BadFormat;
-use crate::types::enums::request::Body;
-use crate::types::enums::role::AuthorityRole;
-use crate::types::enums::vc_type::VcType;
-use crate::types::gnap::{
-    CallbackBody, GrantRequest, GrantResponse, Interact4GR, RejectedCallbackBody
-};
-use crate::utils::create_opaque_token;
+use crate::types::role::AuthorityRole;
 
 pub struct GnapService {
     config: GnapConfig,
@@ -54,31 +56,47 @@ impl GateKeeperTrait for GnapService {
     fn start(
         &self,
         payload: GrantRequest
-    ) -> anyhow::Result<(request::NewModel, interaction::NewModel)> {
+    ) -> anyhow::Result<(vc_request::NewModel, recv_interaction::NewModel)> {
         info!("Managing vc request");
 
         let interact = self.validate_acc_req(&payload)?;
         let id = uuid::Uuid::new_v4().to_string();
         let client = payload.client;
         let cert = client.key.cert;
-        let participant_slug = client.class_id.unwrap_or("Slug".to_string());
-        let vc_type = VcType::from_str(&payload.access_token.access.r#type)?;
+        let participant_slug = client.class_id.unwrap_or("Unknown".to_string());
 
+        let vc_type = payload.access_token.access.datatypes.as_ref().ok_or_else(|| {
+            let error =
+                Errors::format_new(BadFormat::Received, "No field datatypes in the request");
+            error!("{}", error.log());
+            error
+        })?;
+        let vc_type = vc_type.first().ok_or_else(|| {
+            let error = Errors::format_new(BadFormat::Received, "Datatypes are empty");
+            error!("{}", error.log());
+            error
+        })?;
+
+        let vc_type = VcType::from_str(vc_type)?;
         self.validate_vc_to_issue(&vc_type)?;
 
-        let new_request_model = request::NewModel {
+        let new_request_model = vc_request::NewModel {
             id: id.clone(),
             participant_slug,
             cert,
             vc_type: vc_type.to_string()
         };
 
-        let host_url = format!("{}{}/gate", self.config.get_host(), self.config.get_api_path());
+        let host_url = format!(
+            "{}{}/gate",
+            self.config.hosts().get_host(HostType::Http),
+            self.config.get_api_path()
+        );
         let continue_endpoint = format!("{}/continue", &host_url);
         let grant_endpoint = format!("{}/access", &host_url);
         let continue_token = create_opaque_token();
 
-        let new_interaction_model = interaction::NewModel {
+        let new_recv_interaction_model = recv_interaction::NewModel {
             id: id.clone(),
             start: interact.start,
             method: interact.finish.method,
@@ -91,7 +109,7 @@ impl GateKeeperTrait for GnapService {
             continue_token
         };
 
-        Ok((new_request_model, new_interaction_model))
+        Ok((new_request_model, new_recv_interaction_model))
     }
 
     fn validate_acc_req(&self, payload: &GrantRequest) -> anyhow::Result<Interact4GR> {
@@ -152,13 +170,14 @@ impl GateKeeperTrait for GnapService {
                     bail!(error)
                 }
             }
+            // AuthorityRole::AllRoles => {}
         }
         Ok(())
     }
 
     fn validate_cont_req(
         &self,
-        int_model: &interaction::Model,
+        int_model: &recv_interaction::Model,
         int_ref: String,
         token: String
     ) -> anyhow::Result<()> {
@@ -183,7 +202,10 @@ impl GateKeeperTrait for GnapService {
         }
         Ok(())
     }
-    async fn end_verification(&self, model: interaction::Model) -> anyhow::Result<Option<String>> {
+    async fn end_verification(
+        &self,
+        model: recv_interaction::Model
+    ) -> anyhow::Result<Option<String>> {
         info!("Ending verification");
 
         if model.method == "redirect" {
@@ -199,7 +221,7 @@ impl GateKeeperTrait for GnapService {
             headers.insert(CONTENT_TYPE, "application/json".parse()?);
             headers.insert(ACCEPT, "application/json".parse()?);
 
-            let body = CallbackBody { interact_ref: model.interact_ref, hash: model.hash };
+            let body = ApprovedCallbackBody { interact_ref: model.interact_ref, hash: model.hash };
             let body = serde_json::to_value(body)?;
             self.client.post(&url, Some(headers), Body::Json(body)).await?;
 
@@ -217,14 +239,14 @@ impl GateKeeperTrait for GnapService {
     async fn apprv_dny_req(
         &self,
         approve: bool,
-        req_model: &mut request::Model,
-        int_model: &interaction::Model
+        req_model: &mut vc_request::Model,
+        int_model: &recv_interaction::Model
     ) -> anyhow::Result<()> {
         let body = match approve {
             true => {
                 info!("Approving petition to obtain a VC");
                 req_model.status = "Approved".to_string();
-                let body = CallbackBody {
+                let body = ApprovedCallbackBody {
                     interact_ref: int_model.interact_ref.clone(),
                     hash: int_model.hash.clone()
                 };
@@ -264,15 +286,10 @@ impl GateKeeperTrait for GnapService {
         Ok(())
     }
 
-    fn manage_cross_user(&self, model: interaction::Model) -> anyhow::Result<GrantResponse> {
+    fn manage_cross_user(&self, model: recv_interaction::Model) -> anyhow::Result<GrantResponse> {
         info!("Managing cross-user request");
         if self.config.is_cert_allowed() {
-            let response = GrantResponse::default4cross_user(
-                model.id,
-                model.continue_endpoint,
-                model.continue_token,
-                model.as_nonce
-            );
+            let response = GrantResponse::new(InteractStart::CrossUser, &model, None);
             Ok(response)
         } else {
             let error = Errors::unauthorized_new("Not able to allow authorization using a cert");

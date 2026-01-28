@@ -20,19 +20,19 @@
 use std::sync::Arc;
 
 use tracing::error;
+use ymir::core_traits::CoreWalletTrait;
+use ymir::errors::{ErrorLogTrait, Errors};
+use ymir::services::issuer::IssuerTrait;
+use ymir::services::verifier::VerifierTrait;
+use ymir::services::wallet::WalletTrait;
 
 use crate::config::CoreConfigTrait;
 use crate::core::traits::{
-    CoreApproverTrait, CoreGatekeeperTrait, CoreIssuerTrait, CoreTrait, CoreVerifierTrait,
-    CoreWalletTrait
+    CoreApproverTrait, CoreGatekeeperTrait, CoreIssuerTrait, CoreTrait, CoreVerifierTrait
 };
-use crate::errors::{ErrorLogTrait, Errors};
 use crate::services::gatekeeper::GateKeeperTrait;
-use crate::services::issuer::IssuerTrait;
 use crate::services::repo::RepoTrait;
 use crate::services::vcs_builder::VcBuilderTrait;
-use crate::services::verifier::VerifierTrait;
-use crate::services::wallet::WalletTrait;
 
 pub struct Core {
     wallet: Option<Arc<dyn WalletTrait>>,
@@ -62,8 +62,6 @@ impl CoreTrait for Core {
     fn config(&self) -> Arc<dyn CoreConfigTrait> { self.config.clone() }
 }
 impl CoreVerifierTrait for Core {
-    fn gatekeeper(&self) -> Arc<dyn GateKeeperTrait> { self.gatekeeper.clone() }
-
     fn verifier(&self) -> Arc<dyn VerifierTrait> { self.verifier.clone() }
 
     fn repo(&self) -> Arc<dyn RepoTrait> { self.repo.clone() }
@@ -101,6 +99,4 @@ impl CoreWalletTrait for Core {
             panic!("module wallet not implemented");
         })
     }
-
-    fn repo(&self) -> Arc<dyn RepoTrait> { self.repo.clone() }
 }

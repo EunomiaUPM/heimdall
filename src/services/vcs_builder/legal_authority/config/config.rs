@@ -15,11 +15,12 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
+use ymir::types::issuing::VcModel;
+use ymir::types::vcs::W3cDataModelVersion;
+
 use crate::config::CoreApplicationConfig;
 use crate::services::vcs_builder::min_builder_config::MinConfig;
 use crate::services::vcs_builder::ConfigMinTrait;
-use crate::types::enums::data_model::W3cDataModelVersion;
-use crate::types::issuing::VcModel;
 
 pub struct LegalAuthorityConfig {
     min_config: MinConfig

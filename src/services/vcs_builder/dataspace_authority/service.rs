@@ -20,26 +20,26 @@ use std::str::FromStr;
 use anyhow::bail;
 use serde_json::Value;
 use tracing::{error, info};
+use ymir::data::entities::{issuing, vc_request};
+use ymir::errors::{ErrorLogTrait, Errors};
+use ymir::types::vcs::vc_specs::dataspace::DataSpaceParticipant;
+use ymir::types::vcs::VcType;
+use ymir::utils::get_from_opt;
 
 use super::super::VcBuilderTrait;
-use crate::data::entities::{issuing, request};
-use crate::errors::{ErrorLogTrait, Errors};
 use crate::services::vcs_builder::dataspace_authority::config::{
     DataSpaceAuthorityConfig, DataSpaceAuthorityConfigTrait
 };
-use crate::types::enums::vc_type::VcType;
-use crate::types::vcs::dataspace::DataSpaceParticipant;
-use crate::utils::get_from_opt;
 
-pub struct DataSpaceAuthorityBuilder {
+pub struct DataSpaceAuthorityVcBuilder {
     config: DataSpaceAuthorityConfig
 }
 
-impl DataSpaceAuthorityBuilder {
+impl DataSpaceAuthorityVcBuilder {
     pub fn new(config: DataSpaceAuthorityConfig) -> Self { Self { config } }
 }
 
-impl VcBuilderTrait for DataSpaceAuthorityBuilder {
+impl VcBuilderTrait for DataSpaceAuthorityVcBuilder {
     fn build_vc(&self, model: &issuing::Model) -> anyhow::Result<Value> {
         let vc_type = VcType::from_str(&model.vc_type)?;
 
@@ -67,7 +67,7 @@ impl VcBuilderTrait for DataSpaceAuthorityBuilder {
         self.just_build(&model, credential_subject, &self.config)
     }
 
-    fn gather_data(&self, _req_model: &request::Model) -> anyhow::Result<String> {
+    fn gather_data(&self, _req_model: &vc_request::Model) -> anyhow::Result<String> {
         Ok("WE DONT NEED DATA".to_string())
     }
 }

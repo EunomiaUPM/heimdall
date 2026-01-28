@@ -17,4 +17,4 @@
 
 pub mod config;
 mod service;
-pub use service::DataSpaceAuthorityBuilder;
+pub use service::DataSpaceAuthorityVcBuilder;

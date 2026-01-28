@@ -15,8 +15,8 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-use crate::types::enums::data_model::W3cDataModelVersion;
-use crate::types::issuing::VcModel;
+use ymir::types::issuing::VcModel;
+use ymir::types::vcs::W3cDataModelVersion;
 
 pub trait ConfigMinTrait {
     fn get_vc_model(&self) -> &VcModel;

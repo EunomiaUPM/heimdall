@@ -18,14 +18,14 @@
 use std::sync::Arc;
 
 use async_trait::async_trait;
-
-use crate::services::issuer::IssuerTrait;
-use crate::services::repo::RepoTrait;
-use crate::services::vcs_builder::VcBuilderTrait;
-use crate::types::issuing::{
+use ymir::services::issuer::IssuerTrait;
+use ymir::types::issuing::{
     AuthServerMetadata, CredentialRequest, GiveVC, IssuerMetadata, IssuingToken, TokenRequest,
     VCCredOffer, WellKnownJwks
 };
+
+use crate::services::repo::RepoTrait;
+use crate::services::vcs_builder::VcBuilderTrait;
 
 #[async_trait]
 pub trait CoreIssuerTrait: Send + Sync + 'static {

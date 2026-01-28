@@ -15,16 +15,14 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-use crate::types::enums::role::AuthorityRole;
-use crate::types::secrets::DbSecrets;
+use ymir::config::traits::{ApiConfigTrait, DatabaseConfigTrait};
+use ymir::config::types::CommonHostsConfig;
 
-pub trait CoreConfigTrait: Send + Sync + 'static {
-    fn get_full_db(&self, db_secrets: DbSecrets) -> String;
-    fn get_host(&self) -> String;
+use crate::types::role::AuthorityRole;
+
+pub trait CoreConfigTrait: ApiConfigTrait + DatabaseConfigTrait + Send + Sync + 'static {
+    fn hosts(&self) -> &CommonHostsConfig;
     fn is_local(&self) -> bool;
-    fn get_weird_port(&self) -> String;
     fn get_role(&self) -> AuthorityRole;
-    fn get_openapi_json(&self) -> anyhow::Result<String>;
-    fn get_api_path(&self) -> String;
     fn is_wallet_active(&self) -> bool;
 }
