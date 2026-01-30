@@ -34,13 +34,14 @@ use crate::types::role::AuthorityRole;
 pub struct CoreApplicationConfig {
     pub hosts: CommonHostsConfig,
     pub is_local: bool,
+    pub is_tls: bool,
     pub db_config: DatabaseConfig,
     pub wallet_config: Option<WalletConfig>,
     pub did_config: DidConfig,
     pub role: AuthorityRole,
     pub api: ApiConfig,
     pub stuff_to_issue: StuffToIssue,
-    pub requirements_to_verify: RequirementsToVerify
+    pub requirements_to_verify: RequirementsToVerify,
 }
 
 impl CoreApplicationConfig {
@@ -54,23 +55,40 @@ impl CoreApplicationConfig {
 }
 
 impl CoreApplicationConfig {
-    pub fn get_did(&self) -> String { self.did_config.did.clone() }
+    pub fn get_did(&self) -> String {
+        self.did_config.did.clone()
+    }
 }
 
 impl DatabaseConfigTrait for CoreApplicationConfig {
-    fn db(&self) -> &DatabaseConfig { &self.db_config }
+    fn db(&self) -> &DatabaseConfig {
+        &self.db_config
+    }
 }
 
 impl ApiConfigTrait for CoreApplicationConfig {
-    fn api(&self) -> &ApiConfig { &self.api }
+    fn api(&self) -> &ApiConfig {
+        &self.api
+    }
 }
 
 impl CoreConfigTrait for CoreApplicationConfig {
-    fn hosts(&self) -> &CommonHostsConfig { &self.hosts }
+    fn hosts(&self) -> &CommonHostsConfig {
+        &self.hosts
+    }
 
-    fn is_local(&self) -> bool { self.is_local }
+    fn is_local(&self) -> bool {
+        self.is_local
+    }
+    fn is_tls(&self) -> bool {
+        self.is_tls
+    }
 
-    fn get_role(&self) -> AuthorityRole { self.role.clone() }
+    fn get_role(&self) -> AuthorityRole {
+        self.role.clone()
+    }
 
-    fn is_wallet_active(&self) -> bool { self.wallet_config.is_some() }
+    fn is_wallet_active(&self) -> bool {
+        self.wallet_config.is_some()
+    }
 }

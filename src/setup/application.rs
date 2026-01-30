@@ -45,7 +45,7 @@ use crate::services::repo::RepoForSql;
 use crate::services::vcs_builder::dataspace_authority::config::DataSpaceAuthorityConfig;
 use crate::services::vcs_builder::dataspace_authority::DataSpaceAuthorityVcBuilder;
 use crate::services::vcs_builder::legal_authority::{
-    config::LegalAuthorityConfig, LegalAuthorityVcBuilder
+    config::LegalAuthorityConfig, LegalAuthorityVcBuilder,
 };
 use crate::services::vcs_builder::VcBuilderTrait;
 use crate::types::role::AuthorityRole;
@@ -99,7 +99,7 @@ impl AuthorityApplication {
                 let walt_id_config = WaltIdConfig::from(config.clone());
                 Some(Arc::new(WaltIdService::new(walt_id_config, client.clone(), vault)))
             }
-            false => None
+            false => None,
         };
 
         // CORE
@@ -111,7 +111,7 @@ impl AuthorityApplication {
 
     pub async fn run_basic(
         config: CoreApplicationConfig,
-        vault: Arc<VaultService>
+        vault: Arc<VaultService>,
     ) -> anyhow::Result<()> {
         let router = Self::create_router(&config, vault).await;
 
@@ -143,7 +143,7 @@ impl AuthorityApplication {
     }
     pub async fn run_tls(
         config: &CoreApplicationConfig,
-        vault: Arc<VaultService>
+        vault: Arc<VaultService>,
     ) -> anyhow::Result<()> {
         let cert = expect_from_env("VAULT_APP_ROOT_CLIENT_KEY");
         let pkey = expect_from_env("VAULT_APP_CLIENT_KEY ");
@@ -156,7 +156,7 @@ impl AuthorityApplication {
 
         let tls_config = RustlsConfig::from_pem(
             cert.data().as_bytes().to_vec(),
-            pkey.data().as_bytes().to_vec()
+            pkey.data().as_bytes().to_vec(),
         )
         .await?;
 
@@ -171,14 +171,12 @@ impl AuthorityApplication {
     }
     pub async fn run(
         config: CoreApplicationConfig,
-        vault: Arc<VaultService>
+        vault: Arc<VaultService>,
     ) -> anyhow::Result<()> {
-        match Self::run_tls(&config, vault.clone()).await {
-            Ok(_) => Ok(()),
-            Err(err) => {
-                warn!("TLS failed: {:?}, falling back to basic server", err);
-                Self::run_basic(config, vault).await
-            }
+        if config.is_tls {
+            Self::run_tls(&config, vault.clone()).await
+        } else {
+            Self::run_basic(config, vault).await
         }
     }
 }

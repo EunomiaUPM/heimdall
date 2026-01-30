@@ -23,6 +23,7 @@ use crate::types::role::AuthorityRole;
 pub trait CoreConfigTrait: ApiConfigTrait + DatabaseConfigTrait + Send + Sync + 'static {
     fn hosts(&self) -> &CommonHostsConfig;
     fn is_local(&self) -> bool;
+    fn is_tls(&self) -> bool;
     fn get_role(&self) -> AuthorityRole;
     fn is_wallet_active(&self) -> bool;
 }
