@@ -29,8 +29,7 @@ pub enum AuthorityRole {
     LegalAuthority,
     ClearingHouse,
     ClearingHouseProxy,
-    DataSpaceAuthority
-    // AllRoles,
+    DataSpaceAuthority // AllRoles,
 }
 
 impl FromStr for AuthorityRole {
@@ -58,8 +57,7 @@ impl fmt::Display for AuthorityRole {
             AuthorityRole::LegalAuthority => "LegalAuthority",
             AuthorityRole::ClearingHouse => "ClearingHouse",
             AuthorityRole::ClearingHouseProxy => "ClearingHouseProxy",
-            AuthorityRole::DataSpaceAuthority => "DataSpaceAuthority"
-            // AuthorityRole::AllRoles => "AllRoles",
+            AuthorityRole::DataSpaceAuthority => "DataSpaceAuthority" // AuthorityRole::AllRoles => "AllRoles",
         };
 
         write!(f, "{s}")

@@ -169,8 +169,7 @@ impl GateKeeperTrait for GnapService {
                     error!("{}", error.log());
                     bail!(error)
                 }
-            }
-            // AuthorityRole::AllRoles => {}
+            } // AuthorityRole::AllRoles => {}
         }
         Ok(())
     }
