@@ -1,0 +1,68 @@
+version: "3.8"
+
+services:
+  heimdall-vault:
+    image: hashicorp/vault:1.21
+    container_name: "heimdall-vault"
+    ports:
+      - "8200:8200"
+    cap_add:
+      - IPC_LOCK
+    volumes:
+      - ./vault/config:/vault/config
+      - ./vault/data:/vault/file
+    environment:
+#      VAULT_CACERT: /vault/config/root-ca.pem
+#      VAULT_LOCAL_CONFIG: >
+#        {
+#          "storage": { "file": { "path": "/vault/file" } },
+#          "listener": [{
+#            "tcp": {
+#              "address": "0.0.0.0:8200",
+#              "tls_cert_file": "/vault/config/vault-cert.pem",
+#              "tls_key_file": "/vault/config/vault-key.pem",
+#              "tls_client_ca_file": "/vault/config/vault-ca.pem"
+#            }
+#          }],
+#          "ui": true,
+#          "api_addr": "https://127.0.0.1:8200",
+#          "default_lease_ttl": "168h",
+#          "max_lease_ttl": "720h"
+#        }
+      VAULT_ADDR: http://127.0.0.1:8200
+      VAULT_LOCAL_CONFIG: >
+        {
+          "storage": { "file": { "path": "/vault/file" } },
+          "listener": [{
+            "tcp": {
+              "address": "0.0.0.0:8200",
+              "tls_disable": 1
+
+
+            }
+          }],
+          "ui": true,
+          "api_addr": "http://127.0.0.1:8200",
+          "default_lease_ttl": "168h",
+          "max_lease_ttl": "720h"
+        }
+    command: server
+
+  heimdall-db:
+    container_name: "heimdall-db"
+    image: "postgres"
+    restart: always
+    environment:
+      POSTGRES_PASSWORD: ds_authority
+      POSTGRES_USER: ds_authority
+      POSTGRES_DB: ds_authority
+    ports:
+      - "1450:5432"
+
+  authority:
+    container_name: "heimdall"
+    image: "rmenendez8/heimdall:latest"
+    env_file:
+      - .env.dummy
+    ports:
+      - "1500:1500"
