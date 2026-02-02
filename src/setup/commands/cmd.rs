@@ -66,8 +66,12 @@ impl AuthorityCommands {
                 AuthorityApplication::run(config, vault).await?
             }
             AuthorityCliCommands::Setup(args) => {
-                vault.write_all_secrets(None).await?;
                 let config = extract_env_config(args.env_file)?;
+                if config.is_tls {
+                    vault.write_all_secrets(None).await?;
+                } else {
+                    vault.write_local_secrets(None).await?;
+                }
                 let db_connection = vault.get_db_connection(&config).await;
                 AuthorityMigration::run(&db_connection).await?;
 

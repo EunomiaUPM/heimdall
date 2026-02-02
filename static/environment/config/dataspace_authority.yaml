@@ -3,7 +3,7 @@
 # ==========================
 http_host: &http_host
   protocol: "http"
-  url: "127.0.0.1"
+  url: "host.docker.internal"
   port: "1500"
 
 # ==========================
@@ -20,8 +20,8 @@ is_tls: false
 
 db_config:
   db_type: Postgres
-  url: "127.0.0.1"
-  port: "1450"
+  url: "heimdall-db"
+  port: "5432"
 
 wallet_config:
   api:
@@ -41,13 +41,13 @@ role: DataSpaceAuthority
 
 api:
   version: "v1"
-  openapi_path: "static/specs/openapi/openapi.json"
+  openapi_path: "/static/specs/openapi/openapi.json"
 
 stuff_to_issue:
   vc_model: JwtVc
   w3c_data_model: V1
-  dataspace_id: null
-  federated_catalog_uri: null
+  dataspace_id: "RainbowDataspace"
+  federated_catalog_uri: "http://uri_to_federated_catalog"
 
 requirements_to_verify:
   is_cert_allowed: true
