@@ -15,7 +15,9 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-pub trait DataSpaceAuthorityConfigTrait {
+use crate::services::vcs_builder::BuilderConfigDefaultTrait;
+
+pub trait DataSpaceAuthorityConfigTrait: BuilderConfigDefaultTrait {
     fn get_dataspace_id(&self) -> &str;
     fn get_catalog(&self) -> &str;
 }

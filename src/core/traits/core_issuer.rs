@@ -43,9 +43,11 @@ pub trait CoreIssuerTrait: Send + Sync + 'static {
         };
         Ok(data)
     }
-    fn issuer_metadata(&self) -> IssuerMetadata { self.issuer().get_issuer_data() }
+    fn issuer_metadata(&self) -> IssuerMetadata { self.issuer().get_issuer_data(None) }
 
-    fn oauth_server_metadata(&self) -> AuthServerMetadata { self.issuer().get_oauth_server_data() }
+    fn oauth_server_metadata(&self) -> AuthServerMetadata {
+        self.issuer().get_oauth_server_data(None)
+    }
 
     async fn jwks(&self) -> anyhow::Result<WellKnownJwks> { self.issuer().get_jwks_data().await }
 

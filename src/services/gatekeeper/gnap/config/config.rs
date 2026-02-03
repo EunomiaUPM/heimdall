@@ -32,7 +32,7 @@ pub struct GnapConfig {
 impl From<CoreApplicationConfig> for GnapConfig {
     fn from(config: CoreApplicationConfig) -> GnapConfig {
         let api_path = config.get_api_version();
-        let is_cert_allowed = config.requirements_to_verify.is_cert_allowed;
+        let is_cert_allowed = config.verify_req_config.is_cert_allowed;
         GnapConfig { hosts: config.hosts().clone(), role: config.role, api_path, is_cert_allowed }
     }
 }

@@ -24,7 +24,7 @@ use ymir::config::traits::{ApiConfigTrait, DatabaseConfigTrait};
 use ymir::config::types::{ApiConfig, CommonHostsConfig, DatabaseConfig};
 use ymir::types::dids::did_config::DidConfig;
 use ymir::types::issuing::StuffToIssue;
-use ymir::types::verifying::RequirementsToVerify;
+use ymir::types::verifying::VerifyReqConfig;
 use ymir::types::wallet::WalletConfig;
 
 use super::CoreConfigTrait;
@@ -41,7 +41,7 @@ pub struct CoreApplicationConfig {
     pub role: AuthorityRole,
     pub api: ApiConfig,
     pub stuff_to_issue: StuffToIssue,
-    pub requirements_to_verify: RequirementsToVerify
+    pub verify_req_config: VerifyReqConfig
 }
 
 impl CoreApplicationConfig {

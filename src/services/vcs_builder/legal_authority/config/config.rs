@@ -15,31 +15,30 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-use ymir::types::issuing::VcModel;
+use ymir::types::issuing::{VcConfig, VcModel};
 use ymir::types::vcs::W3cDataModelVersion;
 
 use crate::config::CoreApplicationConfig;
-use crate::services::vcs_builder::min_builder_config::MinConfig;
-use crate::services::vcs_builder::ConfigMinTrait;
+use crate::services::vcs_builder::BuilderConfigDefaultTrait;
 
 pub struct LegalAuthorityConfig {
-    min_config: MinConfig
+    vc_config: VcConfig
 }
 
-impl ConfigMinTrait for LegalAuthorityConfig {
-    fn get_vc_model(&self) -> &VcModel { self.min_config.get_vc_model() }
+impl BuilderConfigDefaultTrait for LegalAuthorityConfig {
+    fn get_vc_model(&self) -> &VcModel { self.vc_config.get_vc_model() }
 
     fn get_w3c_data_model(&self) -> &Option<W3cDataModelVersion> {
-        self.min_config.get_w3c_data_model()
+        self.vc_config.get_w3c_data_model()
     }
 }
 
 impl From<CoreApplicationConfig> for LegalAuthorityConfig {
     fn from(value: CoreApplicationConfig) -> Self {
         Self {
-            min_config: MinConfig {
-                vc_model: value.stuff_to_issue.vc_model,
-                vc_data_model: value.stuff_to_issue.w3c_data_model
+            vc_config: VcConfig {
+                vc_model: value.stuff_to_issue.vc_config.get_vc_model().clone(),
+                w3c_data_model: value.stuff_to_issue.vc_config.get_w3c_data_model().clone()
             }
         }
     }

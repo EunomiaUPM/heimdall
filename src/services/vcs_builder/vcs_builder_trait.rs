@@ -30,7 +30,7 @@ use ymir::types::vcs::vc_issuer::VCIssuer;
 use ymir::types::vcs::{VcType, W3cDataModelVersion};
 use ymir::utils::get_from_opt;
 
-use crate::services::vcs_builder::ConfigMinTrait;
+use crate::services::vcs_builder::BuilderConfigDefaultTrait;
 
 pub trait VcBuilderTrait: Send + Sync + 'static {
     fn build_vc(&self, model: &issuing::Model) -> anyhow::Result<Value>;
@@ -39,7 +39,7 @@ pub trait VcBuilderTrait: Send + Sync + 'static {
         &self,
         model: &issuing::Model,
         credential_subject: Value,
-        config: &dyn ConfigMinTrait
+        config: &dyn BuilderConfigDefaultTrait
     ) -> anyhow::Result<Value> {
         let now = Utc::now();
         let vc_type = VcType::from_str(&model.vc_type)?;

@@ -18,18 +18,7 @@
 use ymir::types::issuing::VcModel;
 use ymir::types::vcs::W3cDataModelVersion;
 
-pub trait ConfigMinTrait {
+pub trait BuilderConfigDefaultTrait {
     fn get_vc_model(&self) -> &VcModel;
     fn get_w3c_data_model(&self) -> &Option<W3cDataModelVersion>;
-}
-
-pub struct MinConfig {
-    pub vc_data_model: Option<W3cDataModelVersion>,
-    pub vc_model: VcModel
-}
-
-impl ConfigMinTrait for MinConfig {
-    fn get_vc_model(&self) -> &VcModel { &self.vc_model }
-
-    fn get_w3c_data_model(&self) -> &Option<W3cDataModelVersion> { &self.vc_data_model }
 }

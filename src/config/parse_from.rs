@@ -37,7 +37,7 @@ impl From<CoreApplicationConfig> for BasicVerifierConfig {
         BasicVerifierConfigBuilder::new()
             .hosts(value.hosts.clone())
             .is_local(value.is_local)
-            .requested_vcs(value.requirements_to_verify.vcs_requested)
+            .requested_vcs(value.verify_req_config.vcs_requested)
             .api_path(api_path)
             .build()
     }

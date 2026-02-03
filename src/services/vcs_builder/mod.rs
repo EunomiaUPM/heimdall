@@ -15,12 +15,12 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
+mod builder_default_trait;
 pub mod clearing_house;
 pub mod clearing_house_proxy;
 pub mod dataspace_authority;
 pub mod legal_authority;
-mod min_builder_config;
 mod vcs_builder_trait;
 
-pub use min_builder_config::ConfigMinTrait;
+pub use builder_default_trait::*;
 pub use vcs_builder_trait::VcBuilderTrait;
