@@ -64,5 +64,7 @@ services:
     image: "rmenendez8/heimdall:latest"
     env_file:
       - .env.dummy
+    volumes:
+      - ./static/environment/config/dataspace_authority.yaml:/app/dataspace.yaml
     ports:
       - "1500:1500"

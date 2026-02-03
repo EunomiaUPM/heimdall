@@ -51,4 +51,4 @@ stuff_to_issue:
 
 requirements_to_verify:
   is_cert_allowed: true
-  vcs_requested: [DataspaceParticipant]
+  vcs_requested: []
