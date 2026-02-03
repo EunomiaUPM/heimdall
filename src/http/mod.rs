@@ -20,9 +20,11 @@ mod gatekeeper_router;
 mod issuer_router;
 mod vcs_router;
 mod verifier_router;
+mod minion_router;
 
 pub use core_router::RainbowAuthorityRouter;
 pub use gatekeeper_router::GateKeeperRouter;
 pub use issuer_router::IssuerRouter;
 pub use vcs_router::ApproverRouter;
 pub use verifier_router::VerifierRouter;
+pub use minion_router::MinionRouter;

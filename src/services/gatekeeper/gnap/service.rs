@@ -84,7 +84,8 @@ impl GateKeeperTrait for GnapService {
             id: id.clone(),
             participant_slug,
             cert,
-            vc_type: vc_type.to_string()
+            vc_type: vc_type.to_string(),
+            interact_method: interact.start.clone(),
         };
 
         let host_url = format!(

@@ -4618,7 +4618,6 @@ checksum = "cfe53a6657fd280eaa890a3bc59152892ffa3e30101319d168b781ed6529b049"
 [[package]]
 name = "ymir"
 version = "0.1.0"
-source = "git+https://github.com/EunomiaUPM/ymir.git?tag=v0.3.0#4c64ea5e7af1a8d48a6dd7ef8f9b0b470e2dcda7"
 dependencies = [
  "anyhow",
  "async-trait",
