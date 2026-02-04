@@ -5,6 +5,8 @@ import About from './pages/About';
 import Dashboard from './pages/Dashboard';
 import Minions from './pages/Minions';
 import MinionDetails from './pages/MinionDetails';
+import Requests from './pages/Requests';
+import RequestDetails from './pages/RequestDetails';
 import './App.css';
 
 function App() {
@@ -24,6 +26,8 @@ function App() {
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="minions" element={<Minions />} />
           <Route path="minions/:id" element={<MinionDetails />} />
+          <Route path="requests" element={<Requests />} />
+          <Route path="requests/:id" element={<RequestDetails />} />
         </Route>
       </Routes>
     </BrowserRouter>
