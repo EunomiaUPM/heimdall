@@ -24,7 +24,7 @@ use axum::{serve, Router};
 use axum_server::tls_rustls::RustlsConfig;
 use tokio::net::TcpListener;
 use tracing::info;
-use ymir::config::traits::HostsConfigTrait;
+use ymir::config::traits::{ConnectionConfigTrait, HostsConfigTrait};
 use ymir::config::types::HostType;
 use ymir::services::client::basic::BasicClientService;
 use ymir::services::issuer::basic::config::BasicIssuerConfig;
@@ -175,7 +175,7 @@ impl AuthorityApplication {
         config: CoreApplicationConfig,
         vault: Arc<VaultService>,
     ) -> anyhow::Result<()> {
-        if config.is_tls {
+        if config.is_tls_enabled() {
             Self::run_tls(&config, vault.clone()).await
         } else {
             Self::run_basic(config, vault).await

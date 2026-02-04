@@ -15,43 +15,41 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-use ymir::config::traits::ApiConfigTrait;
+use ymir::config::traits::{ApiConfigTrait, ConnectionConfigTrait, HostsConfigTrait};
 use ymir::services::issuer::basic::config::{BasicIssuerConfig, BasicIssuerConfigBuilder};
 use ymir::services::verifier::basic::config::{BasicVerifierConfig, BasicVerifierConfigBuilder};
 use ymir::services::wallet::walt_id::config::{WaltIdConfig, WaltIdConfigBuilder};
 
-use crate::config::CoreApplicationConfig;
+use crate::config::{CoreApplicationConfig, CoreConfigTrait};
 
 impl From<CoreApplicationConfig> for WaltIdConfig {
     fn from(value: CoreApplicationConfig) -> Self {
         WaltIdConfigBuilder::new()
-            .hosts(value.hosts.clone())
-            .ssi_wallet_config(value.wallet_config.unwrap())
-            .did_config(value.did_config)
+            .hosts(value.hosts().clone())
+            .ssi_wallet_config(value.get_wallet_config().clone())
+            .did_config(value.get_did_config().clone())
             .build()
     }
 }
 
 impl From<CoreApplicationConfig> for BasicVerifierConfig {
     fn from(value: CoreApplicationConfig) -> Self {
-        let api_path = value.get_api_version();
         BasicVerifierConfigBuilder::new()
-            .hosts(value.hosts.clone())
-            .is_local(value.is_local)
-            .requested_vcs(value.verify_req_config.vcs_requested)
-            .api_path(api_path)
+            .hosts(value.hosts().clone())
+            .is_local(value.is_local())
+            .requested_vcs(value.get_verify_req_config().vcs_requested.clone())
+            .api_path(value.get_api_version())
             .build()
     }
 }
 
 impl From<CoreApplicationConfig> for BasicIssuerConfig {
     fn from(value: CoreApplicationConfig) -> Self {
-        let api_path = value.get_api_version();
         BasicIssuerConfigBuilder::new()
-            .hosts(value.hosts.clone())
-            .is_local(value.is_local)
-            .api_path(api_path)
-            .did_config(value.did_config.clone())
+            .hosts(value.hosts().clone())
+            .is_local(value.is_local())
+            .api_path(value.get_api_version())
+            .did_config(value.get_did_config().clone())
             .build()
     }
 }

@@ -21,7 +21,7 @@ use ymir::types::issuing::{VcConfig, VcModel};
 use ymir::types::vcs::W3cDataModelVersion;
 
 use super::config_trait::DataSpaceAuthorityConfigTrait;
-use crate::config::CoreApplicationConfig;
+use crate::config::{CoreApplicationConfig, CoreConfigTrait};
 use crate::services::vcs_builder::BuilderConfigDefaultTrait;
 
 pub struct DataSpaceAuthorityConfig {
@@ -45,7 +45,7 @@ impl DataSpaceAuthorityConfigTrait for DataSpaceAuthorityConfig {
 
 impl From<CoreApplicationConfig> for DataSpaceAuthorityConfig {
     fn from(value: CoreApplicationConfig) -> Self {
-        let dataspace_id = value.stuff_to_issue.dataspace_id.unwrap_or_else(|| {
+        let dataspace_id = value.get_issue_config().dataspace_id.clone().unwrap_or_else(|| {
             let error =
                 Errors::module_new("dataspace_id is not defined while being dataspace_authority");
             error!("{}", error.log());
@@ -53,7 +53,7 @@ impl From<CoreApplicationConfig> for DataSpaceAuthorityConfig {
         });
 
         let federated_catalog_uri =
-            value.stuff_to_issue.federated_catalog_uri.unwrap_or_else(|| {
+            value.get_issue_config().federated_catalog_uri.clone().unwrap_or_else(|| {
                 let error = Errors::module_new(
                     "federated_catalog_uri is not defined while being dataspace_authority"
                 );
@@ -65,8 +65,8 @@ impl From<CoreApplicationConfig> for DataSpaceAuthorityConfig {
 
         Self {
             vc_config: VcConfig {
-                vc_model: value.stuff_to_issue.vc_config.get_vc_model().clone(),
-                w3c_data_model: value.stuff_to_issue.vc_config.get_w3c_data_model().clone()
+                vc_model: value.get_issue_config().vc_config.get_vc_model().clone(),
+                w3c_data_model: value.get_issue_config().vc_config.get_w3c_data_model().clone()
             },
             dataspace_id,
             federated_catalog_uri

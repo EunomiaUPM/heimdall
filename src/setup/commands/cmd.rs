@@ -18,36 +18,36 @@
 use std::cmp::PartialEq;
 use std::sync::Arc;
 
+use super::env_extraction::extract_env_config;
+use crate::config::CoreConfigTrait;
+use crate::setup::application::AuthorityApplication;
+use crate::setup::db_migrations::AuthorityMigration;
 use clap::{Parser, Subcommand};
 use tracing::debug;
-use ymir::config::traits::HostsConfigTrait;
+use ymir::config::traits::{ConnectionConfigTrait, HostsConfigTrait};
 use ymir::config::types::HostType;
 use ymir::data::seeders::MinionSeeder;
 use ymir::services::vault::vault_rs::VaultService;
 use ymir::services::vault::VaultTrait;
-
-use super::env_extraction::extract_env_config;
-use crate::setup::application::AuthorityApplication;
-use crate::setup::db_migrations::AuthorityMigration;
 
 #[derive(Parser, Debug)]
 #[command(name = "Rainbow Dataspace Authority Server")]
 #[command(version = "0.1")]
 struct AuthorityCli {
     #[command(subcommand)]
-    command: AuthorityCliCommands
+    command: AuthorityCliCommands,
 }
 
 #[derive(Parser, Debug, PartialEq)]
 pub struct AuthCliArgs {
     #[arg(short, long)]
-    env_file: String
+    env_file: String,
 }
 
 #[derive(Subcommand, Debug, PartialEq)]
 pub enum AuthorityCliCommands {
     Start(AuthCliArgs),
-    Setup(AuthCliArgs)
+    Setup(AuthCliArgs),
 }
 
 pub struct AuthorityCommands;
@@ -67,7 +67,7 @@ impl AuthorityCommands {
             }
             AuthorityCliCommands::Setup(args) => {
                 let config = extract_env_config(args.env_file)?;
-                if config.is_tls {
+                if config.is_tls_enabled() {
                     vault.write_all_secrets(None).await?;
                 } else {
                     vault.write_local_secrets(None).await?;
@@ -75,8 +75,8 @@ impl AuthorityCommands {
                 let db_connection = vault.get_db_connection(&config).await;
                 AuthorityMigration::run(&db_connection).await?;
 
-                let did = config.did_config.did;
-                let url = config.hosts.get_host(HostType::Http);
+                let did = config.get_did_config().did.clone();
+                let url = config.hosts().get_host(HostType::Http);
                 MinionSeeder::seed(&db_connection, did, url).await?
             }
         }
