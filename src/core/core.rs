@@ -23,6 +23,7 @@ use tracing::error;
 use ymir::core_traits::CoreWalletTrait;
 use ymir::errors::{ErrorLogTrait, Errors};
 use ymir::services::issuer::IssuerTrait;
+use ymir::services::repo::subtraits::{MatesTrait, MinionsTrait};
 use ymir::services::verifier::VerifierTrait;
 use ymir::services::wallet::WalletTrait;
 
@@ -91,6 +92,10 @@ impl CoreIssuerTrait for Core {
     fn vc_builder(&self) -> Arc<dyn VcBuilderTrait> {
         self.vc_builder.clone()
     }
+
+    fn wallet(&self) -> Option<Arc<dyn WalletTrait>> {
+        self.wallet.clone()
+    }
 }
 
 impl CoreApproverTrait for Core {
@@ -132,5 +137,13 @@ impl CoreWalletTrait for Core {
             error!("{}", error.log());
             panic!("module wallet not implemented");
         })
+    }
+
+    fn mate(&self) -> Option<Arc<dyn MatesTrait>> {
+        None
+    }
+
+    fn minion(&self) -> Option<Arc<dyn MinionsTrait>> {
+        Some(self.repo.minions().clone())
     }
 }

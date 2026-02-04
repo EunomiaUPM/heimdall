@@ -25,6 +25,7 @@ use crate::config::CoreApplicationConfig;
 impl From<CoreApplicationConfig> for WaltIdConfig {
     fn from(value: CoreApplicationConfig) -> Self {
         WaltIdConfigBuilder::new()
+            .hosts(value.hosts.clone())
             .ssi_wallet_config(value.wallet_config.unwrap())
             .did_config(value.did_config)
             .build()

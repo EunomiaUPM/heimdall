@@ -19,9 +19,10 @@ use std::sync::Arc;
 
 use async_trait::async_trait;
 use ymir::services::issuer::IssuerTrait;
+use ymir::services::wallet::WalletTrait;
 use ymir::types::issuing::{
     AuthServerMetadata, CredentialRequest, GiveVC, IssuerMetadata, IssuingToken, TokenRequest,
-    VCCredOffer, WellKnownJwks
+    VCCredOffer, WellKnownJwks,
 };
 
 use crate::services::repo::RepoTrait;
@@ -32,6 +33,7 @@ pub trait CoreIssuerTrait: Send + Sync + 'static {
     fn issuer(&self) -> Arc<dyn IssuerTrait>;
     fn repo(&self) -> Arc<dyn RepoTrait>;
     fn vc_builder(&self) -> Arc<dyn VcBuilderTrait>;
+    fn wallet(&self) -> Option<Arc<dyn WalletTrait>>;
     async fn get_cred_offer_data(&self, id: String) -> anyhow::Result<VCCredOffer> {
         let mut model = self.repo().issuing().get_by_id(&id).await?;
 
@@ -43,13 +45,17 @@ pub trait CoreIssuerTrait: Send + Sync + 'static {
         };
         Ok(data)
     }
-    fn issuer_metadata(&self) -> IssuerMetadata { self.issuer().get_issuer_data(None) }
+    fn issuer_metadata(&self) -> IssuerMetadata {
+        self.issuer().get_issuer_data(None)
+    }
 
     fn oauth_server_metadata(&self) -> AuthServerMetadata {
         self.issuer().get_oauth_server_data(None)
     }
 
-    async fn jwks(&self) -> anyhow::Result<WellKnownJwks> { self.issuer().get_jwks_data().await }
+    async fn jwks(&self) -> anyhow::Result<WellKnownJwks> {
+        self.issuer().get_jwks_data().await
+    }
 
     async fn get_token(&self, payload: TokenRequest) -> anyhow::Result<IssuingToken> {
         let model =
@@ -64,14 +70,19 @@ pub trait CoreIssuerTrait: Send + Sync + 'static {
     async fn get_credential(
         &self,
         payload: CredentialRequest,
-        token: String
+        token: String,
     ) -> anyhow::Result<GiveVC> {
         let mut iss_model = self.repo().issuing().get_by_token(&token).await?;
 
-        self.issuer().validate_cred_req(&mut iss_model, &payload, &token).await?;
+        let did = match self.wallet() {
+            Some(wallet) => Some(wallet.get_did().await?),
+            None => None,
+        };
+
+        self.issuer().validate_cred_req(&mut iss_model, &payload, &token, did.clone()).await?;
 
         let claims = self.vc_builder().build_vc(&iss_model)?;
-        let data = self.issuer().issue_cred(claims).await?;
+        let data = self.issuer().issue_cred(claims, did).await?;
 
         let req_model = self.repo().request().get_by_id(&iss_model.id).await?;
         let int_model = self.repo().interaction().get_by_id(&iss_model.id).await?;
