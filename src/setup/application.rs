@@ -124,7 +124,7 @@ impl AuthorityApplication {
         let listener = match config.is_local() {
             true => {
                 TcpListener::bind(format!(
-                    "127.0.0.1{}",
+                    "0.0.0.0{}",
                     config.hosts().get_weird_port(HostType::Http)
                 ))
                 .await?
@@ -162,7 +162,7 @@ impl AuthorityApplication {
 
         let router = Self::create_router(config, vault).await;
 
-        let addr_str = if config.is_local() { "127.0.0.1:443" } else { "0.0.0.0:443" };
+        let addr_str = if config.is_local() { "0.0.0.0:443" } else { "0.0.0.0:443" };
         let addr: SocketAddr = addr_str.parse()?;
         info!("Starting Authority server with TLS in {}", addr);
 

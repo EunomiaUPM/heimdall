@@ -2,9 +2,9 @@
 # COMMON ANCHORS
 # ==========================
 http_host: &http_host
-  protocol: "http"
-  url: "host.docker.internal"
-  port: "1500"
+  protocol: 'http'
+  url: 'host.docker.internal'
+  port: '1500'
 
 # ==========================
 # CONFIG
@@ -20,34 +20,34 @@ is_tls: false
 
 db_config:
   db_type: Postgres
-  url: "heimdall-db"
-  port: "5432"
+  url: 'heimdall-db'
+  port: '5432'
 
 wallet_config:
   api:
-    protocol: "http"
-    url: "127.0.0.1"
-    port: "7001"
+    protocol: 'http'
+    url: 'host.docker.internal'
+    port: '7001'
   id: null
 
 did_config:
-  did: "did:jwk:eyJrdHkiOiJSU0EiLCJlIjoiQVFBQiIsIm4iOiJtN3RpeFY2U2Q5MTJyZmk1ME10Y1FPYWJHZnVrMGhtNEZ4ZUtaTnV1OFNuMUh2WGFya0FUd2M2VzRSZ1FzVnA0UVlMdGRFSkpmQ2IxU0U2UDN4UXM3N3BNV0kzMzhOYk9ES2g0OEFOLUdIdjN0V3p4b3NmamV5aDRSTHB4bG00d1ZDWS1ZXzBSYmJCRzBnRUh5cmJ6SHhmU2NiZ2RMdnlGX2lab0ZIVWNnOHZCSERxVU5KblhESG5tcEpIRmlfYV84UTZuWUdka0lqVXdxWnRWbzB6ZWV0aVp3TTkwN05zZHhQYzN2b0ZqQ2Q1a3dacUtiMms4ZFl0bDhCLXUwdVBBcUFpRFJjYjloeG9QWUdUVmtJN1Nuc0hrekFsOHFOWFBKN1FBcTNxT2t1Y1RpbldYd3ltSTNOY3p2dzBtVDVQenpDNm5fcGRaQy1sUXo3WnZfblZXUXcifQ"
+  did: 'did:jwk:eyJrdHkiOiJSU0EiLCJlIjoiQVFBQiIsIm4iOiJtN3RpeFY2U2Q5MTJyZmk1ME10Y1FPYWJHZnVrMGhtNEZ4ZUtaTnV1OFNuMUh2WGFya0FUd2M2VzRSZ1FzVnA0UVlMdGRFSkpmQ2IxU0U2UDN4UXM3N3BNV0kzMzhOYk9ES2g0OEFOLUdIdjN0V3p4b3NmamV5aDRSTHB4bG00d1ZDWS1ZXzBSYmJCRzBnRUh5cmJ6SHhmU2NiZ2RMdnlGX2lab0ZIVWNnOHZCSERxVU5KblhESG5tcEpIRmlfYV84UTZuWUdka0lqVXdxWnRWbzB6ZWV0aVp3TTkwN05zZHhQYzN2b0ZqQ2Q1a3dacUtiMms4ZFl0bDhCLXUwdVBBcUFpRFJjYjloeG9QWUdUVmtJN1Nuc0hrekFsOHFOWFBKN1FBcTNxT2t1Y1RpbldYd3ltSTNOY3p2dzBtVDVQenpDNm5fcGRaQy1sUXo3WnZfblZXUXcifQ'
   type: Jwk
   did_web_options: null
 #    domain: "CHANGE_ME"
 #    path: null
-  
+
 role: DataSpaceAuthority
 
 api:
-  version: "v1"
-  openapi_path: "/static/specs/openapi/openapi.json"
+  version: 'v1'
+  openapi_path: '/static/specs/openapi/openapi.json'
 
 stuff_to_issue:
   vc_model: JwtVc
   w3c_data_model: V1
-  dataspace_id: "RainbowDataspace"
-  federated_catalog_uri: "http://uri_to_federated_catalog"
+  dataspace_id: 'RainbowDataspace'
+  federated_catalog_uri: 'http://uri_to_federated_catalog'
 
 requirements_to_verify:
   is_cert_allowed: true
