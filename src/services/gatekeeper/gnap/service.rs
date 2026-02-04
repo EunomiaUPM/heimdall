@@ -264,7 +264,9 @@ impl GateKeeperTrait for GnapService {
         headers.insert(CONTENT_TYPE, "application/json".parse()?);
         headers.insert(ACCEPT, "application/json".parse()?);
 
-        let res = self.client.post(&int_model.uri, Some(headers), Body::Json(body)).await?;
+        let uri = int_model.uri.clone().replace("127.0.0.1", "host.docker.internal");
+
+        let res = self.client.post(&uri, Some(headers), Body::Json(body)).await?;
 
         match res.status().as_u16() {
             200 => {

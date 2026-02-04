@@ -3,7 +3,7 @@
 # ==========================
 http_host: &http_host
   protocol: 'http'
-  url: 'host.docker.internal'
+  url: '127.0.0.1'
   port: '1500'
 
 # ==========================
@@ -31,7 +31,7 @@ wallet_config:
   id: null
 
 did_config:
-  did: 'did:jwk:eyJrdHkiOiJSU0EiLCJlIjoiQVFBQiIsIm4iOiJtN3RpeFY2U2Q5MTJyZmk1ME10Y1FPYWJHZnVrMGhtNEZ4ZUtaTnV1OFNuMUh2WGFya0FUd2M2VzRSZ1FzVnA0UVlMdGRFSkpmQ2IxU0U2UDN4UXM3N3BNV0kzMzhOYk9ES2g0OEFOLUdIdjN0V3p4b3NmamV5aDRSTHB4bG00d1ZDWS1ZXzBSYmJCRzBnRUh5cmJ6SHhmU2NiZ2RMdnlGX2lab0ZIVWNnOHZCSERxVU5KblhESG5tcEpIRmlfYV84UTZuWUdka0lqVXdxWnRWbzB6ZWV0aVp3TTkwN05zZHhQYzN2b0ZqQ2Q1a3dacUtiMms4ZFl0bDhCLXUwdVBBcUFpRFJjYjloeG9QWUdUVmtJN1Nuc0hrekFsOHFOWFBKN1FBcTNxT2t1Y1RpbldYd3ltSTNOY3p2dzBtVDVQenpDNm5fcGRaQy1sUXo3WnZfblZXUXcifQ'
+  did: 'did:jwk:eyJrdHkiOiJSU0EiLCJlIjoiQVFBQiIsIm4iOiJ2R0hKQzJCUkhVZzJtRHZHdEF6TDFRX3l0ZXJ0STlyVzFNX0ZKM2tqeHJ2MGdTa1l5U2RwXzNnZ3NabkZCOVVxekR5MFRxRGlDUkxlS0RvN3k2ZnJBY084NGRYeE53a01WMkl6Z0cya0g1cXBjdW9VbjRoT3BBS2hrQzB6Tk5YaUYwX0I4WHliZmw4dTVoN2lJSnQtLXJuUWowNHJaRVdvXzRYU0hEVkVreml0Mk1Ja3pYNjhLaFkxdnlJbFJ3bVNfaVJxaWdIVzQwMk1YNjczbGp4UFplNXRSRERRSE1BTkpIS1liaE9VeTBlcHpQcXNQYllJT0pFb1ZmMTJvclhqTEM1eEJvNE92UmhObVljV2RQdXpUSDdaSDd5RC02V1I0blBDSWVqWWFDY3ZzQXNiME9pYkVyWDEwNTl1dXhvX1FVSmlPTVlraVpRWjBjeVRSRlJKZHcifQ'
   type: Jwk
   did_web_options: null
 #    domain: "CHANGE_ME"
@@ -44,11 +44,12 @@ api:
   openapi_path: '/static/specs/openapi/openapi.json'
 
 stuff_to_issue:
-  vc_model: JwtVc
-  w3c_data_model: V1
+  vc_config:
+    vc_model: JwtVc
+    w3c_data_model: V1
   dataspace_id: 'RainbowDataspace'
   federated_catalog_uri: 'http://uri_to_federated_catalog'
 
-requirements_to_verify:
+verify_req_config:
   is_cert_allowed: true
   vcs_requested: []
