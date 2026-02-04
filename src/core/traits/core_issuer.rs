@@ -84,12 +84,16 @@ pub trait CoreIssuerTrait: Send + Sync + 'static {
         let claims = self.vc_builder().build_vc(&iss_model)?;
         let data = self.issuer().issue_cred(claims, did).await?;
 
-        let req_model = self.repo().request().get_by_id(&iss_model.id).await?;
+        let mut req_model = self.repo().request().get_by_id(&iss_model.id).await?;
         let int_model = self.repo().interaction().get_by_id(&iss_model.id).await?;
         let iss_model = self.repo().issuing().update(iss_model).await?;
 
         let minion = self.issuer().end(&req_model, &int_model, &iss_model)?;
         self.repo().minions().force_create(minion).await?;
+
+        req_model.is_vc_issued = true;
+        req_model.status = "Finalized".to_string();
+        self.repo().request().update(req_model).await?;
 
         Ok(data)
     }

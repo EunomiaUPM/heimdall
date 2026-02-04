@@ -1,11 +1,27 @@
 :root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
+  /* Cyberpunk Color Palette */
+  --cyber-dark: #0a0e27;
+  --cyber-dark-alt: #1a1d35;
+  --cyber-cyan: #00f0ff;
+  --cyber-magenta: #ff00ff;
+  --cyber-purple: #bd00ff;
+  --cyber-green: #00ff41;
+  --cyber-red: #ff0040;
+  --cyber-text: #e0e0e0;
+  --cyber-text-bright: #ffffff;
+
+  font-family:
+    'Courier New',
+    monospace,
+    system-ui,
+    -apple-system,
+    sans-serif;
+  line-height: 1.6;
   font-weight: 400;
 
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
+  color-scheme: dark;
+  color: var(--cyber-text);
+  background-color: var(--cyber-dark);
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -13,56 +29,90 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
-}
-a:hover {
-  color: #535bf2;
+* {
+  box-sizing: border-box;
 }
 
 body {
   margin: 0;
-  display: flex;
-  place-items: center;
+  padding: 0;
   min-width: 320px;
   min-height: 100vh;
+  background: linear-gradient(135deg, var(--cyber-dark) 0%, var(--cyber-dark-alt) 100%);
+  color: var(--cyber-text);
 }
 
 h1 {
-  font-size: 3.2em;
+  font-size: 2.5em;
   line-height: 1.1;
+  color: var(--cyber-cyan);
+  text-shadow: 0 0 10px rgba(0, 240, 255, 0.5);
+  margin: 0 0 20px 0;
+}
+
+h2 {
+  color: var(--cyber-magenta);
+  text-shadow: 0 0 8px rgba(255, 0, 255, 0.4);
+}
+
+h3 {
+  color: var(--cyber-purple);
+  text-shadow: 0 0 6px rgba(189, 0, 255, 0.3);
+}
+
+a {
+  font-weight: 500;
+  color: var(--cyber-cyan);
+  text-decoration: none;
+  transition: all 0.3s ease;
+}
+
+a:hover {
+  color: var(--cyber-magenta);
+  text-shadow: 0 0 8px rgba(255, 0, 255, 0.6);
 }
 
 button {
-  border-radius: 8px;
-  border: 1px solid transparent;
+  border-radius: 4px;
+  border: 2px solid var(--cyber-cyan);
   padding: 0.6em 1.2em;
   font-size: 1em;
-  font-weight: 500;
+  font-weight: 600;
   font-family: inherit;
-  background-color: #1a1a1a;
+  background-color: rgba(0, 240, 255, 0.1);
+  color: var(--cyber-cyan);
   cursor: pointer;
-  transition: border-color 0.25s;
-}
-button:hover {
-  border-color: #646cff;
-}
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
+  transition: all 0.3s ease;
+  box-shadow: 0 0 10px rgba(0, 240, 255, 0.3);
 }
 
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
-  }
-  a:hover {
-    color: #747bff;
-  }
-  button {
-    background-color: #f9f9f9;
-  }
+button:hover {
+  background-color: rgba(0, 240, 255, 0.2);
+  box-shadow: 0 0 20px rgba(0, 240, 255, 0.6);
+  transform: translateY(-2px);
+}
+
+button:active {
+  transform: translateY(0);
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--cyber-dark);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--cyber-cyan);
+  border-radius: 5px;
+  box-shadow: 0 0 10px rgba(0, 240, 255, 0.5);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--cyber-magenta);
+  box-shadow: 0 0 10px rgba(255, 0, 255, 0.5);
 }

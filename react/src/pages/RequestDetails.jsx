@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { X509 } from 'jsrsasign';
+import BooleanBadge from '../components/BooleanBadge';
 
 const RequestDetails = () => {
   const { id } = useParams();
@@ -75,9 +76,9 @@ const RequestDetails = () => {
     }
   };
 
-  if (loading) return <div>Loading...</div>;
-  if (error) return <div>Error: {error}</div>;
-  if (!request) return <div>Request not found</div>;
+  if (loading) return <div style={{ padding: '20px', color: '#00f0ff' }}>Loading...</div>;
+  if (error) return <div style={{ padding: '20px', color: '#ff0040' }}>Error: {error}</div>;
+  if (!request) return <div style={{ padding: '20px', color: '#e0e0e0' }}>Request not found</div>;
 
   const showDecisionButtons =
     request.interact_method &&
@@ -85,97 +86,166 @@ const RequestDetails = () => {
     request.interact_method[0] === 'cross-user';
 
   return (
-    <div style={{ padding: '20px' }}>
-      <button
-        onClick={() => navigate('/requests')}
-        style={{ marginBottom: '20px', cursor: 'pointer' }}
-      >
-        &larr; Back to List
-      </button>
-      <h1>Request Details</h1>
+    <div style={{ padding: '30px', minHeight: '100vh' }}>
+      <div style={{ position: 'relative', marginBottom: '20px' }}>
+        <button
+          onClick={() => navigate('/requests')}
+          style={{
+            position: 'absolute',
+            left: 0,
+            top: '50%',
+            transform: 'translateY(-50%)',
+            cursor: 'pointer',
+            backgroundColor: 'rgba(189, 0, 255, 0.2)',
+            border: '2px solid #bd00ff',
+            color: '#bd00ff',
+            padding: '8px 16px',
+            boxShadow: '0 0 15px rgba(189, 0, 255, 0.4)',
+            borderRadius: '4px',
+            fontSize: '1em',
+            transition: 'all 0.3s ease',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.backgroundColor = 'rgba(189, 0, 255, 0.3)';
+            e.currentTarget.style.boxShadow = '0 0 20px rgba(189, 0, 255, 0.6)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = 'rgba(189, 0, 255, 0.2)';
+            e.currentTarget.style.boxShadow = '0 0 15px rgba(189, 0, 255, 0.4)';
+          }}
+        >
+          &larr; Back to List
+        </button>
+        <h1 style={{ margin: 0, textAlign: 'center' }}>Request Details</h1>
+      </div>
       <div
         style={{
-          border: '1px solid #ccc',
-          padding: '20px',
+          border: '2px solid #00f0ff',
+          padding: '25px',
           borderRadius: '8px',
           marginBottom: '20px',
+          textAlign: 'left',
+          backgroundColor: 'rgba(26, 29, 53, 0.6)',
+          boxShadow: '0 0 20px rgba(0, 240, 255, 0.3)',
         }}
       >
         <p>
-          <strong>ID:</strong> {request.id}
+          <strong style={{ color: '#00f0ff' }}>ID:</strong>{' '}
+          <span style={{ color: '#e0e0e0' }}>{request.id}</span>
         </p>
         <p>
-          <strong>Slug:</strong> {request.participant_slug}
+          <strong style={{ color: '#00f0ff' }}>Slug:</strong>{' '}
+          <span style={{ color: '#e0e0e0' }}>{request.participant_slug}</span>
         </p>
         <p>
-          <strong>VC Type:</strong> {request.vc_type}
+          <strong style={{ color: '#00f0ff' }}>VC Type:</strong>{' '}
+          <span style={{ color: '#ff00ff' }}>{request.vc_type}</span>
         </p>
         <p>
-          <strong>Status:</strong> {request.status}
+          <strong style={{ color: '#00f0ff' }}>Interact Methods:</strong>{' '}
+          <span style={{ color: '#e0e0e0' }}>{request.interact_method.join(', ')}</span>
         </p>
         <p>
-          <strong>Created At:</strong> {request.created_at}
+          <strong style={{ color: '#00f0ff' }}>Status:</strong>{' '}
+          <span style={{ color: '#bd00ff' }}>{request.status}</span>
         </p>
         <p>
-          <strong>Interact Methods:</strong> {request.interact_method.join(', ')}
+          <strong style={{ color: '#00f0ff' }}>VC Issued:</strong>{' '}
+          <BooleanBadge value={request.is_vc_issued} />
         </p>
-        {request.vc_uri && (
-          <p>
-            <strong>VC URI:</strong> {request.vc_uri}
-          </p>
-        )}
-        {request.vc_issuing && (
-          <p>
-            <strong>VC Issuing:</strong> {request.vc_issuing}
-          </p>
-        )}
+        <p>
+          <strong style={{ color: '#00f0ff' }}>Created At:</strong>{' '}
+          <span style={{ color: '#e0e0e0' }}>{request.created_at}</span>
+        </p>
         {request.ended_at && (
           <p>
-            <strong>Ended At:</strong> {request.ended_at}
+            <strong style={{ color: '#00f0ff' }}>Ended At:</strong>{' '}
+            <span style={{ color: '#e0e0e0' }}>{request.ended_at}</span>
           </p>
         )}
-        <p>
-          <strong>VC Issued:</strong> {request.is_vc_issued ? 'Yes' : 'No'}
-        </p>
       </div>
 
       {request.cert && (
         <div
           style={{
-            border: '1px solid #ccc',
-            padding: '20px',
+            border: '2px solid #ff00ff',
+            padding: '25px',
             borderRadius: '8px',
             marginBottom: '20px',
-            backgroundColor: '#f9f9f9',
+            backgroundColor: 'rgba(26, 29, 53, 0.6)',
+            color: '#e0e0e0',
+            textAlign: 'left',
+            boxShadow: '0 0 20px rgba(255, 0, 255, 0.3)',
           }}
         >
-          <h3>Certificate Details</h3>
+          <h3 style={{ color: '#ff00ff', textShadow: '0 0 10px rgba(255, 0, 255, 0.6)' }}>
+            Certificate Details
+          </h3>
           {parsedCert && !parsedCert.error ? (
             <>
               <p>
-                <strong>Subject:</strong> {parsedCert.subject}
+                <strong style={{ color: '#ff00ff' }}>Subject:</strong>{' '}
+                <span
+                  style={{
+                    wordBreak: 'break-word',
+                    overflowWrap: 'break-word',
+                    display: 'inline-block',
+                    maxWidth: '100%',
+                  }}
+                >
+                  {parsedCert.subject}
+                </span>
               </p>
               <p>
-                <strong>Issuer:</strong> {parsedCert.issuer}
+                <strong style={{ color: '#ff00ff' }}>Issuer:</strong>{' '}
+                <span
+                  style={{
+                    wordBreak: 'break-word',
+                    overflowWrap: 'break-word',
+                    display: 'inline-block',
+                    maxWidth: '100%',
+                  }}
+                >
+                  {parsedCert.issuer}
+                </span>
               </p>
               <p>
-                <strong>Serial:</strong> {parsedCert.serial}
+                <strong style={{ color: '#ff00ff' }}>Serial:</strong>{' '}
+                <span>{parsedCert.serial}</span>
               </p>
               <p>
-                <strong>Not Before:</strong> {parsedCert.notBefore}
+                <strong style={{ color: '#ff00ff' }}>Not Before:</strong>{' '}
+                <span>{parsedCert.notBefore}</span>
               </p>
               <p>
-                <strong>Not After:</strong> {parsedCert.notAfter}
+                <strong style={{ color: '#ff00ff' }}>Not After:</strong>{' '}
+                <span>{parsedCert.notAfter}</span>
               </p>
             </>
           ) : (
             <p>
-              <em>{parsedCert?.error || 'Raw cert available but parsing failed.'}</em>
+              <em style={{ color: '#ff0040' }}>
+                {parsedCert?.error || 'Raw cert available but parsing failed.'}
+              </em>
             </p>
           )}
           <details>
-            <summary>Raw Certificate</summary>
-            <pre style={{ overflowX: 'auto', whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>
+            <summary style={{ color: '#ff00ff', cursor: 'pointer', marginTop: '10px' }}>
+              Raw Certificate
+            </summary>
+            <pre
+              style={{
+                overflowX: 'auto',
+                whiteSpace: 'pre-wrap',
+                wordBreak: 'break-all',
+                backgroundColor: 'rgba(10, 14, 39, 0.8)',
+                padding: '10px',
+                borderRadius: '4px',
+                border: '1px solid #ff00ff',
+                color: '#e0e0e0',
+                marginTop: '10px',
+              }}
+            >
               {request.cert}
             </pre>
           </details>
@@ -187,13 +257,24 @@ const RequestDetails = () => {
           <button
             onClick={() => handleDecision(true)}
             style={{
-              padding: '10px 20px',
-              backgroundColor: 'green',
-              color: 'white',
-              border: 'none',
+              padding: '12px 24px',
+              backgroundColor: 'rgba(0, 255, 65, 0.2)',
+              color: '#00ff41',
+              border: '2px solid #00ff41',
               borderRadius: '4px',
               cursor: 'pointer',
               fontSize: '16px',
+              fontWeight: 'bold',
+              boxShadow: '0 0 20px rgba(0, 255, 65, 0.4)',
+              transition: 'all 0.3s ease',
+            }}
+            onMouseEnter={(e) => {
+              e.target.style.backgroundColor = 'rgba(0, 255, 65, 0.3)';
+              e.target.style.boxShadow = '0 0 30px rgba(0, 255, 65, 0.6)';
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.backgroundColor = 'rgba(0, 255, 65, 0.2)';
+              e.target.style.boxShadow = '0 0 20px rgba(0, 255, 65, 0.4)';
             }}
           >
             Approve
@@ -201,13 +282,24 @@ const RequestDetails = () => {
           <button
             onClick={() => handleDecision(false)}
             style={{
-              padding: '10px 20px',
-              backgroundColor: 'red',
-              color: 'white',
-              border: 'none',
+              padding: '12px 24px',
+              backgroundColor: 'rgba(255, 0, 64, 0.2)',
+              color: '#ff0040',
+              border: '2px solid #ff0040',
               borderRadius: '4px',
               cursor: 'pointer',
               fontSize: '16px',
+              fontWeight: 'bold',
+              boxShadow: '0 0 20px rgba(255, 0, 64, 0.4)',
+              transition: 'all 0.3s ease',
+            }}
+            onMouseEnter={(e) => {
+              e.target.style.backgroundColor = 'rgba(255, 0, 64, 0.3)';
+              e.target.style.boxShadow = '0 0 30px rgba(255, 0, 64, 0.6)';
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.backgroundColor = 'rgba(255, 0, 64, 0.2)';
+              e.target.style.boxShadow = '0 0 20px rgba(255, 0, 64, 0.4)';
             }}
           >
             Reject
