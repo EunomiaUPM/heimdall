@@ -184,6 +184,38 @@ const Wallet = () => {
         >
           Credentials
         </button>
+        <button
+          onClick={() => navigate('/wallet/oidc4vp')}
+          style={tabStyle('/wallet/oidc4vp')}
+          onMouseEnter={(e) => {
+            if (!isActiveTab('/wallet/oidc4vp')) {
+              e.currentTarget.style.backgroundColor = 'rgba(0, 240, 255, 0.1)';
+            }
+          }}
+          onMouseLeave={(e) => {
+            if (!isActiveTab('/wallet/oidc4vp')) {
+              e.currentTarget.style.backgroundColor = 'transparent';
+            }
+          }}
+        >
+          OIDC4VP
+        </button>
+        <button
+          onClick={() => navigate('/wallet/oidc4vci')}
+          style={tabStyle('/wallet/oidc4vci')}
+          onMouseEnter={(e) => {
+            if (!isActiveTab('/wallet/oidc4vci')) {
+              e.currentTarget.style.backgroundColor = 'rgba(0, 240, 255, 0.1)';
+            }
+          }}
+          onMouseLeave={(e) => {
+            if (!isActiveTab('/wallet/oidc4vci')) {
+              e.currentTarget.style.backgroundColor = 'transparent';
+            }
+          }}
+        >
+          OIDC4VCI
+        </button>
       </div>
 
       {/* Sub-page content */}

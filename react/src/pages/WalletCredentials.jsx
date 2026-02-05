@@ -52,28 +52,34 @@ const WalletCredentials = () => {
           <p style={{ color: '#e0e0e0', fontSize: '1.1em' }}>No credentials found</p>
         </div>
       ) : (
-        <div
-          style={{
-            border: '2px solid #ff00ff',
-            padding: '20px',
-            borderRadius: '8px',
-            backgroundColor: 'rgba(26, 29, 53, 0.6)',
-            boxShadow: '0 0 20px rgba(255, 0, 255, 0.3)',
-          }}
-        >
-          <pre
-            style={{
-              color: '#e0e0e0',
-              whiteSpace: 'pre-wrap',
-              wordBreak: 'break-word',
-              margin: 0,
-              fontFamily: 'Courier New, monospace',
-              fontSize: '0.9em',
-              lineHeight: '1.5',
-            }}
-          >
-            {JSON.stringify(credentials, null, 2)}
-          </pre>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          {(Array.isArray(credentials) ? credentials : [credentials]).map((vc, index) => (
+            <div
+              key={index}
+              style={{
+                border: '2px solid #ff00ff',
+                padding: '20px',
+                borderRadius: '8px',
+                backgroundColor: 'rgba(26, 29, 53, 0.6)',
+                boxShadow: '0 0 20px rgba(255, 0, 255, 0.3)',
+                textAlign: 'left',
+              }}
+            >
+              <pre
+                style={{
+                  color: '#e0e0e0',
+                  whiteSpace: 'pre-wrap',
+                  wordBreak: 'break-word',
+                  margin: 0,
+                  fontFamily: 'Courier New, monospace',
+                  fontSize: '0.9em',
+                  lineHeight: '1.5',
+                }}
+              >
+                {JSON.stringify(vc, null, 2)}
+              </pre>
+            </div>
+          ))}
         </div>
       )}
     </div>

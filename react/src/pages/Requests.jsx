@@ -1,21 +1,25 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-const StatusBadge = ({ status }) => {
-  const getStatusColor = (status) => {
-    switch (status.toLowerCase()) {
-      case 'completed':
-        return { bg: 'rgba(0, 255, 65, 0.15)', color: '#00ff41', border: '#00ff41' };
+const StatusBadge = ({ status, isVcIssued }) => {
+  const getStatusColor = (status, isVcIssued) => {
+    switch (status?.toLowerCase()) {
+      case 'processing':
+      case 'proccesing':
+        return { bg: 'rgba(240, 255, 0, 0.15)', color: '#f0ff00', border: '#f0ff00' };
       case 'pending':
         return { bg: 'rgba(255, 165, 0, 0.15)', color: '#ffa500', border: '#ffa500' };
-      case 'rejected':
-        return { bg: 'rgba(255, 0, 64, 0.15)', color: '#ff0040', border: '#ff0040' };
+      case 'approved':
+        return { bg: 'rgba(0, 240, 255, 0.15)', color: '#00f0ff', border: '#00f0ff' };
+      case 'finalized':
+        const color = isVcIssued ? '#00ff41' : '#ff0040';
+        return { bg: `${color}26`, color: color, border: color }; // 26 is ~15% alpha
       default:
-        return { bg: 'rgba(189, 0, 255, 0.15)', color: '#bd00ff', border: '#bd00ff' };
+        return { bg: 'rgba(0, 240, 255, 0.15)', color: '#00f0ff', border: '#00f0ff' };
     }
   };
 
-  const colors = getStatusColor(status);
+  const colors = getStatusColor(status, isVcIssued);
 
   return (
     <span
@@ -351,7 +355,7 @@ const Requests = () => {
                 {req.interact_method.join(', ')}
               </td>
               <td style={{ padding: '12px' }}>
-                <StatusBadge status={req.status} />
+                <StatusBadge status={req.status} isVcIssued={req.is_vc_issued} />
               </td>
               <td style={{ padding: '12px', color: '#e0e0e0' }}>{req.created_at}</td>
             </tr>

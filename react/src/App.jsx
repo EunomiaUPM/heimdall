@@ -10,6 +10,8 @@ import Wallet from './pages/Wallet';
 import WalletDID from './pages/WalletDID';
 import WalletInfo from './pages/WalletInfo';
 import WalletCredentials from './pages/WalletCredentials';
+import WalletOidc4vp from './pages/WalletOidc4vp';
+import WalletOidc4vci from './pages/WalletOidc4vci';
 import './App.css';
 
 function App() {
@@ -37,6 +39,8 @@ function App() {
               <Route path="did" element={<WalletDID />} />
               <Route path="info" element={<WalletInfo />} />
               <Route path="credentials" element={<WalletCredentials />} />
+              <Route path="oidc4vp" element={<WalletOidc4vp />} />
+              <Route path="oidc4vci" element={<WalletOidc4vci />} />
             </Route>
           )}
         </Route>

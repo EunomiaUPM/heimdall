@@ -40,6 +40,7 @@ const WalletDID = () => {
           borderRadius: '8px',
           backgroundColor: 'rgba(26, 29, 53, 0.6)',
           boxShadow: '0 0 20px rgba(255, 0, 255, 0.3)',
+          textAlign: 'left',
         }}
       >
         <pre

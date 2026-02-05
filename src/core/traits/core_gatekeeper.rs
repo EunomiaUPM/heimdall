@@ -88,7 +88,6 @@ pub trait CoreGatekeeperTrait: Send + Sync + 'static {
         let vc_uri = self.issuer().generate_issuing_uri(&int_model.id);
         info!(vc_uri);
 
-        req_model.status = "Approved".to_string();
         req_model.vc_uri = Some(vc_uri.clone());
         iss_model.uri = Some(vc_uri.clone());
         iss_model.credential_data = Some(credential_data);

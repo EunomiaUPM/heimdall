@@ -42,7 +42,7 @@ use crate::types::role::AuthorityRole;
 
 pub struct GnapService {
     config: GnapConfig,
-    client: Arc<dyn ClientTrait>
+    client: Arc<dyn ClientTrait>,
 }
 
 impl GnapService {
@@ -55,7 +55,7 @@ impl GnapService {
 impl GateKeeperTrait for GnapService {
     fn start(
         &self,
-        payload: GrantRequest
+        payload: GrantRequest,
     ) -> anyhow::Result<(vc_request::NewModel, recv_interaction::NewModel)> {
         info!("Managing vc request");
 
@@ -107,7 +107,7 @@ impl GateKeeperTrait for GnapService {
             hints: interact.hints,
             grant_endpoint,
             continue_endpoint,
-            continue_token
+            continue_token,
         };
 
         Ok((new_request_model, new_recv_interaction_model))
@@ -149,7 +149,7 @@ impl GateKeeperTrait for GnapService {
                 VcType::LegalRegistrationNumber(_) => {}
                 _ => {
                     let error = Errors::unauthorized_new(
-                        "As a legal authority we can only issue LegalRegistration numbers vcs"
+                        "As a legal authority we can only issue LegalRegistration numbers vcs",
                     );
                     error!("{}", error.log());
                     bail!(error)
@@ -165,13 +165,12 @@ impl GateKeeperTrait for GnapService {
                 VcType::DataspaceParticipant => {}
                 _ => {
                     let error = Errors::unauthorized_new(
-                        "As a legal authority we can only issue LegalRegistration numbers vcs"
+                        "As a legal authority we can only issue LegalRegistration numbers vcs",
                     );
                     error!("{}", error.log());
                     bail!(error)
                 }
-            }
-            // AuthorityRole::AllRoles => {}
+            }, // AuthorityRole::AllRoles => {}
         }
         Ok(())
     }
@@ -180,7 +179,7 @@ impl GateKeeperTrait for GnapService {
         &self,
         int_model: &recv_interaction::Model,
         int_ref: String,
-        token: String
+        token: String,
     ) -> anyhow::Result<()> {
         info!("Validating continue request");
 
@@ -205,7 +204,7 @@ impl GateKeeperTrait for GnapService {
     }
     async fn end_verification(
         &self,
-        model: recv_interaction::Model
+        model: recv_interaction::Model,
     ) -> anyhow::Result<Option<String>> {
         info!("Ending verification");
 
@@ -230,7 +229,7 @@ impl GateKeeperTrait for GnapService {
         } else {
             let error = Errors::not_impl_new(
                 "Interact method not supported",
-                &format!("Interact method {} not supported", model.method)
+                &format!("Interact method {} not supported", model.method),
             );
             error!("{}", error.log());
             bail!(error);
@@ -241,7 +240,7 @@ impl GateKeeperTrait for GnapService {
         &self,
         approve: bool,
         req_model: &mut vc_request::Model,
-        int_model: &recv_interaction::Model
+        int_model: &recv_interaction::Model,
     ) -> anyhow::Result<()> {
         let body = match approve {
             true => {
@@ -249,7 +248,7 @@ impl GateKeeperTrait for GnapService {
                 req_model.status = "Approved".to_string();
                 let body = ApprovedCallbackBody {
                     interact_ref: int_model.interact_ref.clone(),
-                    hash: int_model.hash.clone()
+                    hash: int_model.hash.clone(),
                 };
                 serde_json::to_value(body)?
             }
@@ -261,28 +260,38 @@ impl GateKeeperTrait for GnapService {
             }
         };
 
-        let mut headers = HeaderMap::new();
-        headers.insert(CONTENT_TYPE, "application/json".parse()?);
-        headers.insert(ACCEPT, "application/json".parse()?);
+        let client = self.client.clone();
+        let int_model = int_model.clone();
 
-        let res = self.client.post(&int_model.uri, Some(headers), Body::Json(body)).await?;
+        tokio::spawn(async move {
+            let mut headers = HeaderMap::new();
+            headers.insert(CONTENT_TYPE, "application/json".parse().unwrap());
+            headers.insert(ACCEPT, "application/json".parse().unwrap());
 
-        match res.status().as_u16() {
-            200 => {
-                info!("Minion received callback received successfully");
+            match client.post(&int_model.uri, Some(headers), Body::Json(body)).await {
+                Ok(res) => match res.status().as_u16() {
+                    200 => info!("Minion received callback successfully"),
+                    status => {
+                        let error = Errors::consumer_new(
+                            &int_model.uri,
+                            "POST",
+                            Some(status),
+                            "Minion did not receive callback successfully",
+                        );
+                        error!("{}", error.log());
+                    }
+                },
+                Err(_) => {
+                    let error = Errors::petition_new(
+                        &int_model.uri,
+                        "POST",
+                        None,
+                        "Error sending callback petition",
+                    );
+                    error!("{}", error.log())
+                }
             }
-            _ => {
-                let error = Errors::consumer_new(
-                    &int_model.uri,
-                    "POST",
-                    Some(res.status().as_u16()),
-                    "Minion did not receive callback successfully"
-                );
-                req_model.status = "Minion_failure".to_string();
-                error!("{}", error.log());
-                bail!(error);
-            }
-        }
+        });
 
         Ok(())
     }

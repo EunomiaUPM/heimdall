@@ -85,6 +85,24 @@ const RequestDetails = () => {
     request.interact_method.length > 0 &&
     request.interact_method[0] === 'cross-user';
 
+  const getStatusColor = (status, isVcIssued) => {
+    switch (status?.toLowerCase()) {
+      case 'processing':
+      case 'proccesing':
+        return '#f0ff00'; // Yellow
+      case 'pending':
+        return '#ffa500'; // Orange
+      case 'approved':
+        return '#00f0ff'; // Blue/Cyan
+      case 'finalized':
+        return isVcIssued ? '#00ff41' : '#ff0040'; // Green if issued, Red if not
+      default:
+        return '#00f0ff'; // Default Blue/Cyan
+    }
+  };
+
+  const statusColor = getStatusColor(request.status, request.is_vc_issued);
+
   return (
     <div style={{ padding: '30px', minHeight: '100vh' }}>
       <div style={{ position: 'relative', marginBottom: '20px' }}>
@@ -120,13 +138,13 @@ const RequestDetails = () => {
       </div>
       <div
         style={{
-          border: '2px solid #00f0ff',
+          border: `2px solid ${statusColor}`,
           padding: '25px',
           borderRadius: '8px',
           marginBottom: '20px',
           textAlign: 'left',
           backgroundColor: 'rgba(26, 29, 53, 0.6)',
-          boxShadow: '0 0 20px rgba(0, 240, 255, 0.3)',
+          boxShadow: `0 0 20px ${statusColor}4D`, // 4D is ~30% alpha
         }}
       >
         <p>
@@ -147,8 +165,14 @@ const RequestDetails = () => {
         </p>
         <p>
           <strong style={{ color: '#00f0ff' }}>Status:</strong>{' '}
-          <span style={{ color: '#bd00ff' }}>{request.status}</span>
+          <span style={{ color: statusColor }}>{request.status}</span>
         </p>
+        {request.vc_uri && (
+          <p>
+            <strong style={{ color: '#00f0ff' }}>VC URI:</strong>{' '}
+            <span style={{ color: '#e0e0e0', wordBreak: 'break-all' }}>{request.vc_uri}</span>
+          </p>
+        )}
         <p>
           <strong style={{ color: '#00f0ff' }}>VC Issued:</strong>{' '}
           <BooleanBadge value={request.is_vc_issued} />
@@ -252,7 +276,7 @@ const RequestDetails = () => {
         </div>
       )}
 
-      {showDecisionButtons && request.status !== 'completed' && request.status !== 'rejected' && (
+      {showDecisionButtons && request.status === 'Pending' && (
         <div style={{ display: 'flex', gap: '20px', marginTop: '20px' }}>
           <button
             onClick={() => handleDecision(true)}

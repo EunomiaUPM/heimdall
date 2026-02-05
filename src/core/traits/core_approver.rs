@@ -38,6 +38,7 @@ pub trait CoreApproverTrait: Send + Sync + 'static {
         let mut req_model = self.repo().request().get_by_id(&id).await?;
         let int_model = self.repo().interaction().get_by_id(&id).await?;
         self.gatekeeper().apprv_dny_req(payload.approve, &mut req_model, &int_model).await?;
+        self.repo().request().update(req_model).await?;
         Ok(())
     }
 }
