@@ -23,12 +23,11 @@ use tracing::{debug, error};
 use ymir::config::traits::{
     ApiConfigTrait, ConnectionConfigTrait, DatabaseConfigTrait, HostsConfigTrait,
 };
-use ymir::config::types::{ApiConfig, CommonHostsConfig, ConnectionConfig, DatabaseConfig};
+use ymir::config::types::{
+    ApiConfig, CommonHostsConfig, ConnectionConfig, DatabaseConfig, DidConfig, IssueConfig,
+    VcConfig, VerifyReqConfig, WalletConfig,
+};
 use ymir::errors::{ErrorLogTrait, Errors};
-use ymir::types::dids::did_config::DidConfig;
-use ymir::types::issuing::IssueConfig;
-use ymir::types::verifying::VerifyReqConfig;
-use ymir::types::wallet::WalletConfig;
 
 use super::CoreConfigTrait;
 use crate::types::role::AuthorityRole;
@@ -42,6 +41,7 @@ pub struct CoreApplicationConfig {
     wallet_config: Option<WalletConfig>,
     did_config: DidConfig,
     issue_config: IssueConfig,
+    vc_config: VcConfig,
     verify_req_config: VerifyReqConfig,
     role: AuthorityRole,
 }
@@ -111,5 +111,8 @@ impl CoreConfigTrait for CoreApplicationConfig {
 
     fn get_verify_req_config(&self) -> &VerifyReqConfig {
         &self.verify_req_config
+    }
+    fn get_vc_config(&self) -> &VcConfig {
+        &self.vc_config
     }
 }

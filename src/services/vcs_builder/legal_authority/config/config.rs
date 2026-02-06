@@ -14,9 +14,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
-
-use ymir::types::issuing::{VcConfig, VcModel};
-use ymir::types::vcs::W3cDataModelVersion;
+use ymir::config::traits::VcConfigTrait;
+use ymir::config::types::VcConfig;
+use ymir::types::vcs::{VcModel, W3cDataModelVersion};
 
 use crate::config::{CoreApplicationConfig, CoreConfigTrait};
 use crate::services::vcs_builder::BuilderConfigDefaultTrait;
@@ -30,7 +30,7 @@ impl BuilderConfigDefaultTrait for LegalAuthorityConfig {
         self.vc_config.get_vc_model()
     }
 
-    fn get_w3c_data_model(&self) -> &Option<W3cDataModelVersion> {
+    fn get_w3c_data_model(&self) -> Option<&W3cDataModelVersion> {
         self.vc_config.get_w3c_data_model()
     }
 }
@@ -39,8 +39,8 @@ impl From<CoreApplicationConfig> for LegalAuthorityConfig {
     fn from(value: CoreApplicationConfig) -> Self {
         Self {
             vc_config: VcConfig {
-                vc_model: value.get_issue_config().vc_config.get_vc_model().clone(),
-                w3c_data_model: value.get_issue_config().vc_config.get_w3c_data_model().clone(),
+                vc_model: value.get_vc_config().get_vc_model().clone(),
+                w3c_data_model: value.get_vc_config().get_w3c_data_model().cloned(),
             },
         }
     }

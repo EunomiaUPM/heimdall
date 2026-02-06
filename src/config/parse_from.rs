@@ -39,6 +39,7 @@ impl From<CoreApplicationConfig> for BasicVerifierConfig {
             .is_local(value.is_local())
             .requested_vcs(value.get_verify_req_config().vcs_requested.clone())
             .api_path(value.get_api_version())
+            .vc_config(value.get_vc_config().clone())
             .build()
     }
 }

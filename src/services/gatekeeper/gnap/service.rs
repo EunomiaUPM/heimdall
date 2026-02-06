@@ -22,6 +22,7 @@ use anyhow::bail;
 use async_trait::async_trait;
 use axum::http::header::{ACCEPT, CONTENT_TYPE};
 use axum::http::HeaderMap;
+use serde_json::Value;
 use tracing::{error, info};
 use ymir::config::traits::HostsConfigTrait;
 use ymir::config::types::HostType;
@@ -241,7 +242,7 @@ impl GateKeeperTrait for GnapService {
         approve: bool,
         req_model: &mut vc_request::Model,
         int_model: &recv_interaction::Model,
-    ) -> anyhow::Result<()> {
+    ) -> anyhow::Result<Value> {
         let body = match approve {
             true => {
                 info!("Approving petition to obtain a VC");
@@ -260,39 +261,32 @@ impl GateKeeperTrait for GnapService {
             }
         };
 
-        let client = self.client.clone();
-        let int_model = int_model.clone();
+        Ok(body)
+    }
 
-        tokio::spawn(async move {
-            let mut headers = HeaderMap::new();
-            headers.insert(CONTENT_TYPE, "application/json".parse().unwrap());
-            headers.insert(ACCEPT, "application/json".parse().unwrap());
+    async fn notify_minion(
+        &self,
+        int_model: &recv_interaction::Model,
+        body: Value,
+    ) -> anyhow::Result<()> {
+        let mut headers = HeaderMap::new();
+        headers.insert(CONTENT_TYPE, "application/json".parse().unwrap());
+        headers.insert(ACCEPT, "application/json".parse().unwrap());
 
-            match client.post(&int_model.uri, Some(headers), Body::Json(body)).await {
-                Ok(res) => match res.status().as_u16() {
-                    200 => info!("Minion received callback successfully"),
-                    status => {
-                        let error = Errors::consumer_new(
-                            &int_model.uri,
-                            "POST",
-                            Some(status),
-                            "Minion did not receive callback successfully",
-                        );
-                        error!("{}", error.log());
-                    }
-                },
-                Err(_) => {
-                    let error = Errors::petition_new(
-                        &int_model.uri,
-                        "POST",
-                        None,
-                        "Error sending callback petition",
-                    );
-                    error!("{}", error.log())
-                }
+        let res = self.client.post(&int_model.uri, Some(headers), Body::Json(body)).await?;
+
+        match res.status().as_u16() {
+            200 => info!("Minion received callback successfully"),
+            status => {
+                let error = Errors::consumer_new(
+                    &int_model.uri,
+                    "POST",
+                    Some(status),
+                    "Minion did not receive callback successfully",
+                );
+                error!("{}", error.log());
             }
-        });
-
+        }
         Ok(())
     }
 

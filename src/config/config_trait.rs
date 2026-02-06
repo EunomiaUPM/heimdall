@@ -15,14 +15,11 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
+use crate::types::role::AuthorityRole;
 use ymir::config::traits::{
     ApiConfigTrait, ConnectionConfigTrait, DatabaseConfigTrait, HostsConfigTrait,
 };
-use ymir::types::dids::did_config::DidConfig;
-use ymir::types::issuing::IssueConfig;
-use ymir::types::verifying::VerifyReqConfig;
-use ymir::types::wallet::WalletConfig;
-use crate::types::role::AuthorityRole;
+use ymir::config::types::{DidConfig, IssueConfig, VcConfig, VerifyReqConfig, WalletConfig};
 
 pub trait CoreConfigTrait:
     HostsConfigTrait
@@ -39,4 +36,5 @@ pub trait CoreConfigTrait:
     fn get_did_config(&self) -> &DidConfig;
     fn get_issue_config(&self) -> &IssueConfig;
     fn get_verify_req_config(&self) -> &VerifyReqConfig;
+    fn get_vc_config(&self) -> &VcConfig;
 }

@@ -23,11 +23,10 @@ use serde_json::Value;
 use tracing::error;
 use ymir::data::entities::{issuing, vc_request};
 use ymir::errors::{ErrorLogTrait, Errors};
-use ymir::types::issuing::VcModel;
 use ymir::types::vcs::claims_v1::{VCClaimsV1, VCFromClaimsV1};
 use ymir::types::vcs::claims_v2::VCClaimsV2;
 use ymir::types::vcs::vc_issuer::VCIssuer;
-use ymir::types::vcs::{VcType, W3cDataModelVersion};
+use ymir::types::vcs::{VcModel, VcType, W3cDataModelVersion};
 use ymir::utils::get_from_opt;
 
 use crate::services::vcs_builder::BuilderConfigDefaultTrait;
@@ -39,14 +38,14 @@ pub trait VcBuilderTrait: Send + Sync + 'static {
         &self,
         model: &issuing::Model,
         credential_subject: Value,
-        config: &dyn BuilderConfigDefaultTrait
+        config: &dyn BuilderConfigDefaultTrait,
     ) -> anyhow::Result<Value> {
         let now = Utc::now();
         let vc_type = VcType::from_str(&model.vc_type)?;
         let issuer_did = get_from_opt(&model.issuer_did, "issuer did")?;
         match config.get_vc_model() {
             VcModel::JwtVc => {
-                let w3c_data_model = config.get_w3c_data_model().as_ref().ok_or_else(|| {
+                let w3c_data_model = config.get_w3c_data_model().ok_or_else(|| {
                     let error = Errors::module_new("vc_jwt format is not active");
                     error!("{}", error.log());
                     error
@@ -65,11 +64,11 @@ pub trait VcBuilderTrait: Send + Sync + 'static {
                             credential_subject,
                             issuer: VCIssuer {
                                 id: issuer_did,
-                                name: Some("RainbowAuthority".to_string())
+                                name: Some("RainbowAuthority".to_string()),
                             },
                             valid_from: Some(now),
-                            valid_until: Some(now + Duration::days(365))
-                        }
+                            valid_until: Some(now + Duration::days(365)),
+                        },
                     })?,
                     W3cDataModelVersion::V2 => serde_json::to_value(VCClaimsV2 {
                         exp: None,
@@ -82,11 +81,11 @@ pub trait VcBuilderTrait: Send + Sync + 'static {
                         credential_subject,
                         issuer: VCIssuer {
                             id: issuer_did,
-                            name: Some("RainbowAuthority".to_string())
+                            name: Some("RainbowAuthority".to_string()),
                         },
                         valid_from: Some(now),
-                        valid_until: Some(now + Duration::days(365))
-                    })?
+                        valid_until: Some(now + Duration::days(365)),
+                    })?,
                 };
                 Ok(vc)
             }
