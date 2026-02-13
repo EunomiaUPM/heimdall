@@ -51,7 +51,7 @@ impl GateKeeperRouter {
     ) -> impl IntoResponse {
         let payload = match payload {
             Ok(Json(data)) => data,
-            Err(e) => return e.into_response()
+            Err(e) => return e.to_response()
         };
 
         match gatekeeper.manage_req(payload).await {
@@ -77,7 +77,7 @@ impl GateKeeperRouter {
 
         let payload = match payload {
             Ok(Json(data)) => data,
-            Err(e) => return e.into_response()
+            Err(e) => return e.to_response()
         };
 
         match authority.manage_cont_req(id, payload, token).await {

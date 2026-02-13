@@ -49,7 +49,7 @@ use crate::services::vcs_builder::dataspace_authority::DataSpaceAuthorityVcBuild
 use crate::services::vcs_builder::legal_authority::{
     config::LegalAuthorityConfig, LegalAuthorityVcBuilder,
 };
-use crate::services::vcs_builder::VcBuilderTrait;
+use crate::services::vcs_builder::{EcoAuthorityBuilder, VcBuilderTrait};
 use crate::types::role::AuthorityRole;
 
 pub struct AuthorityApplication;
@@ -77,6 +77,14 @@ impl AuthorityApplication {
             AuthorityRole::DataSpaceAuthority => {
                 let config = DataSpaceAuthorityConfig::from(config.clone());
                 Arc::new(DataSpaceAuthorityVcBuilder::new(config))
+            }
+            AuthorityRole::EcoAuthority => {
+                let legal_config = LegalAuthorityConfig::from(config.clone());
+                let legal = Arc::new(LegalAuthorityVcBuilder::new(legal_config));
+                let dp_config = DataSpaceAuthorityConfig::from(config.clone());
+                let dp = Arc::new(DataSpaceAuthorityVcBuilder::new(dp_config));
+
+                Arc::new(EcoAuthorityBuilder::new(legal, dp))
             }
         };
 

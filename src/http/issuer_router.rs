@@ -112,7 +112,7 @@ impl IssuerRouter {
     ) -> impl IntoResponse {
         let payload = match payload {
             Ok(Json(data)) => data,
-            Err(e) => return e.into_response()
+            Err(e) => return e.to_response()
         };
 
         let token = match extract_bearer_token(headers) {

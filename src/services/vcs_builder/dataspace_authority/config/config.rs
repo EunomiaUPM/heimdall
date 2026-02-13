@@ -24,24 +24,36 @@ use ymir::types::vcs::{VcModel, W3cDataModelVersion};
 use super::config_trait::DataSpaceAuthorityConfigTrait;
 use crate::config::{CoreApplicationConfig, CoreConfigTrait};
 use crate::services::vcs_builder::BuilderConfigDefaultTrait;
+use crate::types::role::AuthorityRole;
 
 pub struct DataSpaceAuthorityConfig {
     vc_config: VcConfig,
     dataspace_id: String,
-    federated_catalog_uri: String
+    federated_catalog_uri: String,
+    role: AuthorityRole,
 }
 
 impl BuilderConfigDefaultTrait for DataSpaceAuthorityConfig {
-    fn get_vc_model(&self) -> &VcModel { self.vc_config.get_vc_model() }
+    fn get_vc_model(&self) -> &VcModel {
+        self.vc_config.get_vc_model()
+    }
 
     fn get_w3c_data_model(&self) -> Option<&W3cDataModelVersion> {
         self.vc_config.get_w3c_data_model()
     }
+
+    fn get_role(&self) -> &AuthorityRole {
+        &self.role
+    }
 }
 
 impl DataSpaceAuthorityConfigTrait for DataSpaceAuthorityConfig {
-    fn get_dataspace_id(&self) -> &str { &self.dataspace_id }
-    fn get_catalog(&self) -> &str { &self.federated_catalog_uri }
+    fn get_dataspace_id(&self) -> &str {
+        &self.dataspace_id
+    }
+    fn get_catalog(&self) -> &str {
+        &self.federated_catalog_uri
+    }
 }
 
 impl From<CoreApplicationConfig> for DataSpaceAuthorityConfig {
@@ -56,7 +68,7 @@ impl From<CoreApplicationConfig> for DataSpaceAuthorityConfig {
         let federated_catalog_uri =
             value.get_issue_config().federated_catalog_uri.clone().unwrap_or_else(|| {
                 let error = Errors::module_new(
-                    "federated_catalog_uri is not defined while being dataspace_authority"
+                    "federated_catalog_uri is not defined while being dataspace_authority",
                 );
                 error!("{}", error.log());
                 panic!(
@@ -67,10 +79,11 @@ impl From<CoreApplicationConfig> for DataSpaceAuthorityConfig {
         Self {
             vc_config: VcConfig {
                 vc_model: value.get_vc_config().get_vc_model().clone(),
-                w3c_data_model: value.get_vc_config().get_w3c_data_model().cloned()
+                w3c_data_model: value.get_vc_config().get_w3c_data_model().cloned(),
             },
             dataspace_id,
-            federated_catalog_uri
+            federated_catalog_uri,
+            role: value.get_role().clone(),
         }
     }
 }

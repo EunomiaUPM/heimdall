@@ -32,8 +32,10 @@ const WalletInfo = () => {
   if (error) return <div style={{ color: '#ff0040' }}>Error: {error}</div>;
 
   return (
-    <div>
-      <h2 style={{ color: '#00f0ff', marginBottom: '20px' }}>Wallet Information</h2>
+    <div style={{ textAlign: 'left' }}>
+      <h2 style={{ color: '#00f0ff', marginBottom: '20px', textAlign: 'center' }}>
+        Wallet Information
+      </h2>
 
       {/* Wallet Details Card */}
       <div

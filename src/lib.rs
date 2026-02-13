@@ -15,13 +15,10 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-// pub mod capabilities;
 pub mod config;
 pub mod core;
 pub mod data;
-// pub mod errors;
 pub mod http;
 pub mod services;
 pub mod setup;
 pub mod types;
-// pub mod utils;

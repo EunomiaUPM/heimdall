@@ -23,6 +23,7 @@ use serde_json::Value;
 use tracing::error;
 use ymir::data::entities::{issuing, vc_request};
 use ymir::errors::{ErrorLogTrait, Errors};
+use ymir::types::errors::BadFormat;
 use ymir::types::vcs::claims_v1::{VCClaimsV1, VCFromClaimsV1};
 use ymir::types::vcs::claims_v2::VCClaimsV2;
 use ymir::types::vcs::vc_issuer::VCIssuer;
@@ -30,16 +31,26 @@ use ymir::types::vcs::{VcModel, VcType, W3cDataModelVersion};
 use ymir::utils::get_from_opt;
 
 use crate::services::vcs_builder::BuilderConfigDefaultTrait;
+use crate::types::role::AuthorityRole;
 
 pub trait VcBuilderTrait: Send + Sync + 'static {
     fn build_vc(&self, model: &issuing::Model) -> anyhow::Result<Value>;
     fn gather_data(&self, req_model: &vc_request::Model) -> anyhow::Result<String>;
+    fn get_role(&self) -> &AuthorityRole;
     fn just_build(
         &self,
         model: &issuing::Model,
         credential_subject: Value,
         config: &dyn BuilderConfigDefaultTrait,
     ) -> anyhow::Result<Value> {
+        let subject_id =
+            credential_subject.get("id").and_then(|v| v.as_str()).ok_or_else(|| {
+                let error =
+                    Errors::format_new(BadFormat::Received, "Unable to retrieve cred subject id");
+                error!("{}", error.log());
+                error
+            })?;
+
         let now = Utc::now();
         let vc_type = VcType::from_str(&model.vc_type)?;
         let issuer_did = get_from_opt(&model.issuer_did, "issuer did")?;
@@ -54,9 +65,10 @@ pub trait VcBuilderTrait: Send + Sync + 'static {
                 let vc = match w3c_data_model {
                     W3cDataModelVersion::V1 => serde_json::to_value(VCClaimsV1 {
                         exp: None,
+                        jti: Some(model.credential_id.clone()),
                         iat: None,
-                        iss: None,
-                        sub: None,
+                        iss: Some(issuer_did.clone()),
+                        sub: Some(subject_id.to_string()),
                         vc: VCFromClaimsV1 {
                             context: vec!["https://www.w3.org/ns/credentials/v1".to_string()],
                             r#type: vec!["VerifiableCredential".to_string(), vc_type.name()],
@@ -73,8 +85,9 @@ pub trait VcBuilderTrait: Send + Sync + 'static {
                     W3cDataModelVersion::V2 => serde_json::to_value(VCClaimsV2 {
                         exp: None,
                         iat: None,
-                        iss: None,
-                        sub: None,
+                        jti: Some(model.credential_id.clone()),
+                        iss: Some(issuer_did.clone()),
+                        sub: Some(subject_id.to_string()),
                         context: vec!["https://www.w3.org/ns/credentials/v2".to_string()],
                         r#type: vec!["VerifiableCredential".to_string(), vc_type.name()],
                         id: model.credential_id.clone(),

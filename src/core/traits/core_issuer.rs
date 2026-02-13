@@ -37,7 +37,7 @@ pub trait CoreIssuerTrait: Send + Sync + 'static {
     async fn get_cred_offer_data(&self, id: String) -> anyhow::Result<VCCredOffer> {
         let mut model = self.repo().issuing().get_by_id(&id).await?;
 
-        let data = self.issuer().get_cred_offer_data(&model)?;
+        let data = self.issuer().get_cred_offer_data(&model, None)?;
 
         if model.step {
             model.step = false;
@@ -46,11 +46,13 @@ pub trait CoreIssuerTrait: Send + Sync + 'static {
         Ok(data)
     }
     fn issuer_metadata(&self) -> IssuerMetadata {
-        self.issuer().get_issuer_data(None)
+        let vcs = self.vc_builder().get_role().credentials();
+        self.issuer().get_issuer_data(None, Some(vcs))
     }
 
     fn oauth_server_metadata(&self) -> AuthServerMetadata {
-        self.issuer().get_oauth_server_data(None)
+        let vcs = self.vc_builder().get_role().credentials();
+        self.issuer().get_oauth_server_data(None, Some(vcs))
     }
 
     async fn jwks(&self) -> anyhow::Result<WellKnownJwks> {
