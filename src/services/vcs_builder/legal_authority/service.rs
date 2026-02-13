@@ -27,20 +27,23 @@ use ymir::data::entities::{issuing, vc_request};
 use ymir::errors::{ErrorLogTrait, Errors};
 use ymir::types::errors::BadFormat;
 use ymir::types::vcs::vc_specs::legal_authority::{
-    LegalRegistrationNumberCredSubj, LegalRegistrationNumberTypes, VCData
+    LegalRegistrationNumberCredSubj, LegalRegistrationNumberTypes, VCData,
 };
 use ymir::types::vcs::VcType;
 use ymir::utils::get_from_opt;
-
+use crate::services::vcs_builder::BuilderConfigDefaultTrait;
 use super::super::VcBuilderTrait;
 use crate::services::vcs_builder::legal_authority::config::LegalAuthorityConfig;
+use crate::types::role::AuthorityRole;
 
 pub struct LegalAuthorityVcBuilder {
-    config: LegalAuthorityConfig
+    config: LegalAuthorityConfig,
 }
 
 impl LegalAuthorityVcBuilder {
-    pub fn new(config: LegalAuthorityConfig) -> Self { Self { config } }
+    pub fn new(config: LegalAuthorityConfig) -> Self {
+        Self { config }
+    }
 }
 
 impl VcBuilderTrait for LegalAuthorityVcBuilder {
@@ -52,31 +55,10 @@ impl VcBuilderTrait for LegalAuthorityVcBuilder {
             serde_json::from_str(&get_from_opt(&model.credential_data, "credential data")?)?;
         let holder_did = get_from_opt(&model.holder_did, "holder did")?;
 
-        let mut cred_subj = LegalRegistrationNumberCredSubj::default();
-        cred_subj.id = holder_did;
-        match vc_type {
-            VcType::LegalRegistrationNumber(data) => match data {
-                LegalRegistrationNumberTypes::TaxId => {
-                    cred_subj.r#type = "gx:taxID".to_string();
-                    cred_subj.tax_id = Some(vc_data.shitty_code);
-                }
-                LegalRegistrationNumberTypes::Euid => {
-                    cred_subj.r#type = "gx:EUID".to_string();
-                    cred_subj.euid = Some(vc_data.shitty_code);
-                }
-                LegalRegistrationNumberTypes::Eori => {
-                    cred_subj.r#type = "gx:EORI".to_string();
-                    cred_subj.eori = Some(vc_data.shitty_code);
-                }
-                LegalRegistrationNumberTypes::VatId => {
-                    cred_subj.r#type = "gx:vatID".to_string();
-                    cred_subj.vat_id = Some(vc_data.shitty_code);
-                }
-                LegalRegistrationNumberTypes::LeiCode => {
-                    cred_subj.r#type = "gx:leiCode".to_string();
-                    cred_subj.lei_code = Some(vc_data.shitty_code);
-                }
-            },
+        let cred_subj = match vc_type {
+            VcType::LegalRegistrationNumber(data) => {
+                LegalRegistrationNumberCredSubj::new(data, &holder_did, &vc_data.shitty_code)
+            }
             _ => {
                 let error = Errors::unauthorized_new(&format!(
                     "Cannot issue vc_type: {}",
@@ -85,7 +67,7 @@ impl VcBuilderTrait for LegalAuthorityVcBuilder {
                 error!("{}", error.log());
                 bail!(error)
             }
-        }
+        };
 
         let credential_subject = serde_json::to_value(&cred_subj)?;
 
@@ -118,7 +100,7 @@ impl VcBuilderTrait for LegalAuthorityVcBuilder {
                     None => {
                         let error = Errors::format_new(
                             BadFormat::Received,
-                            "No organizational identifier found in certificate"
+                            "No organizational identifier found in certificate",
                         );
                         error!("{}", error.log());
                         bail!(error)
@@ -134,12 +116,12 @@ impl VcBuilderTrait for LegalAuthorityVcBuilder {
                         LegalRegistrationNumberTypes::Euid => part.starts_with("EUID"),
                         LegalRegistrationNumberTypes::Eori => part.starts_with("EORI"),
                         LegalRegistrationNumberTypes::VatId => part.starts_with("VAT"),
-                        LegalRegistrationNumberTypes::LeiCode => part.starts_with("LEI")
+                        LegalRegistrationNumberTypes::LeiCode => part.starts_with("LEI"),
                     })
                     .ok_or_else(|| {
                         let error = Errors::format_new(
                             BadFormat::Received,
-                            &format!("No matching code found in cert for {:?}", data)
+                            &format!("No matching code found in cert for {:?}", data),
                         );
                         error!("{}", error.log());
                         error
@@ -160,5 +142,9 @@ impl VcBuilderTrait for LegalAuthorityVcBuilder {
         let data = serde_json::to_string(&VCData { shitty_code })?;
 
         Ok(data)
+    }
+
+    fn get_role(&self) -> &AuthorityRole {
+        self.config.get_role()
     }
 }

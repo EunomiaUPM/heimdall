@@ -29,6 +29,7 @@ services:
 #          "default_lease_ttl": "168h",
 #          "max_lease_ttl": "720h"
 #        }
+      VAULT_ADDR: http://127.0.0.1:8200
       VAULT_LOCAL_CONFIG: >
         {
           "storage": { "file": { "path": "/vault/file" } },

@@ -15,6 +15,7 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
+use std::collections::HashMap;
 use std::fmt;
 use std::fmt::Formatter;
 use std::str::FromStr;
@@ -23,14 +24,17 @@ use anyhow::bail;
 use serde::{Deserialize, Serialize};
 use tracing::error;
 use ymir::errors::{ErrorLogTrait, Errors};
+use ymir::types::issuing::CredentialConfiguration;
+use ymir::types::vcs::vc_specs::legal_authority::LegalRegistrationNumberTypes;
+use ymir::types::vcs::VcType;
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub enum AuthorityRole {
     LegalAuthority,
     ClearingHouse,
     ClearingHouseProxy,
-    DataSpaceAuthority
-    // AllRoles,
+    DataSpaceAuthority,
+    EcoAuthority,
 }
 
 impl FromStr for AuthorityRole {
@@ -42,7 +46,7 @@ impl FromStr for AuthorityRole {
             "ClearingHouseProxy" => Ok(Self::ClearingHouseProxy),
             "DataSpaceAuthority" => Ok(Self::DataSpaceAuthority),
             "DataspaceAuthority" => Ok(Self::DataSpaceAuthority),
-            // "AllRoles" => Ok(Self::AllRoles),
+            "EcoAuthority" => Ok(Self::EcoAuthority),
             _ => {
                 let error = Errors::parse_new("Invalid Authority role");
                 error!("{}", error.log());
@@ -58,10 +62,37 @@ impl fmt::Display for AuthorityRole {
             AuthorityRole::LegalAuthority => "LegalAuthority",
             AuthorityRole::ClearingHouse => "ClearingHouse",
             AuthorityRole::ClearingHouseProxy => "ClearingHouseProxy",
-            AuthorityRole::DataSpaceAuthority => "DataSpaceAuthority"
-            // AuthorityRole::AllRoles => "AllRoles",
+            AuthorityRole::DataSpaceAuthority => "DataSpaceAuthority",
+            AuthorityRole::EcoAuthority => "EcoAuthority",
         };
 
         write!(f, "{s}")
+    }
+}
+
+impl AuthorityRole {
+    pub fn credentials(&self) -> Vec<VcType> {
+        match self {
+            AuthorityRole::LegalAuthority => {
+                vec![VcType::LegalRegistrationNumber(LegalRegistrationNumberTypes::Eori)]
+            }
+            AuthorityRole::ClearingHouse => {
+                // TODO
+                vec![VcType::DataspaceParticipant]
+            }
+            AuthorityRole::ClearingHouseProxy => {
+                // TODO
+                vec![VcType::DataspaceParticipant]
+            }
+            AuthorityRole::DataSpaceAuthority => {
+                vec![VcType::DataspaceParticipant]
+            }
+            AuthorityRole::EcoAuthority => {
+                vec![
+                    VcType::LegalRegistrationNumber(LegalRegistrationNumberTypes::TaxId),
+                    VcType::DataspaceParticipant,
+                ]
+            }
+        }
     }
 }

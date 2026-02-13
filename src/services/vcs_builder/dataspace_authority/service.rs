@@ -25,11 +25,12 @@ use ymir::errors::{ErrorLogTrait, Errors};
 use ymir::types::vcs::vc_specs::dataspace::DataSpaceParticipant;
 use ymir::types::vcs::VcType;
 use ymir::utils::get_from_opt;
-
+use crate::services::vcs_builder::BuilderConfigDefaultTrait;
 use super::super::VcBuilderTrait;
 use crate::services::vcs_builder::dataspace_authority::config::{
     DataSpaceAuthorityConfig, DataSpaceAuthorityConfigTrait
 };
+use crate::types::role::AuthorityRole;
 
 pub struct DataSpaceAuthorityVcBuilder {
     config: DataSpaceAuthorityConfig
@@ -69,5 +70,9 @@ impl VcBuilderTrait for DataSpaceAuthorityVcBuilder {
 
     fn gather_data(&self, _req_model: &vc_request::Model) -> anyhow::Result<String> {
         Ok("WE DONT NEED DATA".to_string())
+    }
+
+    fn get_role(&self) -> &AuthorityRole {
+        &self.config.get_role()
     }
 }

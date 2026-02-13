@@ -37,7 +37,10 @@ pub trait CoreApproverTrait: Send + Sync + 'static {
     async fn manage_req(&self, id: String, payload: VcDecisionApproval) -> anyhow::Result<()> {
         let mut req_model = self.repo().request().get_by_id(&id).await?;
         let int_model = self.repo().interaction().get_by_id(&id).await?;
-        self.gatekeeper().apprv_dny_req(payload.approve, &mut req_model, &int_model).await?;
+        let body =
+            self.gatekeeper().apprv_dny_req(payload.approve, &mut req_model, &int_model).await?;
+        self.repo().request().update(req_model).await?;
+        self.gatekeeper().notify_minion(&int_model, body).await?;
         Ok(())
     }
 }

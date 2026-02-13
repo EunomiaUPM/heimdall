@@ -68,7 +68,7 @@ impl ApproverRouter {
     ) -> impl IntoResponse {
         let payload = match payload {
             Ok(Json(data)) => data,
-            Err(e) => return e.into_response()
+            Err(e) => return e.to_response()
         };
 
         match approver.manage_req(id, payload).await {

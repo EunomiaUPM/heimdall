@@ -23,12 +23,14 @@ use tracing::error;
 use ymir::core_traits::CoreWalletTrait;
 use ymir::errors::{ErrorLogTrait, Errors};
 use ymir::services::issuer::IssuerTrait;
+use ymir::services::repo::subtraits::{MatesTrait, MinionsTrait};
 use ymir::services::verifier::VerifierTrait;
 use ymir::services::wallet::WalletTrait;
 
 use crate::config::CoreConfigTrait;
 use crate::core::traits::{
-    CoreApproverTrait, CoreGatekeeperTrait, CoreIssuerTrait, CoreTrait, CoreVerifierTrait
+    CoreApproverTrait, CoreGatekeeperTrait, CoreIssuerTrait, CoreMinionTrait, CoreTrait,
+    CoreVerifierTrait,
 };
 use crate::services::gatekeeper::GateKeeperTrait;
 use crate::services::repo::RepoTrait;
@@ -41,7 +43,7 @@ pub struct Core {
     verifier: Arc<dyn VerifierTrait>,
     vc_builder: Arc<dyn VcBuilderTrait>,
     repo: Arc<dyn RepoTrait>,
-    config: Arc<dyn CoreConfigTrait>
+    config: Arc<dyn CoreConfigTrait>,
 }
 
 impl Core {
@@ -52,43 +54,80 @@ impl Core {
         verifier: Arc<dyn VerifierTrait>,
         vc_builder: Arc<dyn VcBuilderTrait>,
         repo: Arc<dyn RepoTrait>,
-        config: Arc<dyn CoreConfigTrait>
+        config: Arc<dyn CoreConfigTrait>,
     ) -> Self {
         Self { wallet, gatekeeper, issuer, verifier, vc_builder, repo, config }
     }
 }
 
 impl CoreTrait for Core {
-    fn config(&self) -> Arc<dyn CoreConfigTrait> { self.config.clone() }
+    fn config(&self) -> Arc<dyn CoreConfigTrait> {
+        self.config.clone()
+    }
 }
-impl CoreVerifierTrait for Core {
-    fn verifier(&self) -> Arc<dyn VerifierTrait> { self.verifier.clone() }
 
-    fn repo(&self) -> Arc<dyn RepoTrait> { self.repo.clone() }
+impl CoreMinionTrait for Core {
+    fn repo(&self) -> Arc<dyn RepoTrait> {
+        self.repo.clone()
+    }
+}
+
+impl CoreVerifierTrait for Core {
+    fn verifier(&self) -> Arc<dyn VerifierTrait> {
+        self.verifier.clone()
+    }
+
+    fn repo(&self) -> Arc<dyn RepoTrait> {
+        self.repo.clone()
+    }
 }
 
 impl CoreIssuerTrait for Core {
-    fn issuer(&self) -> Arc<dyn IssuerTrait> { self.issuer.clone() }
-    fn repo(&self) -> Arc<dyn RepoTrait> { self.repo.clone() }
-    fn vc_builder(&self) -> Arc<dyn VcBuilderTrait> { self.vc_builder.clone() }
+    fn issuer(&self) -> Arc<dyn IssuerTrait> {
+        self.issuer.clone()
+    }
+    fn repo(&self) -> Arc<dyn RepoTrait> {
+        self.repo.clone()
+    }
+    fn vc_builder(&self) -> Arc<dyn VcBuilderTrait> {
+        self.vc_builder.clone()
+    }
+
+    fn wallet(&self) -> Option<Arc<dyn WalletTrait>> {
+        self.wallet.clone()
+    }
 }
 
 impl CoreApproverTrait for Core {
-    fn gatekeeper(&self) -> Arc<dyn GateKeeperTrait> { self.gatekeeper.clone() }
+    fn gatekeeper(&self) -> Arc<dyn GateKeeperTrait> {
+        self.gatekeeper.clone()
+    }
 
-    fn repo(&self) -> Arc<dyn RepoTrait> { self.repo.clone() }
+    fn repo(&self) -> Arc<dyn RepoTrait> {
+        self.repo.clone()
+    }
 }
 
 impl CoreGatekeeperTrait for Core {
-    fn gatekeeper(&self) -> Arc<dyn GateKeeperTrait> { self.gatekeeper.clone() }
+    fn gatekeeper(&self) -> Arc<dyn GateKeeperTrait> {
+        self.gatekeeper.clone()
+    }
 
-    fn verifier(&self) -> Arc<dyn VerifierTrait> { self.verifier.clone() }
+    fn verifier(&self) -> Arc<dyn VerifierTrait> {
+        self.verifier.clone()
+    }
 
-    fn issuer(&self) -> Arc<dyn IssuerTrait> { self.issuer.clone() }
+    fn issuer(&self) -> Arc<dyn IssuerTrait> {
+        self.issuer.clone()
+    }
 
-    fn repo(&self) -> Arc<dyn RepoTrait> { self.repo.clone() }
+    fn repo(&self) -> Arc<dyn RepoTrait> {
+        self.repo.clone()
+    }
 
-    fn vc_builder(&self) -> Arc<dyn VcBuilderTrait> { self.vc_builder.clone() }
+    fn vc_builder(&self) -> Arc<dyn VcBuilderTrait> {
+        self.vc_builder.clone()
+    }
 }
 
 impl CoreWalletTrait for Core {
@@ -98,5 +137,13 @@ impl CoreWalletTrait for Core {
             error!("{}", error.log());
             panic!("module wallet not implemented");
         })
+    }
+
+    fn mate(&self) -> Option<Arc<dyn MatesTrait>> {
+        None
+    }
+
+    fn minion(&self) -> Option<Arc<dyn MinionsTrait>> {
+        Some(self.repo.minions().clone())
     }
 }

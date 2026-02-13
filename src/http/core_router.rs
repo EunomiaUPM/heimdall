@@ -20,19 +20,18 @@ use std::sync::Arc;
 use axum::extract::Request;
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
-use axum::routing::get;
 use axum::Router;
 use tower_http::trace::{DefaultOnResponse, TraceLayer};
 use tracing::{error, info, Level};
 use uuid::Uuid;
-use ymir::http::{OpenapiRouter, WalletRouter};
+use ymir::http::{HealthRouter, OpenapiRouter, WalletRouter};
 
 use crate::core::traits::CoreTrait;
-use crate::http::{ApproverRouter, GateKeeperRouter, IssuerRouter, VerifierRouter};
+use crate::http::{ApproverRouter, GateKeeperRouter, IssuerRouter, MinionRouter, VerifierRouter};
 
 pub struct RainbowAuthorityRouter {
     core: Arc<dyn CoreTrait>,
-    openapi: String
+    openapi: String,
 }
 
 impl RainbowAuthorityRouter {
@@ -47,10 +46,13 @@ impl RainbowAuthorityRouter {
         let verifier_router = VerifierRouter::new(self.core.clone()).router();
         let approver_router = ApproverRouter::new(self.core.clone()).router();
         let openapi_router = OpenapiRouter::new(self.openapi.clone()).router();
+        let minion_router = MinionRouter::new(self.core.clone()).router();
+        let health_router = HealthRouter::new().router();
 
         let api_path = self.core.config().get_api_version();
         let router = Router::new()
-            .route(&format!("{}/status", api_path), get(Self::server_status))
+            .nest(&format!("{}/health", api_path), health_router)
+            .nest(&format!("{}/minions", api_path), minion_router)
             .nest(&format!("{}/approver", api_path), approver_router)
             .nest(&format!("{}/gate", api_path), gatekeeper_router)
             .nest(&format!("{}/issuer", api_path), issuer_router)
@@ -67,19 +69,15 @@ impl RainbowAuthorityRouter {
         router.fallback(Self::fallback).layer(
             TraceLayer::new_for_http()
                 .make_span_with(
-                    |_req: &Request<_>| tracing::info_span!("request", id = %Uuid::new_v4())
+                    |_req: &Request<_>| tracing::info_span!("request", id = %Uuid::new_v4()),
                 )
                 .on_request(|req: &Request<_>, _span: &tracing::Span| {
                     info!("{} {}", req.method(), req.uri().path());
                 })
-                .on_response(DefaultOnResponse::new().level(Level::TRACE))
+                .on_response(DefaultOnResponse::new().level(Level::TRACE)),
         )
     }
 
-    async fn server_status() -> impl IntoResponse {
-        info!("Someone checked server status");
-        (StatusCode::OK, "Server is Okay!").into_response()
-    }
     async fn fallback() -> impl IntoResponse {
         error!("Wrong route");
         StatusCode::NOT_FOUND.into_response()

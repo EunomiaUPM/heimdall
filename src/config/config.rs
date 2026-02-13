@@ -19,29 +19,31 @@ use std::path::PathBuf;
 use std::{env, fs};
 
 use serde::{Deserialize, Serialize};
-use tracing::debug;
-use ymir::config::traits::{ApiConfigTrait, DatabaseConfigTrait};
-use ymir::config::types::{ApiConfig, CommonHostsConfig, DatabaseConfig};
-use ymir::types::dids::did_config::DidConfig;
-use ymir::types::issuing::StuffToIssue;
-use ymir::types::verifying::VerifyReqConfig;
-use ymir::types::wallet::WalletConfig;
+use tracing::{debug, error};
+use ymir::config::traits::{
+    ApiConfigTrait, ConnectionConfigTrait, DatabaseConfigTrait, HostsConfigTrait,
+};
+use ymir::config::types::{
+    ApiConfig, CommonHostsConfig, ConnectionConfig, DatabaseConfig, DidConfig, IssueConfig,
+    VcConfig, VerifyReqConfig, WalletConfig,
+};
+use ymir::errors::{ErrorLogTrait, Errors};
 
 use super::CoreConfigTrait;
 use crate::types::role::AuthorityRole;
 
 #[derive(Deserialize, Serialize, Clone, Debug)]
 pub struct CoreApplicationConfig {
-    pub hosts: CommonHostsConfig,
-    pub is_local: bool,
-    pub is_tls: bool,
-    pub db_config: DatabaseConfig,
-    pub wallet_config: Option<WalletConfig>,
-    pub did_config: DidConfig,
-    pub role: AuthorityRole,
-    pub api: ApiConfig,
-    pub stuff_to_issue: StuffToIssue,
-    pub verify_req_config: VerifyReqConfig
+    hosts_config: CommonHostsConfig,
+    connection_config: ConnectionConfig,
+    api_config: ApiConfig,
+    db_config: DatabaseConfig,
+    wallet_config: Option<WalletConfig>,
+    did_config: DidConfig,
+    issue_config: IssueConfig,
+    vc_config: VcConfig,
+    verify_req_config: VerifyReqConfig,
+    role: AuthorityRole,
 }
 
 impl CoreApplicationConfig {
@@ -54,25 +56,63 @@ impl CoreApplicationConfig {
     }
 }
 
-impl CoreApplicationConfig {
-    pub fn get_did(&self) -> String { self.did_config.did.clone() }
-}
-
 impl DatabaseConfigTrait for CoreApplicationConfig {
-    fn db(&self) -> &DatabaseConfig { &self.db_config }
+    fn db(&self) -> &DatabaseConfig {
+        &self.db_config
+    }
 }
 
 impl ApiConfigTrait for CoreApplicationConfig {
-    fn api(&self) -> &ApiConfig { &self.api }
+    fn api(&self) -> &ApiConfig {
+        &self.api_config
+    }
+}
+
+impl ConnectionConfigTrait for CoreApplicationConfig {
+    fn connection(&self) -> &ConnectionConfig {
+        &self.connection_config
+    }
+}
+
+impl HostsConfigTrait for CoreApplicationConfig {
+    fn hosts(&self) -> &CommonHostsConfig {
+        &self.hosts_config
+    }
 }
 
 impl CoreConfigTrait for CoreApplicationConfig {
-    fn hosts(&self) -> &CommonHostsConfig { &self.hosts }
+    fn get_role(&self) -> AuthorityRole {
+        self.role.clone()
+    }
 
-    fn is_local(&self) -> bool { self.is_local }
-    fn is_tls(&self) -> bool { self.is_tls }
+    fn is_wallet_active(&self) -> bool {
+        self.wallet_config.is_some()
+    }
 
-    fn get_role(&self) -> AuthorityRole { self.role.clone() }
+    fn get_wallet_config(&self) -> &WalletConfig {
+        let wallet = match self.wallet_config.as_ref() {
+            Some(data) => Some(data),
+            None => {
+                let error = Errors::module_new("wallet");
+                error!("{}", error.log());
+                None
+            }
+        };
+        wallet.expect("Module wallet is no active")
+    }
 
-    fn is_wallet_active(&self) -> bool { self.wallet_config.is_some() }
+    fn get_did_config(&self) -> &DidConfig {
+        &self.did_config
+    }
+
+    fn get_issue_config(&self) -> &IssueConfig {
+        &self.issue_config
+    }
+
+    fn get_verify_req_config(&self) -> &VerifyReqConfig {
+        &self.verify_req_config
+    }
+    fn get_vc_config(&self) -> &VcConfig {
+        &self.vc_config
+    }
 }
