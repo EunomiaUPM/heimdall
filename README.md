@@ -11,6 +11,7 @@ Heimdall provides a modular architecture to handle digital identity:
 - **GateKeeper** 🔑: Manages fine-grained authorization (GNAP).
 - **Approver** ⚖️: Handles credential approval workflows.
 - **Wallet** 💼: Embedded wallet for keys and DIDs.
+- **Web Interface** 🖥️: A built-in React dashboard for management.
 
 Built with a **Clean Architecture** approach 🏗️, ensuring robustness and maintainability.
 
@@ -37,9 +38,12 @@ Validates proofs provided by holders.
 
 - **Endpoints**: `/api/v1/verifier/pd/{state}`, `/api/v1/verifier/verify/{state}`
 
-### 💼 4. Wallet
+### 💼 4. Wallet & Web Interface
 
 Manages cryptographic keys (EdDSA, RSA) and DIDs (`did:web`, `did:key`).
+
+- **Web UI**: Access the management dashboard at `/api/v1/react/`.
+- **Features**: Wallet onboarding, Credential implementation, Minion management.
 
 ---
 
@@ -76,7 +80,7 @@ The initialization logic is handled in `src/setup`, primarily via the `Authority
     - Initializes **GitHub/Postgres** repositories.
     - Sets up **GNAP**, **Issuer**, and **Verifier** services.
 4.  **Core Creation**: Assembles all services into the `Core` struct.
-5.  **Router**: Builds the Axum router with all module routes.
+5.  **Router**: Builds the Axum router with all module routes **including the React Static Server**.
 
 ### 🔒 TLS & Fallback
 
@@ -100,20 +104,43 @@ A complete **OpenAPI 3.1.0** specification is available.
 
 ### Prerequisites
 
-- 🦀 Rust (latest stable)
-- 🗄️ Database (configured via `DatabaseConfig`)
+- 🦀 **Rust** (latest stable)
+- 🟢 **Node.js & npm** (for the React frontend)
+- 🗄️ **Database** (configured via `DatabaseConfig`)
 
-### Building
+### Building & Running (Full Stack)
 
-```bash
-cargo build
-```
+To run the complete system (Rust Backend + React Frontend), follow these steps:
 
-### Running
+1.  **Build the Frontend**:
+    Before running Rust, you must compile the React application code.
 
-```bash
-cargo run
-```
+    **Windows (PowerShell):**
+
+    ```powershell
+    .\react\build.ps1
+    ```
+
+    **Linux/Mac (Bash):**
+
+    ```bash
+    ./react/build.sh
+    ```
+
+    _This generates the `react/dist` folder._
+
+2.  **Run the Server**:
+    ```bash
+    cargo run
+    ```
+    The server will start (default port 1500) and serve the frontend at:
+    `http://localhost:1500/api/v1/react/`
+
+### Development Mode
+
+- **Rust**: `cargo run` (Backend API only)
+- **React**: `cd react && npm run dev` (Frontend with hot-reload at `localhost:5173`)
+  _Note: In this mode, the frontend runs separately from the Rust server backend._
 
 ---
 
