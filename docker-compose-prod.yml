@@ -12,20 +12,20 @@ services:
       - ./vault/config:/vault/config
       - ./vault/data:/vault/file
     environment:
-      VAULT_ADDR: http://127.0.0.1:8200
+      VAULT_CACERT: /vault/config/root-ca.pem
       VAULT_LOCAL_CONFIG: >
         {
           "storage": { "file": { "path": "/vault/file" } },
           "listener": [{
             "tcp": {
               "address": "0.0.0.0:8200",
-              "tls_disable": 1
-
-
+              "tls_cert_file": "/vault/config/vault-cert.pem",
+              "tls_key_file": "/vault/config/vault-key.pem",
+              "tls_client_ca_file": "/vault/config/vault-ca.pem"
             }
           }],
           "ui": true,
-          "api_addr": "http://127.0.0.1:8200",
+          "api_addr": "https://127.0.0.1:8200",
           "default_lease_ttl": "168h",
           "max_lease_ttl": "720h"
         }
@@ -41,3 +41,20 @@ services:
       POSTGRES_DB: ds_authority
     ports:
       - "1450:5432"
+
+  heimdall: 
+    container_name: heimdall
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "1500:1500"
+    volumes:
+      - ./static/environment/envs/.env:/app/static/environment/envs/.env
+      - ./static/environment/config:/app/static/environment/config
+    depends_on:
+      - db
+      - vault
+    env_file:
+      - ./static/environment/envs/.env
+    
