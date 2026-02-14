@@ -1,4 +1,7 @@
 import { useState } from 'react';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
 
 const WalletOidc4vp = () => {
   const [uri, setUri] = useState('');
@@ -40,110 +43,40 @@ const WalletOidc4vp = () => {
   };
 
   return (
-    <div>
-      <h2 style={{ color: '#00f0ff', marginBottom: '20px' }}>OIDC4VP Presentation</h2>
-      <div
-        style={{
-          border: '2px solid #00f0ff',
-          padding: '25px',
-          borderRadius: '8px',
-          backgroundColor: 'rgba(26, 29, 53, 0.6)',
-          boxShadow: '0 0 20px rgba(0, 240, 255, 0.3)',
-        }}
-      >
-        <form onSubmit={handleProcess}>
-          <div style={{ marginBottom: '20px' }}>
-            <label
-              htmlFor="uri"
-              style={{
-                display: 'block',
-                color: '#00f0ff',
-                marginBottom: '10px',
-                fontSize: '1.1em',
-              }}
-            >
+    <div className="max-w-3xl mx-auto">
+      <h2 className="text-2xl font-bold text-brand-sky mb-6 text-center">OIDC4VP Presentation</h2>
+      <div className="rounded-lg border border-brand-sky bg-background/60 p-8 shadow-lg shadow-brand-sky/20">
+        <form onSubmit={handleProcess} className="space-y-6">
+          <div className="grid w-full items-center gap-3">
+            <Label htmlFor="uri" className="text-brand-sky text-lg">
               Enter OIDC4VP Request URI:
-            </label>
-            <input
+            </Label>
+            <Input
               id="uri"
               type="text"
               value={uri}
               onChange={(e) => setUri(e.target.value)}
               placeholder="openid-vc://..."
-              style={{
-                width: '100%',
-                padding: '12px',
-                backgroundColor: 'rgba(10, 14, 39, 0.8)',
-                border: '2px solid #00f0ff',
-                borderRadius: '4px',
-                color: '#e0e0e0',
-                fontSize: '1em',
-                outline: 'none',
-                boxShadow: '0 0 10px rgba(0, 240, 255, 0.2)',
-              }}
+              className="border-brand-sky focus-visible:ring-brand-sky/50 bg-background/80"
             />
           </div>
-          <button
+          <Button
             type="submit"
             disabled={loading || !uri}
-            style={{
-              padding: '12px 30px',
-              backgroundColor:
-                loading || !uri ? 'rgba(0, 240, 255, 0.1)' : 'rgba(0, 240, 255, 0.2)',
-              color: '#00f0ff',
-              border: '2px solid #00f0ff',
-              borderRadius: '4px',
-              cursor: loading || !uri ? 'not-allowed' : 'pointer',
-              fontSize: '1.1em',
-              fontWeight: 'bold',
-              boxShadow: '0 0 15px rgba(0, 240, 255, 0.4)',
-              transition: 'all 0.3s ease',
-            }}
-            onMouseEnter={(e) => {
-              if (!loading && uri) {
-                e.currentTarget.style.backgroundColor = 'rgba(0, 240, 255, 0.3)';
-                e.currentTarget.style.boxShadow = '0 0 25px rgba(0, 240, 255, 0.6)';
-              }
-            }}
-            onMouseLeave={(e) => {
-              if (!loading && uri) {
-                e.currentTarget.style.backgroundColor = 'rgba(0, 240, 255, 0.2)';
-                e.currentTarget.style.boxShadow = '0 0 15px rgba(0, 240, 255, 0.4)';
-              }
-            }}
+            className="w-full bg-brand-sky/20 text-brand-sky border border-brand-sky hover:bg-brand-sky/30 shadow-lg shadow-brand-sky/20 font-bold text-lg h-12"
           >
             {loading ? 'PROCESANDO...' : 'PROCESAR'}
-          </button>
+          </Button>
         </form>
 
         {error && (
-          <div
-            style={{
-              marginTop: '20px',
-              padding: '15px',
-              border: '1px solid #ff0040',
-              backgroundColor: 'rgba(255, 0, 64, 0.1)',
-              color: '#ff0040',
-              borderRadius: '4px',
-            }}
-          >
+          <div className="mt-6 p-4 border border-danger bg-danger/10 text-danger rounded-md">
             <strong>Error:</strong> {error}
           </div>
         )}
 
         {response && (
-          <div
-            style={{
-              marginTop: '20px',
-              padding: '15px',
-              border: '1px solid #00ff41',
-              backgroundColor: 'rgba(0, 255, 65, 0.1)',
-              color: '#00ff41',
-              borderRadius: '4px',
-              textAlign: 'center',
-              fontWeight: 'bold',
-            }}
-          >
+          <div className="mt-6 p-4 border border-success bg-success/10 text-success rounded-md text-center font-bold">
             ✓ OIDC4VP Processed Successfully!
           </div>
         )}

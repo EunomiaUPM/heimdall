@@ -2,11 +2,16 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { X509 } from 'jsrsasign';
 import BooleanBadge from '../components/BooleanBadge';
+import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
+import { ArrowLeft } from 'lucide-react';
+import QRCode from 'react-qr-code';
 
 const RequestDetails = () => {
   const { id } = useParams();
   const [request, setRequest] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
   const [parsedCert, setParsedCert] = useState(null);
   const navigate = useNavigate();
@@ -54,6 +59,7 @@ const RequestDetails = () => {
   }, [id, apiUrl]);
 
   const handleDecision = async (approve) => {
+    setSubmitting(true);
     try {
       const response = await fetch(`${apiUrl}/approver/${id}`, {
         method: 'POST',
@@ -73,203 +79,153 @@ const RequestDetails = () => {
     } catch (err) {
       console.error('Error submitting decision:', err);
       alert('Error: ' + err.message);
+    } finally {
+      setSubmitting(false);
     }
   };
 
-  if (loading) return <div style={{ padding: '20px', color: '#00f0ff' }}>Loading...</div>;
-  if (error) return <div style={{ padding: '20px', color: '#ff0040' }}>Error: {error}</div>;
-  if (!request) return <div style={{ padding: '20px', color: '#e0e0e0' }}>Request not found</div>;
+  if (loading) return <div className="p-8 text-brand-sky">Loading...</div>;
+  if (error) return <div className="p-8 text-danger">Error: {error}</div>;
+  if (!request) return <div className="p-8 text-muted-foreground">Request not found</div>;
 
   const showDecisionButtons =
     request.interact_method &&
     request.interact_method.length > 0 &&
     request.interact_method[0] === 'cross-user';
 
-  const getStatusColor = (status, isVcIssued) => {
+  const getStatusColorClass = (status, isVcIssued) => {
     switch (status?.toLowerCase()) {
       case 'processing':
       case 'proccesing':
-        return '#f0ff00'; // Yellow
+        return 'text-yellow-500 border-yellow-500 shadow-yellow-500/30';
       case 'pending':
-        return '#ffa500'; // Orange
+        return 'text-orange-500 border-orange-500 shadow-orange-500/30';
       case 'approved':
-        return '#00f0ff'; // Blue/Cyan
+        return 'text-brand-sky border-brand-sky shadow-brand-sky/30';
       case 'finalized':
-        return isVcIssued ? '#00ff41' : '#ff0040'; // Green if issued, Red if not
+        return isVcIssued
+          ? 'text-green-500 border-green-500 shadow-green-500/30'
+          : 'text-red-500 border-red-500 shadow-red-500/30';
       default:
-        return '#00f0ff'; // Default Blue/Cyan
+        return 'text-brand-sky border-brand-sky shadow-brand-sky/30';
     }
   };
 
-  const statusColor = getStatusColor(request.status, request.is_vc_issued);
+  const statusClasses = getStatusColorClass(request.status, request.is_vc_issued);
 
   return (
-    <div style={{ padding: '30px', minHeight: '100vh' }}>
-      <div style={{ position: 'relative', marginBottom: '20px' }}>
-        <button
+    <div className="w-full">
+      <div className="relative mb-6 flex items-center justify-center">
+        <Button
+          variant="outline"
           onClick={() => navigate('/requests')}
-          style={{
-            position: 'absolute',
-            left: 0,
-            top: '50%',
-            transform: 'translateY(-50%)',
-            cursor: 'pointer',
-            backgroundColor: 'rgba(189, 0, 255, 0.2)',
-            border: '2px solid #bd00ff',
-            color: '#bd00ff',
-            padding: '8px 16px',
-            boxShadow: '0 0 15px rgba(189, 0, 255, 0.4)',
-            borderRadius: '4px',
-            fontSize: '1em',
-            transition: 'all 0.3s ease',
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.backgroundColor = 'rgba(189, 0, 255, 0.3)';
-            e.currentTarget.style.boxShadow = '0 0 20px rgba(189, 0, 255, 0.6)';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.backgroundColor = 'rgba(189, 0, 255, 0.2)';
-            e.currentTarget.style.boxShadow = '0 0 15px rgba(189, 0, 255, 0.4)';
-          }}
+          className="absolute left-0 border-brand-purple text-brand-purple hover:bg-brand-purple/10 hover:text-brand-purple"
         >
-          &larr; Back to List
-        </button>
-        <h1 style={{ margin: 0, textAlign: 'center' }}>Request Details</h1>
+          <ArrowLeft className="mr-2 h-4 w-4" /> Back to List
+        </Button>
+        <h1 className="text-3xl font-bold text-brand-sky font-ubuntu">Request Details</h1>
       </div>
+
       <div
-        style={{
-          border: `2px solid ${statusColor}`,
-          padding: '25px',
-          borderRadius: '8px',
-          marginBottom: '20px',
-          textAlign: 'left',
-          backgroundColor: 'rgba(26, 29, 53, 0.6)',
-          boxShadow: `0 0 20px ${statusColor}4D`, // 4D is ~30% alpha
-        }}
+        className={cn(
+          'rounded-lg border bg-background/60 p-6 shadow-lg text-left mb-6',
+          statusClasses,
+        )}
       >
-        <p>
-          <strong style={{ color: '#00f0ff' }}>ID:</strong>{' '}
-          <span style={{ color: '#e0e0e0' }}>{request.id}</span>
-        </p>
-        <p>
-          <strong style={{ color: '#00f0ff' }}>Slug:</strong>{' '}
-          <span style={{ color: '#e0e0e0' }}>{request.participant_slug}</span>
-        </p>
-        <p>
-          <strong style={{ color: '#00f0ff' }}>VC Type:</strong>{' '}
-          <span style={{ color: '#ff00ff' }}>{request.vc_type}</span>
-        </p>
-        <p>
-          <strong style={{ color: '#00f0ff' }}>Interact Methods:</strong>{' '}
-          <span style={{ color: '#e0e0e0' }}>{request.interact_method.join(', ')}</span>
-        </p>
-        <p>
-          <strong style={{ color: '#00f0ff' }}>Status:</strong>{' '}
-          <span style={{ color: statusColor }}>{request.status}</span>
-        </p>
-        {request.vc_uri && (
+        <div className="space-y-4">
           <p>
-            <strong style={{ color: '#00f0ff' }}>VC URI:</strong>{' '}
-            <span style={{ color: '#e0e0e0', wordBreak: 'break-all' }}>{request.vc_uri}</span>
+            <strong className="text-brand-sky">ID:</strong>{' '}
+            <span className="text-muted-foreground">{request.id}</span>
           </p>
-        )}
-        <p>
-          <strong style={{ color: '#00f0ff' }}>VC Issued:</strong>{' '}
-          <BooleanBadge value={request.is_vc_issued} />
-        </p>
-        <p>
-          <strong style={{ color: '#00f0ff' }}>Created At:</strong>{' '}
-          <span style={{ color: '#e0e0e0' }}>{request.created_at}</span>
-        </p>
-        {request.ended_at && (
           <p>
-            <strong style={{ color: '#00f0ff' }}>Ended At:</strong>{' '}
-            <span style={{ color: '#e0e0e0' }}>{request.ended_at}</span>
+            <strong className="text-brand-sky">Slug:</strong>{' '}
+            <span className="text-muted-foreground">{request.participant_slug}</span>
           </p>
-        )}
+          <p>
+            <strong className="text-brand-sky">VC Type:</strong>{' '}
+            <span className="text-brand-purple">{request.vc_type}</span>
+          </p>
+          <p>
+            <strong className="text-brand-sky">Interact Methods:</strong>{' '}
+            <span className="text-muted-foreground">{request.interact_method.join(', ')}</span>
+          </p>
+          <p>
+            <strong className="text-brand-sky">Status:</strong>{' '}
+            <span className="font-bold">{request.status}</span>
+          </p>
+          {request.vc_uri && (
+            <div className="space-y-4">
+              <div>
+                <strong className="text-brand-sky block mb-1">VC URI:</strong>{' '}
+                <span className="text-muted-foreground break-all">{request.vc_uri}</span>
+              </div>
+              <div className="p-4 bg-white/10 rounded-lg inline-block">
+                <QRCode
+                  value={request.vc_uri}
+                  size={150}
+                  style={{ height: 'auto', maxWidth: '100%', width: '100%' }}
+                  viewBox={`0 0 150 150`}
+                />
+              </div>
+            </div>
+          )}
+          <p>
+            <strong className="text-brand-sky">VC Issued:</strong>{' '}
+            <BooleanBadge value={request.is_vc_issued} />
+          </p>
+          <p>
+            <strong className="text-brand-sky">Created At:</strong>{' '}
+            <span className="text-muted-foreground">{request.created_at}</span>
+          </p>
+          {request.ended_at && (
+            <p>
+              <strong className="text-brand-sky">Ended At:</strong>{' '}
+              <span className="text-muted-foreground">{request.ended_at}</span>
+            </p>
+          )}
+        </div>
       </div>
 
       {request.cert && (
-        <div
-          style={{
-            border: '2px solid #ff00ff',
-            padding: '25px',
-            borderRadius: '8px',
-            marginBottom: '20px',
-            backgroundColor: 'rgba(26, 29, 53, 0.6)',
-            color: '#e0e0e0',
-            textAlign: 'left',
-            boxShadow: '0 0 20px rgba(255, 0, 255, 0.3)',
-          }}
-        >
-          <h3 style={{ color: '#ff00ff', textShadow: '0 0 10px rgba(255, 0, 255, 0.6)' }}>
+        <div className="rounded-lg border border-brand-purple bg-background/60 p-6 shadow-lg shadow-brand-purple/20 text-left mb-6 text-muted-foreground">
+          <h3 className="text-xl font-bold text-brand-purple drop-shadow-md mb-4">
             Certificate Details
           </h3>
           {parsedCert && !parsedCert.error ? (
-            <>
+            <div className="space-y-2">
               <p>
-                <strong style={{ color: '#ff00ff' }}>Subject:</strong>{' '}
-                <span
-                  style={{
-                    wordBreak: 'break-word',
-                    overflowWrap: 'break-word',
-                    display: 'inline-block',
-                    maxWidth: '100%',
-                  }}
-                >
-                  {parsedCert.subject}
-                </span>
+                <strong className="text-brand-purple">Subject:</strong>{' '}
+                <span className="break-all inline-block max-w-full">{parsedCert.subject}</span>
               </p>
               <p>
-                <strong style={{ color: '#ff00ff' }}>Issuer:</strong>{' '}
-                <span
-                  style={{
-                    wordBreak: 'break-word',
-                    overflowWrap: 'break-word',
-                    display: 'inline-block',
-                    maxWidth: '100%',
-                  }}
-                >
-                  {parsedCert.issuer}
-                </span>
+                <strong className="text-brand-purple">Issuer:</strong>{' '}
+                <span className="break-all inline-block max-w-full">{parsedCert.issuer}</span>
               </p>
               <p>
-                <strong style={{ color: '#ff00ff' }}>Serial:</strong>{' '}
+                <strong className="text-brand-purple">Serial:</strong>{' '}
                 <span>{parsedCert.serial}</span>
               </p>
               <p>
-                <strong style={{ color: '#ff00ff' }}>Not Before:</strong>{' '}
+                <strong className="text-brand-purple">Not Before:</strong>{' '}
                 <span>{parsedCert.notBefore}</span>
               </p>
               <p>
-                <strong style={{ color: '#ff00ff' }}>Not After:</strong>{' '}
+                <strong className="text-brand-purple">Not After:</strong>{' '}
                 <span>{parsedCert.notAfter}</span>
               </p>
-            </>
+            </div>
           ) : (
             <p>
-              <em style={{ color: '#ff0040' }}>
+              <em className="text-danger">
                 {parsedCert?.error || 'Raw cert available but parsing failed.'}
               </em>
             </p>
           )}
-          <details>
-            <summary style={{ color: '#ff00ff', cursor: 'pointer', marginTop: '10px' }}>
+          <details className="mt-4">
+            <summary className="text-brand-purple cursor-pointer hover:underline">
               Raw Certificate
             </summary>
-            <pre
-              style={{
-                overflowX: 'auto',
-                whiteSpace: 'pre-wrap',
-                wordBreak: 'break-all',
-                backgroundColor: 'rgba(10, 14, 39, 0.8)',
-                padding: '10px',
-                borderRadius: '4px',
-                border: '1px solid #ff00ff',
-                color: '#e0e0e0',
-                marginTop: '10px',
-              }}
-            >
+            <pre className="mt-2 text-xs overflow-x-auto whitespace-pre-wrap break-all bg-black/40 p-3 rounded border border-brand-purple/50 text-muted-foreground">
               {request.cert}
             </pre>
           </details>
@@ -277,57 +233,21 @@ const RequestDetails = () => {
       )}
 
       {showDecisionButtons && request.status === 'Pending' && (
-        <div style={{ display: 'flex', gap: '20px', marginTop: '20px' }}>
-          <button
+        <div className="flex gap-4 mt-6">
+          <Button
             onClick={() => handleDecision(true)}
-            style={{
-              padding: '12px 24px',
-              backgroundColor: 'rgba(0, 255, 65, 0.2)',
-              color: '#00ff41',
-              border: '2px solid #00ff41',
-              borderRadius: '4px',
-              cursor: 'pointer',
-              fontSize: '16px',
-              fontWeight: 'bold',
-              boxShadow: '0 0 20px rgba(0, 255, 65, 0.4)',
-              transition: 'all 0.3s ease',
-            }}
-            onMouseEnter={(e) => {
-              e.target.style.backgroundColor = 'rgba(0, 255, 65, 0.3)';
-              e.target.style.boxShadow = '0 0 30px rgba(0, 255, 65, 0.6)';
-            }}
-            onMouseLeave={(e) => {
-              e.target.style.backgroundColor = 'rgba(0, 255, 65, 0.2)';
-              e.target.style.boxShadow = '0 0 20px rgba(0, 255, 65, 0.4)';
-            }}
+            disabled={submitting}
+            className="bg-green-500/20 text-green-500 border border-green-500 hover:bg-green-500/30 font-bold shadow-lg shadow-green-500/20"
           >
-            Approve
-          </button>
-          <button
+            {submitting ? 'PROCESSING...' : 'APPROVE'}
+          </Button>
+          <Button
             onClick={() => handleDecision(false)}
-            style={{
-              padding: '12px 24px',
-              backgroundColor: 'rgba(255, 0, 64, 0.2)',
-              color: '#ff0040',
-              border: '2px solid #ff0040',
-              borderRadius: '4px',
-              cursor: 'pointer',
-              fontSize: '16px',
-              fontWeight: 'bold',
-              boxShadow: '0 0 20px rgba(255, 0, 64, 0.4)',
-              transition: 'all 0.3s ease',
-            }}
-            onMouseEnter={(e) => {
-              e.target.style.backgroundColor = 'rgba(255, 0, 64, 0.3)';
-              e.target.style.boxShadow = '0 0 30px rgba(255, 0, 64, 0.6)';
-            }}
-            onMouseLeave={(e) => {
-              e.target.style.backgroundColor = 'rgba(255, 0, 64, 0.2)';
-              e.target.style.boxShadow = '0 0 20px rgba(255, 0, 64, 0.4)';
-            }}
+            disabled={submitting}
+            className="bg-red-500/20 text-red-500 border border-red-500 hover:bg-red-500/30 font-bold shadow-lg shadow-red-500/20"
           >
-            Reject
-          </button>
+            {submitting ? 'PROCESSING...' : 'REJECT'}
+          </Button>
         </div>
       )}
     </div>

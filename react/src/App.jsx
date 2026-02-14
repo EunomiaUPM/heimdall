@@ -12,7 +12,6 @@ import WalletInfo from './pages/WalletInfo';
 import WalletCredentials from './pages/WalletCredentials';
 import WalletOidc4vp from './pages/WalletOidc4vp';
 import WalletOidc4vci from './pages/WalletOidc4vci';
-import './App.css';
 
 function App() {
   // Accessing environment variables

@@ -27,8 +27,8 @@ const WalletCredentials = () => {
     fetchCredentials();
   }, [apiUrl]);
 
-  if (loading) return <div style={{ color: '#00f0ff' }}>Loading credentials...</div>;
-  if (error) return <div style={{ color: '#ff0040' }}>Error: {error}</div>;
+  if (loading) return <div className="text-brand-sky">Loading credentials...</div>;
+  if (error) return <div className="text-danger">Error: {error}</div>;
 
   const hasCredentials =
     credentials &&
@@ -36,46 +36,20 @@ const WalletCredentials = () => {
 
   return (
     <div>
-      <h2 style={{ color: '#00f0ff', marginBottom: '20px' }}>Verifiable Credentials</h2>
+      <h2 className="text-2xl font-bold text-brand-sky mb-4">Verifiable Credentials</h2>
 
       {!hasCredentials ? (
-        <div
-          style={{
-            border: '2px solid #ff00ff',
-            padding: '30px',
-            borderRadius: '8px',
-            backgroundColor: 'rgba(26, 29, 53, 0.6)',
-            boxShadow: '0 0 20px rgba(255, 0, 255, 0.3)',
-            textAlign: 'center',
-          }}
-        >
-          <p style={{ color: '#e0e0e0', fontSize: '1.1em' }}>No credentials found</p>
+        <div className="rounded-lg border border-brand-purple bg-background/60 p-8 shadow-lg shadow-brand-purple/20 text-center">
+          <p className="text-muted-foreground text-lg">No credentials found</p>
         </div>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+        <div className="flex flex-col gap-6">
           {(Array.isArray(credentials) ? credentials : [credentials]).map((vc, index) => (
             <div
               key={index}
-              style={{
-                border: '2px solid #ff00ff',
-                padding: '20px',
-                borderRadius: '8px',
-                backgroundColor: 'rgba(26, 29, 53, 0.6)',
-                boxShadow: '0 0 20px rgba(255, 0, 255, 0.3)',
-                textAlign: 'left',
-              }}
+              className="rounded-lg border border-brand-purple bg-background/60 p-6 shadow-lg shadow-brand-purple/20 text-left"
             >
-              <pre
-                style={{
-                  color: '#e0e0e0',
-                  whiteSpace: 'pre-wrap',
-                  wordBreak: 'break-word',
-                  margin: 0,
-                  fontFamily: 'Courier New, monospace',
-                  fontSize: '0.9em',
-                  lineHeight: '1.5',
-                }}
-              >
+              <pre className="text-muted-foreground whitespace-pre-wrap break-all font-mono text-sm leading-relaxed">
                 {JSON.stringify(vc, null, 2)}
               </pre>
             </div>
