@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Layout from './components/Layout';
 import Home from './pages/Home';
 import About from './pages/About';
@@ -24,10 +24,11 @@ function App() {
   console.log('Wallet Active:', walletActive);
 
   return (
-    <BrowserRouter>
+    <BrowserRouter basename={import.meta.env.BASE_URL}>
       <Routes>
         <Route path="/" element={<Layout />}>
           <Route index element={<Home />} />
+          <Route path="home" element={<Navigate to="/" replace />} />
           <Route path="about" element={<About />} />
           <Route path="minions" element={<Minions />} />
           <Route path="minions/:id" element={<MinionDetails />} />

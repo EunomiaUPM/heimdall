@@ -44,6 +44,7 @@ pub struct CoreApplicationConfig {
     vc_config: VcConfig,
     verify_req_config: VerifyReqConfig,
     role: AuthorityRole,
+    is_react: bool,
 }
 
 impl CoreApplicationConfig {
@@ -114,5 +115,8 @@ impl CoreConfigTrait for CoreApplicationConfig {
     }
     fn get_vc_config(&self) -> &VcConfig {
         &self.vc_config
+    }
+    fn is_react(&self) -> bool {
+        self.is_react
     }
 }
