@@ -1,3 +1,6 @@
+Write-Host "Installing dependencies..."
+npm install --legacy-peer-deps
+
 Write-Host "Loading environment variables..."
 # Vite automatically loads .env files, but if you needed to load them manually into the shell session:
 # Get-Content .env | ForEach-Object {

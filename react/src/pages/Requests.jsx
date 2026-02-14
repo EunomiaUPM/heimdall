@@ -1,41 +1,41 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { Input } from '@/components/ui/input';
+import { cn } from '@/lib/utils';
 
 const StatusBadge = ({ status, isVcIssued }) => {
-  const getStatusColor = (status, isVcIssued) => {
+  const getStatusClasses = (status, isVcIssued) => {
     switch (status?.toLowerCase()) {
       case 'processing':
       case 'proccesing':
-        return { bg: 'rgba(240, 255, 0, 0.15)', color: '#f0ff00', border: '#f0ff00' };
+        return 'bg-yellow-500/15 text-yellow-500 border-yellow-500';
       case 'pending':
-        return { bg: 'rgba(255, 165, 0, 0.15)', color: '#ffa500', border: '#ffa500' };
+        return 'bg-orange-500/15 text-orange-500 border-orange-500';
       case 'approved':
-        return { bg: 'rgba(0, 240, 255, 0.15)', color: '#00f0ff', border: '#00f0ff' };
+        return 'bg-brand-sky/15 text-brand-sky border-brand-sky';
       case 'finalized':
-        const color = isVcIssued ? '#00ff41' : '#ff0040';
-        return { bg: `${color}26`, color: color, border: color }; // 26 is ~15% alpha
+        return isVcIssued
+          ? 'bg-green-500/15 text-green-500 border-green-500'
+          : 'bg-red-500/15 text-red-500 border-red-500';
       default:
-        return { bg: 'rgba(0, 240, 255, 0.15)', color: '#00f0ff', border: '#00f0ff' };
+        return 'bg-brand-sky/15 text-brand-sky border-brand-sky';
     }
   };
 
-  const colors = getStatusColor(status, isVcIssued);
-
   return (
     <span
-      style={{
-        display: 'inline-block',
-        padding: '4px 12px',
-        borderRadius: '12px',
-        fontSize: '0.85em',
-        fontWeight: 'bold',
-        backgroundColor: colors.bg,
-        color: colors.color,
-        border: `2px solid ${colors.border}`,
-        boxShadow: `0 0 10px ${colors.bg}`,
-        textTransform: 'uppercase',
-        letterSpacing: '1px',
-      }}
+      className={cn(
+        'inline-block px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider border shadow-sm',
+        getStatusClasses(status, isVcIssued),
+      )}
     >
       {status}
     </span>
@@ -140,18 +140,6 @@ const Requests = () => {
     return 0;
   });
 
-  const inputStyle = {
-    width: '100%',
-    padding: '8px',
-    backgroundColor: 'rgba(10, 14, 39, 0.8)',
-    border: '2px solid #00f0ff',
-    borderRadius: '4px',
-    color: '#e0e0e0',
-    fontSize: '0.9em',
-    outline: 'none',
-    boxShadow: '0 0 5px rgba(0, 240, 255, 0.3)',
-  };
-
   const getSortIndicator = (key) => {
     if (sortConfig.key !== key) {
       return ' ⇅';
@@ -159,221 +147,135 @@ const Requests = () => {
     return sortConfig.direction === 'asc' ? ' ▲' : ' ▼';
   };
 
-  const headerStyle = (key) => ({
-    padding: '15px',
-    color: '#00f0ff',
-    textShadow: '0 0 10px rgba(0, 240, 255, 0.8)',
-    cursor: 'pointer',
-    userSelect: 'none',
-    transition: 'all 0.3s ease',
-  });
-
-  if (loading) return <div style={{ padding: '20px', color: '#00f0ff' }}>Loading...</div>;
-  if (error) return <div style={{ padding: '20px', color: '#ff0040' }}>Error: {error}</div>;
+  if (loading) return <div className="p-8 text-brand-sky">Loading...</div>;
+  if (error) return <div className="p-8 text-danger">Error: {error}</div>;
 
   return (
-    <div style={{ padding: '30px', width: '100%', minHeight: '100vh' }}>
-      <h1>Requests</h1>
-      <table
-        style={{
-          width: '100%',
-          borderCollapse: 'collapse',
-          marginTop: '10px',
-          backgroundColor: 'rgba(26, 29, 53, 0.5)',
-          border: '2px solid #00f0ff',
-          boxShadow: '0 0 20px rgba(0, 240, 255, 0.3)',
-        }}
-      >
-        <thead>
-          <tr
-            style={{
-              borderBottom: '2px solid #00f0ff',
-              textAlign: 'left',
-              backgroundColor: 'rgba(0, 240, 255, 0.1)',
-            }}
-          >
-            <th
-              style={headerStyle('id')}
-              onClick={() => handleSort('id')}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = 'rgba(0, 240, 255, 0.2)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = 'transparent';
-              }}
-            >
-              ID{getSortIndicator('id')}
-            </th>
-            <th
-              style={headerStyle('slug')}
-              onClick={() => handleSort('slug')}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = 'rgba(0, 240, 255, 0.2)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = 'transparent';
-              }}
-            >
-              Slug{getSortIndicator('slug')}
-            </th>
-            <th
-              style={headerStyle('vcType')}
-              onClick={() => handleSort('vcType')}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = 'rgba(0, 240, 255, 0.2)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = 'transparent';
-              }}
-            >
-              VC Type{getSortIndicator('vcType')}
-            </th>
-            <th
-              style={headerStyle('interactMethod')}
-              onClick={() => handleSort('interactMethod')}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = 'rgba(0, 240, 255, 0.2)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = 'transparent';
-              }}
-            >
-              Interact Method{getSortIndicator('interactMethod')}
-            </th>
-            <th
-              style={headerStyle('status')}
-              onClick={() => handleSort('status')}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = 'rgba(0, 240, 255, 0.2)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = 'transparent';
-              }}
-            >
-              Status{getSortIndicator('status')}
-            </th>
-            <th
-              style={headerStyle('createdAt')}
-              onClick={() => handleSort('createdAt')}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = 'rgba(0, 240, 255, 0.2)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = 'transparent';
-              }}
-            >
-              Created At{getSortIndicator('createdAt')}
-            </th>
-          </tr>
-          <tr style={{ backgroundColor: 'rgba(10, 14, 39, 0.6)' }}>
-            <th style={{ padding: '10px' }}>
-              <input
-                type="text"
-                placeholder="Filter ID..."
-                value={filters.id}
-                onChange={(e) => handleFilterChange('id', e.target.value)}
-                style={inputStyle}
-                onClick={(e) => e.stopPropagation()}
-              />
-            </th>
-            <th style={{ padding: '10px' }}>
-              <input
-                type="text"
-                placeholder="Filter Slug..."
-                value={filters.slug}
-                onChange={(e) => handleFilterChange('slug', e.target.value)}
-                style={inputStyle}
-                onClick={(e) => e.stopPropagation()}
-              />
-            </th>
-            <th style={{ padding: '10px' }}>
-              <input
-                type="text"
-                placeholder="Filter VC Type..."
-                value={filters.vcType}
-                onChange={(e) => handleFilterChange('vcType', e.target.value)}
-                style={inputStyle}
-                onClick={(e) => e.stopPropagation()}
-              />
-            </th>
-            <th style={{ padding: '10px' }}>
-              <input
-                type="text"
-                placeholder="Filter Method..."
-                value={filters.interactMethod}
-                onChange={(e) => handleFilterChange('interactMethod', e.target.value)}
-                style={inputStyle}
-                onClick={(e) => e.stopPropagation()}
-              />
-            </th>
-            <th style={{ padding: '10px' }}>
-              <input
-                type="text"
-                placeholder="Filter Status..."
-                value={filters.status}
-                onChange={(e) => handleFilterChange('status', e.target.value)}
-                style={inputStyle}
-                onClick={(e) => e.stopPropagation()}
-              />
-            </th>
-            <th style={{ padding: '10px' }}>
-              <input
-                type="text"
-                placeholder="Filter Date..."
-                value={filters.createdAt}
-                onChange={(e) => handleFilterChange('createdAt', e.target.value)}
-                style={inputStyle}
-                onClick={(e) => e.stopPropagation()}
-              />
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {sortedRequests.map((req) => (
-            <tr
-              key={req.id}
-              onClick={() => handleRowClick(req.id)}
-              style={{
-                borderBottom: '1px solid rgba(0, 240, 255, 0.3)',
-                cursor: 'pointer',
-                transition: 'all 0.3s ease',
-                backgroundColor: 'transparent',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = 'rgba(0, 240, 255, 0.1)';
-                e.currentTarget.style.boxShadow = '0 0 15px rgba(0, 240, 255, 0.5)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = 'transparent';
-                e.currentTarget.style.boxShadow = 'none';
-              }}
-            >
-              <td style={{ padding: '12px', color: '#e0e0e0' }}>{req.id}</td>
-              <td style={{ padding: '12px', color: '#e0e0e0' }}>{req.participant_slug}</td>
-              <td style={{ padding: '12px', color: '#ff00ff' }}>{req.vc_type}</td>
-              <td style={{ padding: '12px', color: '#e0e0e0' }}>
-                {req.interact_method.join(', ')}
-              </td>
-              <td style={{ padding: '12px' }}>
-                <StatusBadge status={req.status} isVcIssued={req.is_vc_issued} />
-              </td>
-              <td style={{ padding: '12px', color: '#e0e0e0' }}>{req.created_at}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      {sortedRequests.length === 0 && requests.length > 0 && (
-        <div
-          style={{
-            textAlign: 'center',
-            padding: '20px',
-            color: '#ff00ff',
-            fontSize: '1.1em',
-          }}
-        >
-          No requests match the current filters
-        </div>
-      )}
+    <div className="w-full">
+      <h1 className="text-3xl font-bold text-brand-sky font-ubuntu mb-6">Requests</h1>
+      <div className="rounded-md border border-stroke bg-background/50 shadow-md">
+        <Table>
+          <TableHeader>
+            <TableRow className="border-b-brand-sky/30 hover:bg-transparent">
+              <TableHead
+                onClick={() => handleSort('id')}
+                className="cursor-pointer text-brand-sky hover:text-brand-sky/80"
+              >
+                ID{getSortIndicator('id')}
+              </TableHead>
+              <TableHead
+                onClick={() => handleSort('slug')}
+                className="cursor-pointer text-brand-sky hover:text-brand-sky/80"
+              >
+                Slug{getSortIndicator('slug')}
+              </TableHead>
+              <TableHead
+                onClick={() => handleSort('vcType')}
+                className="cursor-pointer text-brand-sky hover:text-brand-sky/80"
+              >
+                VC Type{getSortIndicator('vcType')}
+              </TableHead>
+              <TableHead
+                onClick={() => handleSort('interactMethod')}
+                className="cursor-pointer text-brand-sky hover:text-brand-sky/80"
+              >
+                Interact Method{getSortIndicator('interactMethod')}
+              </TableHead>
+              <TableHead
+                onClick={() => handleSort('status')}
+                className="cursor-pointer text-brand-sky hover:text-brand-sky/80"
+              >
+                Status{getSortIndicator('status')}
+              </TableHead>
+              <TableHead
+                onClick={() => handleSort('createdAt')}
+                className="cursor-pointer text-brand-sky hover:text-brand-sky/80"
+              >
+                Created At{getSortIndicator('createdAt')}
+              </TableHead>
+            </TableRow>
+            <TableRow className="bg-brand-blue/30 hover:bg-brand-blue/30 border-none">
+              <TableHead className="p-2">
+                <Input
+                  placeholder="Filter..."
+                  value={filters.id}
+                  onChange={(e) => handleFilterChange('id', e.target.value)}
+                  onClick={(e) => e.stopPropagation()}
+                  className="h-8"
+                />
+              </TableHead>
+              <TableHead className="p-2">
+                <Input
+                  placeholder="Filter..."
+                  value={filters.slug}
+                  onChange={(e) => handleFilterChange('slug', e.target.value)}
+                  onClick={(e) => e.stopPropagation()}
+                  className="h-8"
+                />
+              </TableHead>
+              <TableHead className="p-2">
+                <Input
+                  placeholder="Filter..."
+                  value={filters.vcType}
+                  onChange={(e) => handleFilterChange('vcType', e.target.value)}
+                  onClick={(e) => e.stopPropagation()}
+                  className="h-8"
+                />
+              </TableHead>
+              <TableHead className="p-2">
+                <Input
+                  placeholder="Filter..."
+                  value={filters.interactMethod}
+                  onChange={(e) => handleFilterChange('interactMethod', e.target.value)}
+                  onClick={(e) => e.stopPropagation()}
+                  className="h-8"
+                />
+              </TableHead>
+              <TableHead className="p-2">
+                <Input
+                  placeholder="Filter..."
+                  value={filters.status}
+                  onChange={(e) => handleFilterChange('status', e.target.value)}
+                  onClick={(e) => e.stopPropagation()}
+                  className="h-8"
+                />
+              </TableHead>
+              <TableHead className="p-2">
+                <Input
+                  placeholder="Filter..."
+                  value={filters.createdAt}
+                  onChange={(e) => handleFilterChange('createdAt', e.target.value)}
+                  onClick={(e) => e.stopPropagation()}
+                  className="h-8"
+                />
+              </TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {sortedRequests.map((req) => (
+              <TableRow
+                key={req.id}
+                onClick={() => handleRowClick(req.id)}
+                className="cursor-pointer border-b-brand-sky/20 hover:bg-brand-sky/5 transition-colors"
+              >
+                <TableCell className="font-mono text-xs">{req.id}</TableCell>
+                <TableCell>{req.participant_slug}</TableCell>
+                <TableCell className="text-brand-purple">{req.vc_type}</TableCell>
+                <TableCell>{req.interact_method.join(', ')}</TableCell>
+                <TableCell>
+                  <StatusBadge status={req.status} isVcIssued={req.is_vc_issued} />
+                </TableCell>
+                <TableCell>{req.created_at}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+        {sortedRequests.length === 0 && requests.length > 0 && (
+          <div className="p-8 text-center text-muted-foreground">
+            No requests match the current filters
+          </div>
+        )}
+      </div>
     </div>
   );
 };

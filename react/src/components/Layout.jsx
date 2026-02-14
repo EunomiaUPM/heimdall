@@ -1,4 +1,5 @@
 import { Link, Outlet, useLocation } from 'react-router-dom';
+import { cn } from '@/lib/utils';
 
 const Layout = () => {
   const location = useLocation();
@@ -7,109 +8,47 @@ const Layout = () => {
     return location.pathname === path || (path !== '/' && location.pathname.startsWith(path));
   };
 
-  const getLinkStyle = (path) => ({
-    display: 'block',
-    padding: '12px 16px',
-    textDecoration: 'none',
-    color: isActive(path) ? '#00f0ff' : '#e0e0e0',
-    backgroundColor: isActive(path) ? 'rgba(0, 240, 255, 0.15)' : 'transparent',
-    borderLeft: isActive(path) ? '4px solid #00f0ff' : '4px solid transparent',
-    borderRadius: '4px',
-    transition: 'all 0.3s ease',
-    fontWeight: isActive(path) ? 'bold' : 'normal',
-    textShadow: isActive(path) ? '0 0 10px rgba(0, 240, 255, 0.8)' : 'none',
-  });
+  const navItems = [
+    { name: 'Home', path: '/' },
+    { name: 'About', path: '/about' },
+    { name: 'Minions', path: '/minions' },
+    { name: 'Requests', path: '/requests' },
+  ];
+
+  if (import.meta.env.VITE_WALLET_ACTIVE === 'true') {
+    navItems.push({ name: 'Wallet', path: '/wallet' });
+  }
 
   return (
-    <div
-      style={{
-        display: 'flex',
-        minHeight: '100vh',
-        background: 'linear-gradient(135deg, #0a0e27 0%, #1a1d35 100%)',
-      }}
-    >
-      <nav
-        style={{
-          width: '150px',
-          backgroundColor: '#0a0e27',
-          borderRight: '2px solid #00f0ff',
-          boxShadow: '2px 0 20px rgba(0, 240, 255, 0.3)',
-          padding: '30px 0',
-          position: 'fixed',
-          height: '100vh',
-          left: 0,
-          top: 0,
-          overflowY: 'auto',
-        }}
-      >
-        <div
-          style={{
-            padding: '0 16px 20px',
-            borderBottom: '2px solid #00f0ff',
-            marginBottom: '20px',
-            boxShadow: '0 2px 10px rgba(0, 240, 255, 0.3)',
-          }}
-        >
-          <h2
-            style={{
-              margin: 0,
-              fontSize: '1.5em',
-              color: '#00f0ff',
-              textShadow: '0 0 15px rgba(0, 240, 255, 0.8)',
-              fontFamily: 'Courier New, monospace',
-            }}
-          >
-            HEIMDALL
-          </h2>
+    <div className="flex min-h-screen bg-background font-sans text-brand-sky antialiased selection:bg-brand-sky selection:text-brand-black">
+      {/* Sidebar */}
+      <aside className="fixed left-0 top-0 z-40 h-screen w-64 border-r border-stroke bg-background-200">
+        <div className="flex h-16 items-center border-b border-stroke px-6">
+          <h2 className="text-xl font-bold tracking-tight text-brand-sky">HEIMDALL</h2>
         </div>
-        <ul
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '8px',
-            listStyle: 'none',
-            margin: 0,
-            padding: '0 12px',
-          }}
-        >
-          <li>
-            <Link to="/" style={getLinkStyle('/')}>
-              Home
+        <nav className="space-y-1 p-4">
+          {navItems.map((item) => (
+            <Link
+              key={item.path}
+              to={item.path}
+              className={cn(
+                'flex items-center rounded-md px-3 py-2 text-sm font-medium transition-colors mb-1',
+                isActive(item.path)
+                  ? 'bg-brand-sky/10 text-brand-sky border-l-4 border-brand-sky'
+                  : 'text-gray-400 hover:text-brand-sky hover:bg-white/5',
+              )}
+            >
+              {item.name}
             </Link>
-          </li>
-          <li>
-            <Link to="/about" style={getLinkStyle('/about')}>
-              About
-            </Link>
-          </li>
-          <li>
-            <Link to="/minions" style={getLinkStyle('/minions')}>
-              Minions
-            </Link>
-          </li>
-          <li>
-            <Link to="/requests" style={getLinkStyle('/requests')}>
-              Requests
-            </Link>
-          </li>
-          {import.meta.env.VITE_WALLET_ACTIVE === 'true' && (
-            <li>
-              <Link to="/wallet" style={getLinkStyle('/wallet')}>
-                Wallet
-              </Link>
-            </li>
-          )}
-        </ul>
-      </nav>
-      <main
-        style={{
-          marginLeft: '150px',
-          width: 'calc(100% - 150px)',
-          padding: '0',
-          minHeight: '100vh',
-        }}
-      >
-        <Outlet />
+          ))}
+        </nav>
+      </aside>
+
+      {/* Main Content */}
+      <main className="flex-1 ml-64 min-h-screen bg-background text-brand-snow overflow-auto">
+        <div className="container mx-auto p-8 max-w-screen-xl">
+          <Outlet />
+        </div>
       </main>
     </div>
   );

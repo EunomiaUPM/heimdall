@@ -21,6 +21,7 @@ use axum::extract::Request;
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::Router;
+use tower_http::services::{ServeDir, ServeFile};
 use tower_http::trace::{DefaultOnResponse, TraceLayer};
 use tracing::{error, info, Level};
 use uuid::Uuid;
@@ -62,6 +63,16 @@ impl RainbowAuthorityRouter {
         let router = if self.core.config().is_wallet_active() {
             let wallet_router = WalletRouter::new(self.core.clone()).router();
             router.nest(&format!("{}/wallet", api_path), wallet_router)
+        } else {
+            router
+        };
+
+        let router = if self.core.config().is_react() {
+            router.nest_service(
+                &format!("{}/react", api_path),
+                ServeDir::new("./react/dist")
+                    .not_found_service(ServeFile::new("./react/dist/index.html")),
+            )
         } else {
             router
         };

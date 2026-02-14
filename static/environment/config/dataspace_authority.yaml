@@ -55,3 +55,5 @@ issue_config:
 verify_req_config:
   is_cert_allowed: true
   vcs_requested: [ ]
+
+is_react: true

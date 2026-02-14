@@ -37,4 +37,5 @@ pub trait CoreConfigTrait:
     fn get_issue_config(&self) -> &IssueConfig;
     fn get_verify_req_config(&self) -> &VerifyReqConfig;
     fn get_vc_config(&self) -> &VcConfig;
+    fn is_react(&self) -> bool;
 }
