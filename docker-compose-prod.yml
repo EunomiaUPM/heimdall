@@ -35,10 +35,8 @@ services:
     container_name: "db"
     image: "postgres"
     restart: always
-    environment:
-      POSTGRES_PASSWORD: ds_authority
-      POSTGRES_USER: ds_authority
-      POSTGRES_DB: ds_authority
+    env_file:
+      - ./static/environment/envs/db.env
     ports:
       - "1450:5432"
 
