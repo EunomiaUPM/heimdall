@@ -7,12 +7,11 @@ COPY react/ .
 RUN npm run build
 
 # Stage 2: Build Rust Backend
-FROM rust:1.81-slim-bookworm AS backend-builder
+FROM rust:alpine3.23 AS backend-builder
 WORKDIR /app
-RUN apt-get update && apt-get install -y pkg-config libssl-dev && rm -rf /var/lib/apt/lists/*
+
 COPY Cargo.toml Cargo.lock ./
 COPY src src
-# COPY .git .git # Optional: copy git info if needed for versioning
 RUN cargo build --release
 
 # Stage 3: Final Runtime Image
@@ -25,19 +24,17 @@ RUN apt-get update && apt-get install -y libssl3 ca-certificates && rm -rf /var/
 # Copy backend binary
 COPY --from=backend-builder /app/target/release/heimdall /app/heimdall
 
-# Copy frontend build output to expected path
+# Copy frontend build output
 COPY --from=frontend-builder /app/react/dist /app/react/dist
 
-# Copy static configuration and environment files
+# Copy static configuration
 COPY static /app/static
 
-# Expose port
 EXPOSE 1500
 
-# Set environment variable for log level (optional default)
 ENV RUST_LOG=info
+ENV CONFIG_PATH=/app/static/environment/config/prod/dataspace_authority.yaml
 
-# Command to run (using the config from volume or image)
-# We assume the env file path is passed via arguments or default
-ENTRYPOINT ["/app/heimdall"]
-CMD ["start", "--env-file", "/app/static/environment/envs/.env"]
+# Ejecutar setup + start
+ENTRYPOINT ["/bin/sh", "-c"]
+CMD ["/app/heimdall setup --env-file $CONFIG_PATH && /app/heimdall start --env-file $CONFIG_PATH"]

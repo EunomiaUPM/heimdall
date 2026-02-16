@@ -156,7 +156,7 @@ impl AuthorityApplication {
         vault: Arc<VaultService>,
     ) -> anyhow::Result<()> {
         let cert = expect_from_env("VAULT_APP_ROOT_CLIENT_KEY");
-        let pkey = expect_from_env("VAULT_APP_CLIENT_KEY ");
+        let pkey = expect_from_env("VAULT_APP_CLIENT_KEY");
         let cert: StringHelper = vault.read(None, &cert).await?;
         let pkey: StringHelper = vault.read(None, &pkey).await?;
 
@@ -172,7 +172,12 @@ impl AuthorityApplication {
 
         let router = Self::create_router(config, vault).await;
 
-        let addr_str = if config.is_local() { "127.0.0.1:443" } else { "0.0.0.0:443" };
+        let port = config.hosts().get_tls_port(HostType::Http);
+        let addr_str = if config.is_local() {
+            format!("127.0.0.1:{}", port)
+        } else {
+            format!("0.0.0.0:{}", port)
+        };
         let addr: SocketAddr = addr_str.parse()?;
         info!("Starting Authority server with TLS in {}", addr);
 
