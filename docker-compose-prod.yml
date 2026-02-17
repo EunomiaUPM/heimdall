@@ -1,7 +1,7 @@
 services:
-  vault:
+  heimdall-vault:
     image: hashicorp/vault:1.21
-    container_name: vault
+    container_name: heimdall-vault
     ports:
       - "8200:8200"
     cap_add:
@@ -40,9 +40,10 @@ services:
 
   heimdall: 
     container_name: heimdall
-    build: 
-      context: .
-      dockerfile: Dockerfile
+    image: rmenendez8/heimdall:v1.1.0
+    # build: 
+    #   context: .
+    #   dockerfile: Dockerfile
     ports:
       - "1500:1500"
     volumes:
@@ -50,7 +51,7 @@ services:
       - ./vault:/app/vault
     depends_on:
       - heimdall-db
-      - vault
+      - heimdall-vault
     env_file:
       - ./static/environment/envs/heimdall.env
     environment:
