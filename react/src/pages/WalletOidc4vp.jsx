@@ -32,8 +32,9 @@ const WalletOidc4vp = () => {
         throw new Error(`Failed to process OIDC4VP: ${res.statusText}`);
       }
 
-      const data = await res.json();
-      setResponse(data);
+      // const data = await res.json();
+      // User requested no response body parsing, just strict success check
+      setResponse({ success: true });
     } catch (err) {
       console.error('Error processing OIDC4VP:', err);
       setError(err.message);

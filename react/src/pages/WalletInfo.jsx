@@ -105,7 +105,7 @@ const WalletInfo = () => {
           key={index}
           className="group rounded-lg border border-brand-purple bg-background/60 p-4 shadow-md shadow-brand-purple/20 mb-4 open:bg-background/80 transition-all"
         >
-          <summary className="text-brand-purple cursor-pointer font-bold mb-2 group-open:mb-4 select-none hover:text-brand-purple/80">
+          <summary className="text-brand-purple cursor-pointer font-bold mb-2 group-open:mb-4 select-none hover:text-brand-purple/80 break-all">
             {did.alias} - {did.did}
           </summary>
           <pre className="text-muted-foreground whitespace-pre-wrap break-all font-mono text-xs leading-relaxed bg-black/40 p-4 rounded border border-brand-purple/30">

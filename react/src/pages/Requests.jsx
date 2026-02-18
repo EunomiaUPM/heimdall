@@ -10,6 +10,7 @@ import {
 } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
+import { GeneralErrorComponent } from '@/components/GeneralErrorComponent';
 
 const StatusBadge = ({ status, isVcIssued }) => {
   const getStatusClasses = (status, isVcIssued) => {
@@ -148,7 +149,7 @@ const Requests = () => {
   };
 
   if (loading) return <div className="p-8 text-brand-sky">Loading...</div>;
-  if (error) return <div className="p-8 text-danger">Error: {error}</div>;
+  if (error) return <GeneralErrorComponent error={error} reset={() => window.location.reload()} />;
 
   return (
     <div className="w-full">

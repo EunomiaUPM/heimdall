@@ -14,21 +14,15 @@ import WalletOidc4vp from './pages/WalletOidc4vp';
 import WalletOidc4vci from './pages/WalletOidc4vci';
 
 function App() {
-  // Accessing environment variables
-  const featureFlag1 = import.meta.env.VITE_FEATURE_FLAG_1 === 'true';
-  const featureFlag2 = import.meta.env.VITE_FEATURE_FLAG_2 === 'true';
   const walletActive = import.meta.env.VITE_WALLET_ACTIVE === 'true';
-
-  console.log('Feature Flag 1:', featureFlag1);
-  console.log('Feature Flag 2:', featureFlag2);
-  console.log('Wallet Active:', walletActive);
 
   return (
     <BrowserRouter basename={import.meta.env.BASE_URL}>
       <Routes>
         <Route path="/" element={<Layout />}>
-          <Route index element={<Home />} />
-          <Route path="home" element={<Navigate to="/" replace />} />
+          {/* Redirect root to /home */}
+          <Route index element={<Navigate to="/home" replace />} />
+          <Route path="home" element={<Home />} />
           <Route path="about" element={<About />} />
           <Route path="minions" element={<Minions />} />
           <Route path="minions/:id" element={<MinionDetails />} />

@@ -14,73 +14,53 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
+import { GeneralErrorComponent } from '@/components/GeneralErrorComponent';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+
 const TruncatedId = ({ id }) => {
-  const [showTooltip, setShowTooltip] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [coords, setCoords] = useState({ top: 0, left: 0 });
-  const triggerRef = useRef(null);
 
   const shouldTruncate = id.length > 20;
   const displayId = shouldTruncate ? `${id.substring(0, 17)}...` : id;
 
   const handleCopy = (e) => {
-    e.stopPropagation();
+    e.stopPropagation(); // Prevent row click
     navigator.clipboard.writeText(id);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const handleMouseEnter = () => {
-    if (triggerRef.current) {
-      const rect = triggerRef.current.getBoundingClientRect();
-      setCoords({
-        top: rect.bottom + window.scrollY,
-        left: rect.left + window.scrollX,
-      });
-    }
-    setShowTooltip(true);
-  };
+  if (!shouldTruncate) {
+    return <span>{id}</span>;
+  }
 
   return (
-    <>
-      <div
-        ref={triggerRef}
-        className="relative inline-block"
-        onMouseEnter={handleMouseEnter}
-        onMouseLeave={() => setShowTooltip(false)}
-      >
-        <span className="cursor-help border-b border-dotted border-muted-foreground/50">
-          {displayId}
-        </span>
-      </div>
-      {showTooltip &&
-        createPortal(
-          <div
-            className="fixed z-[9999] mt-2 min-w-[300px] max-w-[600px] rounded-md border border-brand-sky bg-background p-4 shadow-lg shadow-brand-sky/20"
-            style={{
-              top: coords.top,
-              left: coords.left,
-              transform: 'translateY(4px)',
-            }}
-            onMouseEnter={() => setShowTooltip(true)}
-            onMouseLeave={() => setShowTooltip(false)}
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span className="cursor-help border-b border-dotted border-muted-foreground/50">
+            {displayId}
+          </span>
+        </TooltipTrigger>
+        <TooltipContent
+          className="z-50 min-w-[300px] max-w-[600px] rounded-md border border-brand-sky bg-background p-4 shadow-lg shadow-brand-sky/20 flex flex-col gap-2"
+          sideOffset={5}
+        >
+          <div className="break-all text-sm font-mono text-muted-foreground">{id}</div>
+          <Button
+            size="sm"
+            variant="outline"
+            className={cn(
+              'h-6 text-xs w-fit',
+              copied ? 'border-success text-success' : 'border-brand-sky text-brand-sky',
+            )}
+            onClick={handleCopy}
           >
-            <div className="mb-2 break-all text-sm font-mono text-muted-foreground">{id}</div>
-            <Button
-              size="sm"
-              variant="outline"
-              className={cn(
-                'h-6 text-xs',
-                copied ? 'border-success text-success' : 'border-brand-sky text-brand-sky',
-              )}
-              onClick={handleCopy}
-            >
-              {copied ? 'Copied!' : 'Copy'}
-            </Button>
-          </div>,
-          document.body,
-        )}
-    </>
+            {copied ? 'Copied!' : 'Copy'}
+          </Button>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   );
 };
 
@@ -101,23 +81,25 @@ const Minions = () => {
 
   const apiUrl = import.meta.env.VITE_API_SERVER_URL;
 
-  useEffect(() => {
-    const fetchMinions = async () => {
-      try {
-        const response = await fetch(`${apiUrl}/minions/all`);
-        if (!response.ok) {
-          throw new Error('Failed to fetch minions');
-        }
-        const data = await response.json();
-        setMinions(data);
-        setLoading(false);
-      } catch (err) {
-        console.error('Error fetching minions:', err);
-        setError(err.message);
-        setLoading(false);
+  const fetchMinions = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await fetch(`${apiUrl}/minions/all`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch minions');
       }
-    };
+      const data = await response.json();
+      setMinions(data);
+      setLoading(false);
+    } catch (err) {
+      console.error('Error fetching minions:', err);
+      setError(err);
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
     fetchMinions();
   }, [apiUrl]);
 
@@ -198,7 +180,7 @@ const Minions = () => {
   };
 
   if (loading) return <div className="p-8 text-brand-sky">Loading...</div>;
-  if (error) return <div className="p-8 text-danger">Error: {error}</div>;
+  if (error) return <GeneralErrorComponent error={error} reset={fetchMinions} />;
 
   return (
     <div className="w-full">
