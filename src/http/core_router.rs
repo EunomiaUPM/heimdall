@@ -69,7 +69,7 @@ impl RainbowAuthorityRouter {
 
         let router = if self.core.config().is_react() {
             router.nest_service(
-                &format!("{}/react", api_path),
+                "admin",
                 ServeDir::new("./react/dist")
                     .not_found_service(ServeFile::new("./react/dist/index.html")),
             )
