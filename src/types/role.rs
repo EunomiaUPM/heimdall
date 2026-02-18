@@ -15,7 +15,6 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-use std::collections::HashMap;
 use std::fmt;
 use std::fmt::Formatter;
 use std::str::FromStr;
@@ -24,7 +23,6 @@ use anyhow::bail;
 use serde::{Deserialize, Serialize};
 use tracing::error;
 use ymir::errors::{ErrorLogTrait, Errors};
-use ymir::types::issuing::CredentialConfiguration;
 use ymir::types::vcs::vc_specs::legal_authority::LegalRegistrationNumberTypes;
 use ymir::types::vcs::VcType;
 

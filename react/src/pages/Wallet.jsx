@@ -48,12 +48,12 @@ const Wallet = () => {
     setError(null);
 
     try {
-      const response = await fetch(`${apiUrl}/wallet/onboard`, {
+      const response = await fetch(`${apiUrl}/wallet/link`, {
         method: 'POST',
       });
 
       if (!response.ok) {
-        throw new Error('Failed to onboard wallet');
+        throw new Error('Failed to link wallet');
       }
 
       // Mark as onboarded in localStorage
