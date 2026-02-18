@@ -23,7 +23,7 @@ const Wallet = () => {
 
   const getButtonText = () => {
     if (isOnboarding) return 'LINKING...';
-    if (isOnboarded) return 'LINKED';
+    if (isOnboarded) return 'LINK AGAIN';
     if (error) return 'RETRY LINK';
     return 'LINK';
   };
@@ -42,8 +42,6 @@ const Wallet = () => {
   }, [location.pathname, navigate]);
 
   const handleOnboard = async () => {
-    if (isOnboarded) return; // Do nothing if already linked
-
     setIsOnboarding(true);
     setError(null);
 
@@ -60,8 +58,7 @@ const Wallet = () => {
       localStorage.setItem('walletOnboarded', 'true');
       setIsOnboarded(true);
 
-      // Navigate to DID page
-      navigate('/wallet/did');
+      window.location.reload();
     } catch (err) {
       console.error('Error onboarding wallet:', err);
       setError(err.message);
@@ -82,7 +79,7 @@ const Wallet = () => {
         {/* Always visible Link Button */}
         <Button
           onClick={handleOnboard}
-          disabled={isOnboarding || isOnboarded}
+          disabled={isOnboarding}
           variant={error ? 'destructive' : 'default'}
           className={cn(
             'font-bold transition-all shadow-lg',

@@ -1,6 +1,7 @@
-import { Home, Users, Wallet, FileText, Info } from 'lucide-react';
 import React from 'react';
+// 1. Asegúrate de que useLocation esté importado de react-router-dom
 import { Link, useLocation } from 'react-router-dom';
+import { Home, Users, Wallet, FileText, Info } from 'lucide-react';
 import {
   Sidebar,
   SidebarContent,
@@ -9,59 +10,56 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  useSidebar,
 } from '@/components/ui/sidebar';
 import logoImg from '@/assets/logo.svg';
 
 export function AppSidebar() {
-  const location = useLocation();
+  const location = useLocation(); // Esto ya no debería dar error
   const walletActive = import.meta.env.VITE_WALLET_ACTIVE === 'true';
+  const { state } = useSidebar();
+  const isCollapsed = state === 'collapsed';
 
   const items = [
-    {
-      title: 'Home',
-      url: '/',
-      icon: Home,
-    },
-    {
-      title: 'Requests',
-      url: '/requests',
-      icon: FileText,
-    },
-    {
-      title: 'Minions',
-      url: '/minions',
-      icon: Users,
-    },
-    ...(walletActive
-      ? [
-          {
-            title: 'Wallet',
-            url: '/wallet',
-            icon: Wallet,
-          },
-        ]
-      : []),
-    {
-      title: 'About',
-      url: '/about',
-      icon: Info,
-    },
+    { title: 'Home', url: '/', icon: Home },
+    { title: 'Requests', url: '/requests', icon: FileText },
+    { title: 'Minions', url: '/minions', icon: Users },
+    ...(walletActive ? [{ title: 'Wallet', url: '/wallet', icon: Wallet }] : []),
+    { title: 'About', url: '/about', icon: Info },
   ];
 
   return (
     <Sidebar className="bg-base-sidebar" collapsible="icon">
       <SidebarContent>
         <SidebarGroup>
-          {/* Logo */}
-          <div className="flex h-16 items-center px-4">
+          {/* Título HEIMDALL: Se oculta suavemente */}
+          <div
+            className={`flex flex-col items-center px-3 pt-3 transition-all duration-300 ease-in-out ${
+              isCollapsed ? 'opacity-0 h-0 overflow-hidden' : 'opacity-100 h-auto'
+            }`}
+          >
+            <div className="text-4xl font-extra tracking-widest text-center">HEIMDALL</div>
+            <div className="mt-3 w-full border-t border-sidebar-border" />
+          </div>
+
+          {/* Contenedor de Logos: Mantiene el espacio para evitar saltos */}
+          <div className="relative h-24 w-full flex items-center justify-center overflow-hidden">
             <img
               src={logoImg}
-              className="h-8 object-contain transition-all group-data-[collapsible=icon]:h-8 group-data-[collapsible=icon]:w-8"
-              alt="Eunomia Logo"
+              className={`absolute h-16 w-auto transition-all duration-500 ease-in-out ${
+                isCollapsed ? 'opacity-0 scale-50 pointer-events-none' : 'opacity-100 scale-100'
+              }`}
+              alt="Heimdall Logo"
+            />
+            <img
+              src={`${import.meta.env.BASE_URL}iso_logo.svg`}
+              className={`absolute h-10 w-auto transition-all duration-500 ease-in-out ${
+                isCollapsed ? 'opacity-100 scale-100' : 'opacity-0 scale-50 pointer-events-none'
+              }`}
+              alt="Heimdall Iso"
             />
           </div>
 
-          {/* Navigation Menu */}
           <SidebarGroupContent>
             <SidebarMenu>
               {items.map((item) => (
