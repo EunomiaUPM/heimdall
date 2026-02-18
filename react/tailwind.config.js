@@ -40,7 +40,7 @@ module.exports = {
         brand: {
           snow: '#EFF7FB', // white
           sky: '#9DD5F2', // light blue
-          purple: '#62388E',
+          purple: '#B592DB',
           blue: '#24234C', // dark blue
           black: '#0D0D1C',
         },
