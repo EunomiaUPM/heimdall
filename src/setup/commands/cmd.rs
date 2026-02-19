@@ -26,7 +26,6 @@ use clap::{Parser, Subcommand};
 use tracing::debug;
 use ymir::config::traits::{ConnectionConfigTrait, HostsConfigTrait};
 use ymir::config::types::HostType;
-use ymir::data::seeders::MinionSeeder;
 use ymir::services::vault::vault_rs::VaultService;
 use ymir::services::vault::VaultTrait;
 
@@ -74,10 +73,6 @@ impl AuthorityCommands {
                 }
                 let db_connection = vault.get_db_connection(&config).await;
                 AuthorityMigration::run(&db_connection).await?;
-
-                let did = config.get_did_config().did.clone();
-                let url = config.hosts().get_host(HostType::Http);
-                MinionSeeder::seed(&db_connection, did, url).await?
             }
         }
 

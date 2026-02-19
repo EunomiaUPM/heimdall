@@ -39,4 +39,4 @@ serde_norway = "0.9.42"
 axum-server = { version = "0.8.0", features = ["tls-rustls"] }
 rustls = { version = "0.23", features = ["ring"] }
 #ymir = { path = "./../ymir" }
-ymir = {git = "https://github.com/EunomiaUPM/ymir.git", tag = "v0.4.2"}
+ymir = {git = "https://github.com/EunomiaUPM/ymir.git", tag = "v0.4.4"}
