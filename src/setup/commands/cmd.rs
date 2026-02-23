@@ -19,13 +19,11 @@ use std::cmp::PartialEq;
 use std::sync::Arc;
 
 use super::env_extraction::extract_env_config;
-use crate::config::CoreConfigTrait;
 use crate::setup::application::AuthorityApplication;
 use crate::setup::db_migrations::AuthorityMigration;
 use clap::{Parser, Subcommand};
 use tracing::debug;
-use ymir::config::traits::{ConnectionConfigTrait, HostsConfigTrait};
-use ymir::config::types::HostType;
+use ymir::config::traits::ConnectionConfigTrait;
 use ymir::services::vault::vault_rs::VaultService;
 use ymir::services::vault::VaultTrait;
 
