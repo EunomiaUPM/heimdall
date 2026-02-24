@@ -15,11 +15,7 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-use ymir::types::vcs::{VcModel, W3cDataModelVersion};
-use crate::types::role::AuthorityRole;
+use crate::config::role::RoleConfigTrait;
+use ymir::config::traits::VcConfigTrait;
 
-pub trait BuilderConfigDefaultTrait {
-    fn get_vc_model(&self) -> &VcModel;
-    fn get_w3c_data_model(&self) -> Option<&W3cDataModelVersion>;
-    fn get_role(&self) -> &AuthorityRole;
-}
+pub trait BuilderConfigDefaultTrait: VcConfigTrait + RoleConfigTrait {}

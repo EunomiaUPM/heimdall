@@ -18,19 +18,18 @@
 use std::path::PathBuf;
 use std::{env, fs};
 
+use super::CoreConfigTrait;
+use crate::config::role::{AuthorityRole, RoleConfigTrait};
 use serde::{Deserialize, Serialize};
-use tracing::{debug, error};
+use tracing::debug;
 use ymir::config::traits::{
-    ApiConfigTrait, ConnectionConfigTrait, DatabaseConfigTrait, HostsConfigTrait,
+    ApiConfigTrait, ConnectionConfigTrait, DatabaseConfigTrait, DidConfigTrait, HostsConfigTrait,
+    IssueConfigTrait, VcConfigTrait, VerifyReqConfigTrait, WalletConfigTrait,
 };
 use ymir::config::types::{
     ApiConfig, CommonHostsConfig, ConnectionConfig, DatabaseConfig, DidConfig, IssueConfig,
     VcConfig, VerifyReqConfig, WalletConfig,
 };
-use ymir::errors::{ErrorLogTrait, Errors};
-
-use super::CoreConfigTrait;
-use crate::types::role::AuthorityRole;
 
 #[derive(Deserialize, Serialize, Clone, Debug)]
 pub struct CoreApplicationConfig {
@@ -81,41 +80,47 @@ impl HostsConfigTrait for CoreApplicationConfig {
     }
 }
 
-impl CoreConfigTrait for CoreApplicationConfig {
-    fn get_role(&self) -> AuthorityRole {
-        self.role.clone()
+impl DidConfigTrait for CoreApplicationConfig {
+    fn did_config(&self) -> &DidConfig {
+        &self.did_config
     }
+}
 
+impl IssueConfigTrait for CoreApplicationConfig {
+    fn issue_config(&self) -> &IssueConfig {
+        &self.issue_config
+    }
+}
+
+impl VerifyReqConfigTrait for CoreApplicationConfig {
+    fn verify_req_config(&self) -> &VerifyReqConfig {
+        &self.verify_req_config
+    }
+}
+
+impl VcConfigTrait for CoreApplicationConfig {
+    fn vc_config(&self) -> &VcConfig {
+        &self.vc_config
+    }
+}
+
+impl WalletConfigTrait for CoreApplicationConfig {
+    fn wallet_config(&self) -> &WalletConfig {
+        self.wallet_config.as_ref().expect("Module wallet is not active")
+    }
+}
+
+impl RoleConfigTrait for CoreApplicationConfig {
+    fn get_role(&self) -> &AuthorityRole {
+        &self.role
+    }
+}
+
+impl CoreConfigTrait for CoreApplicationConfig {
     fn is_wallet_active(&self) -> bool {
         self.wallet_config.is_some()
     }
 
-    fn get_wallet_config(&self) -> &WalletConfig {
-        let wallet = match self.wallet_config.as_ref() {
-            Some(data) => Some(data),
-            None => {
-                let error = Errors::module_new("wallet");
-                error!("{}", error.log());
-                None
-            }
-        };
-        wallet.expect("Module wallet is no active")
-    }
-
-    fn get_did_config(&self) -> &DidConfig {
-        &self.did_config
-    }
-
-    fn get_issue_config(&self) -> &IssueConfig {
-        &self.issue_config
-    }
-
-    fn get_verify_req_config(&self) -> &VerifyReqConfig {
-        &self.verify_req_config
-    }
-    fn get_vc_config(&self) -> &VcConfig {
-        &self.vc_config
-    }
     fn is_react(&self) -> bool {
         self.is_react
     }

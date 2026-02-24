@@ -17,53 +17,48 @@
 
 use std::str::FromStr;
 
-use anyhow::bail;
+use crate::config::role::RoleConfigTrait;
+use crate::services::vcs_builder::BuilderConfigDefaultTrait;
 use chrono::{Duration, Utc};
 use serde_json::Value;
-use tracing::error;
 use ymir::data::entities::{issuing, vc_request};
-use ymir::errors::{ErrorLogTrait, Errors};
+use ymir::errors::{Errors, Outcome};
 use ymir::types::errors::BadFormat;
 use ymir::types::vcs::claims_v1::{VCClaimsV1, VCFromClaimsV1};
 use ymir::types::vcs::claims_v2::VCClaimsV2;
 use ymir::types::vcs::vc_issuer::VCIssuer;
 use ymir::types::vcs::{VcModel, VcType, W3cDataModelVersion};
-use ymir::utils::get_from_opt;
+use ymir::utils::{get_from_opt, parse_to_value};
 
-use crate::services::vcs_builder::BuilderConfigDefaultTrait;
-use crate::types::role::AuthorityRole;
-
-pub trait VcBuilderTrait: Send + Sync + 'static {
-    fn build_vc(&self, model: &issuing::Model) -> anyhow::Result<Value>;
-    fn gather_data(&self, req_model: &vc_request::Model) -> anyhow::Result<String>;
-    fn get_role(&self) -> &AuthorityRole;
+pub trait VcBuilderTrait: RoleConfigTrait + Send + Sync + 'static {
+    fn build_vc(&self, model: &issuing::Model) -> Outcome<Value>;
+    fn gather_data(&self, req_model: &vc_request::Model) -> Outcome<String>;
     fn just_build(
         &self,
         model: &issuing::Model,
         credential_subject: Value,
         config: &dyn BuilderConfigDefaultTrait,
-    ) -> anyhow::Result<Value> {
+    ) -> Outcome<Value> {
         let subject_id =
             credential_subject.get("id").and_then(|v| v.as_str()).ok_or_else(|| {
-                let error =
-                    Errors::format_new(BadFormat::Received, "Unable to retrieve cred subject id");
-                error!("{}", error.log());
-                error
+                Errors::format(
+                    BadFormat::Received,
+                    "Unable to retrieve credential subject id",
+                    None,
+                )
             })?;
 
         let now = Utc::now();
         let vc_type = VcType::from_str(&model.vc_type)?;
-        let issuer_did = get_from_opt(&model.issuer_did, "issuer did")?;
+        let issuer_did = get_from_opt(model.issuer_did.as_ref(), "issuer did")?;
         match config.get_vc_model() {
             VcModel::JwtVc => {
-                let w3c_data_model = config.get_w3c_data_model().ok_or_else(|| {
-                    let error = Errors::module_new("vc_jwt format is not active");
-                    error!("{}", error.log());
-                    error
-                })?;
+                let w3c_data_model = config
+                    .get_w3c_data_model()
+                    .ok_or_else(|| Errors::not_active("vc_jwt format is not active", None))?;
 
                 let vc = match w3c_data_model {
-                    W3cDataModelVersion::V1 => serde_json::to_value(VCClaimsV1 {
+                    W3cDataModelVersion::V1 => parse_to_value(&VCClaimsV1 {
                         exp: None,
                         jti: Some(model.credential_id.clone()),
                         iat: None,
@@ -82,7 +77,7 @@ pub trait VcBuilderTrait: Send + Sync + 'static {
                             valid_until: Some(now + Duration::days(365)),
                         },
                     })?,
-                    W3cDataModelVersion::V2 => serde_json::to_value(VCClaimsV2 {
+                    W3cDataModelVersion::V2 => parse_to_value(&VCClaimsV2 {
                         exp: None,
                         iat: None,
                         jti: Some(model.credential_id.clone()),
@@ -102,12 +97,10 @@ pub trait VcBuilderTrait: Send + Sync + 'static {
                 };
                 Ok(vc)
             }
-            VcModel::SdJwtVc => {
-                let error =
-                    Errors::not_impl_new("sdj_jwt", "Cannot issue vcs  with this format right now");
-                error!("{}", error.log());
-                bail!(error)
-            }
+            VcModel::SdJwtVc => Err(Errors::not_impl(
+                "Cannot issue vcs with the format 'sd_jwt' right now",
+                None,
+            )),
         }
     }
 }

@@ -19,13 +19,16 @@ use std::cmp::PartialEq;
 use std::sync::Arc;
 
 use super::env_extraction::extract_env_config;
+use crate::config::CoreApplicationConfig;
 use crate::setup::application::AuthorityApplication;
 use crate::setup::db_migrations::AuthorityMigration;
 use clap::{Parser, Subcommand};
 use tracing::debug;
 use ymir::config::traits::ConnectionConfigTrait;
-use ymir::services::vault::vault_rs::VaultService;
-use ymir::services::vault::VaultTrait;
+use ymir::errors::Outcome;
+use ymir::services::vault::fake_vault::FakeVaultService;
+use ymir::services::vault::vault_rs::RealVaultService;
+use ymir::services::vault::{VaultService, VaultTrait};
 
 #[derive(Parser, Debug)]
 #[command(name = "Rainbow Dataspace Authority Server")]
@@ -50,20 +53,17 @@ pub enum AuthorityCliCommands {
 pub struct AuthorityCommands;
 
 impl AuthorityCommands {
-    pub async fn init_command_line() -> anyhow::Result<()> {
-        // parse command line
+    pub async fn init_command_line() -> Outcome<()> {
         debug!("Init the command line application");
         let cli = AuthorityCli::parse();
-        let vault = Arc::new(VaultService::new());
 
-        // run scripts
         match cli.command {
             AuthorityCliCommands::Start(args) => {
-                let config = extract_env_config(args.env_file)?;
-                AuthorityApplication::run(config, vault).await?
+                let (config, vault) = Self::bootstrap(args)?;
+                AuthorityApplication::run(config, Arc::new(vault)).await?
             }
             AuthorityCliCommands::Setup(args) => {
-                let config = extract_env_config(args.env_file)?;
+                let (config, vault) = Self::bootstrap(args)?;
                 if config.is_tls_enabled() {
                     vault.write_all_secrets(None).await?;
                 } else {
@@ -75,5 +75,15 @@ impl AuthorityCommands {
         }
 
         Ok(())
+    }
+
+    fn bootstrap(args: AuthCliArgs) -> Outcome<(CoreApplicationConfig, VaultService)> {
+        let config = extract_env_config(args.env_file)?;
+        let vault = if config.is_vault_real() {
+            VaultService::Real(RealVaultService::new())
+        } else {
+            VaultService::Fake(FakeVaultService::new())
+        };
+        Ok((config, vault))
     }
 }

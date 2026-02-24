@@ -17,23 +17,24 @@
 
 use std::sync::Arc;
 
+use crate::core::traits::CoreApproverTrait;
 use axum::extract::rejection::JsonRejection;
 use axum::extract::{Path, State};
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::routing::{get, post};
 use axum::{Json, Router};
-use ymir::errors::CustomToResponse;
 use ymir::types::vcs::vc_decision_approval::VcDecisionApproval;
-
-use crate::core::traits::CoreApproverTrait;
+use ymir::utils::match_json_payload;
 
 pub struct ApproverRouter {
-    approver: Arc<dyn CoreApproverTrait>
+    approver: Arc<dyn CoreApproverTrait>,
 }
 
 impl ApproverRouter {
-    pub fn new(approver: Arc<dyn CoreApproverTrait>) -> Self { Self { approver } }
+    pub fn new(approver: Arc<dyn CoreApproverTrait>) -> Self {
+        Self { approver }
+    }
     pub fn router(self) -> Router {
         Router::new()
             .route("/all", get(Self::get_all_requests))
@@ -43,37 +44,32 @@ impl ApproverRouter {
     }
 
     async fn get_all_requests(
-        State(approver): State<Arc<dyn CoreApproverTrait>>
+        State(approver): State<Arc<dyn CoreApproverTrait>>,
     ) -> impl IntoResponse {
-        match approver.get_all().await {
-            Ok(data) => (StatusCode::OK, Json(data)).into_response(),
-            Err(e) => e.to_response()
-        }
+        approver.get_all().await.map(|data| (StatusCode::OK, Json(data))).into_response()
     }
 
     async fn get_one_request(
         State(approver): State<Arc<dyn CoreApproverTrait>>,
-        Path(id): Path<String>
+        Path(id): Path<String>,
     ) -> impl IntoResponse {
-        match approver.get_by_id(id).await {
-            Ok(data) => (StatusCode::OK, Json(data)).into_response(),
-            Err(e) => e.to_response()
-        }
+        approver.get_by_id(id).await.map(|data| (StatusCode::OK, Json(data))).into_response()
     }
 
     async fn manage_request(
         State(approver): State<Arc<dyn CoreApproverTrait>>,
         Path(id): Path<String>,
-        payload: Result<Json<VcDecisionApproval>, JsonRejection>
+        payload: Result<Json<VcDecisionApproval>, JsonRejection>,
     ) -> impl IntoResponse {
-        let payload = match payload {
-            Ok(Json(data)) => data,
-            Err(e) => return e.to_response()
+        let payload = match match_json_payload(payload) {
+            Ok(data) => data,
+            Err(res) => return res,
         };
 
-        match approver.manage_req(id, payload).await {
-            Ok(_) => StatusCode::OK.into_response(),
-            Err(e) => e.to_response()
-        }
+        approver
+            .manage_req(id, payload)
+            .await
+            .map(|data| (StatusCode::OK, Json(data)))
+            .into_response()
     }
 }

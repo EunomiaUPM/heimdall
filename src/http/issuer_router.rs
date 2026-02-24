@@ -24,20 +24,21 @@ use axum::http::{HeaderMap, StatusCode};
 use axum::response::IntoResponse;
 use axum::routing::{get, post};
 use axum::{Form, Json, Router};
-use tracing::error;
-use ymir::errors::{CustomToResponse, ErrorLogTrait, Errors};
+use ymir::errors::Errors;
 use ymir::types::errors::BadFormat;
 use ymir::types::issuing::{CredentialRequest, TokenRequest};
-use ymir::utils::extract_bearer_token;
+use ymir::utils::{extract_bearer_token, match_form_payload, match_json_payload};
 
 use crate::core::traits::CoreIssuerTrait;
 
 pub struct IssuerRouter {
-    issuer: Arc<dyn CoreIssuerTrait>
+    issuer: Arc<dyn CoreIssuerTrait>,
 }
 
 impl IssuerRouter {
-    pub fn new(issuer: Arc<dyn CoreIssuerTrait>) -> Self { Self { issuer } }
+    pub fn new(issuer: Arc<dyn CoreIssuerTrait>) -> Self {
+        Self { issuer }
+    }
 
     pub fn router(self) -> Router {
         Router::new()
@@ -50,26 +51,34 @@ impl IssuerRouter {
             .with_state(self.issuer)
     }
 
+    pub fn well_known(&self) -> Router {
+        Router::new()
+            .route("/.well-known/openid-credential-issuer", get(Self::get_issuer))
+            .route("/.well-known/oauth-authorization-server", get(Self::get_oauth_server))
+            .with_state(self.issuer.clone())
+    }
+
     async fn cred_offer(
         State(issuer): State<Arc<dyn CoreIssuerTrait>>,
-        Query(params): Query<HashMap<String, String>>
+        Query(params): Query<HashMap<String, String>>,
     ) -> impl IntoResponse {
         let id = match params.get("id") {
-            Some(hash) => hash.clone(),
+            Some(hash) => hash,
             None => {
-                let error = Errors::format_new(
+                return Errors::format(
                     BadFormat::Received,
-                    "Unable to retrieve hash from callback"
-                );
-                error!("{}", error.log());
-                return error.into_response();
+                    "Unable to retrieve hash from callback",
+                    None,
+                )
+                .into_response()
             }
         };
 
-        match issuer.get_cred_offer_data(id).await {
-            Ok(data) => (StatusCode::OK, Json(data)).into_response(),
-            Err(e) => e.to_response()
-        }
+        issuer
+            .get_cred_offer_data(id)
+            .await
+            .map(|data| (StatusCode::OK, Json(data)))
+            .into_response()
     }
 
     async fn get_issuer(State(issuer): State<Arc<dyn CoreIssuerTrait>>) -> impl IntoResponse {
@@ -81,52 +90,40 @@ impl IssuerRouter {
     }
 
     async fn get_jwks(State(issuer): State<Arc<dyn CoreIssuerTrait>>) -> impl IntoResponse {
-        match issuer.jwks().await {
-            Ok(jwk) => (StatusCode::OK, Json(jwk)).into_response(),
-            Err(e) => e.to_response()
-        }
+        issuer.jwks().await.map(|data| (StatusCode::OK, Json(data))).into_response()
     }
 
     async fn get_token(
         State(issuer): State<Arc<dyn CoreIssuerTrait>>,
-        payload: Result<Form<TokenRequest>, FormRejection>
+        payload: Result<Form<TokenRequest>, FormRejection>,
     ) -> impl IntoResponse {
-        let payload = match payload {
-            Ok(Form(data)) => data,
-            Err(e) => {
-                error!("{}", e.to_string());
-                return e.into_response();
-            }
+        let payload = match match_form_payload(payload) {
+            Ok(data) => data,
+            Err(res) => return res,
         };
 
-        match issuer.get_token(payload).await {
-            Ok(data) => (StatusCode::OK, Json(data)).into_response(),
-            Err(e) => e.to_response()
-        }
+        issuer.get_token(payload).await.map(|data| (StatusCode::OK, Json(data))).into_response()
     }
 
     async fn post_credential(
         State(authority): State<Arc<dyn CoreIssuerTrait>>,
         headers: HeaderMap,
-        payload: Result<Json<CredentialRequest>, JsonRejection>
+        payload: Result<Json<CredentialRequest>, JsonRejection>,
     ) -> impl IntoResponse {
-        let payload = match payload {
-            Ok(Json(data)) => data,
-            Err(e) => return e.to_response()
+        let payload = match match_json_payload(payload) {
+            Ok(data) => data,
+            Err(res) => return res,
         };
 
         let token = match extract_bearer_token(headers) {
             Some(token) => token,
-            None => {
-                let error = Errors::unauthorized_new("Missing token");
-                error!("{}", error.log());
-                return error.into_response();
-            }
+            None => return Errors::unauthorized("Missing token", None).into_response(),
         };
 
-        match authority.get_credential(payload, token).await {
-            Ok(data) => (StatusCode::OK, Json(data)).into_response(),
-            Err(e) => e.to_response()
-        }
+        authority
+            .get_credential(payload, token)
+            .await
+            .map(|data| (StatusCode::OK, Json(data)))
+            .into_response()
     }
 }

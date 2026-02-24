@@ -15,18 +15,15 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
+use crate::config::role::{AuthorityRole, RoleConfigTrait};
 use crate::services::vcs_builder::dataspace_authority::DataSpaceAuthorityVcBuilder;
 use crate::services::vcs_builder::legal_authority::LegalAuthorityVcBuilder;
 use crate::services::vcs_builder::VcBuilderTrait;
-use crate::types::role::AuthorityRole;
-use anyhow::bail;
 use serde_json::Value;
 use std::str::FromStr;
 use std::sync::Arc;
-use tracing::error;
 use ymir::data::entities::{issuing, vc_request};
-use ymir::errors::{ErrorLogTrait, Errors};
-use ymir::types::errors::BadFormat;
+use ymir::errors::{Errors, Outcome};
 use ymir::types::vcs::VcType;
 
 pub struct EcoAuthorityBuilder {
@@ -43,40 +40,34 @@ impl EcoAuthorityBuilder {
     }
 }
 
+impl RoleConfigTrait for EcoAuthorityBuilder {
+    fn get_role(&self) -> &AuthorityRole {
+        &AuthorityRole::EcoAuthority
+    }
+}
+
 impl VcBuilderTrait for EcoAuthorityBuilder {
-    fn build_vc(&self, model: &issuing::Model) -> anyhow::Result<Value> {
+    fn build_vc(&self, model: &issuing::Model) -> Outcome<Value> {
         let vc_type = VcType::from_str(&model.vc_type)?;
         match vc_type {
             VcType::LegalRegistrationNumber(_) => self.legal.build_vc(model),
             VcType::DataspaceParticipant => self.dataspace.build_vc(model),
-            _ => {
-                let error = Errors::format_new(
-                    BadFormat::Received,
-                    "Unable to issue credentials with this type",
-                );
-                error!("{}", error.log());
-                bail!("{}", error);
-            }
+            _ => Err(Errors::unauthorized(
+                format!("Cannot issue vc type: {}", vc_type),
+                None,
+            )),
         }
     }
 
-    fn gather_data(&self, req_model: &vc_request::Model) -> anyhow::Result<String> {
+    fn gather_data(&self, req_model: &vc_request::Model) -> Outcome<String> {
         let vc_type = VcType::from_str(&req_model.vc_type)?;
         match vc_type {
             VcType::LegalRegistrationNumber(_) => self.legal.gather_data(&req_model),
             VcType::DataspaceParticipant => self.dataspace.gather_data(&req_model),
-            _ => {
-                let error = Errors::format_new(
-                    BadFormat::Received,
-                    "Unable to issue credentials with this type",
-                );
-                error!("{}", error.log());
-                bail!("{}", error);
-            }
+            _ => Err(Errors::unauthorized(
+                format!("Cannot issue vc type: {}", vc_type),
+                None,
+            )),
         }
-    }
-
-    fn get_role(&self) -> &AuthorityRole {
-        &AuthorityRole::EcoAuthority
     }
 }

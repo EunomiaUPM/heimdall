@@ -15,12 +15,12 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-use ymir::config::traits::{ApiConfigTrait, HostsConfigTrait};
+use ymir::config::traits::{ApiConfigTrait, HostsConfigTrait, VerifyReqConfigTrait};
 use ymir::config::types::CommonHostsConfig;
 
 use super::GnapConfigTrait;
-use crate::config::{CoreApplicationConfig, CoreConfigTrait};
-use crate::types::role::AuthorityRole;
+use crate::config::role::{AuthorityRole, RoleConfigTrait};
+use crate::config::CoreApplicationConfig;
 
 pub struct GnapConfig {
     hosts: CommonHostsConfig,
@@ -33,20 +33,26 @@ impl From<CoreApplicationConfig> for GnapConfig {
     fn from(config: CoreApplicationConfig) -> GnapConfig {
         GnapConfig {
             hosts: config.hosts().clone(),
-            role: config.get_role(),
+            role: config.get_role().clone(),
             api_path: config.get_api_version(),
-            is_cert_allowed: config.get_verify_req_config().is_cert_allowed,
+            is_cert_allowed: config.is_cert_allowed(),
         }
     }
 }
 
-impl GnapConfigTrait for GnapConfig {
-    fn hosts(&self) -> &CommonHostsConfig {
-        &self.hosts
-    }
+impl RoleConfigTrait for GnapConfig {
     fn get_role(&self) -> &AuthorityRole {
         &self.role
     }
+}
+
+impl HostsConfigTrait for GnapConfig {
+    fn hosts(&self) -> &CommonHostsConfig {
+        &self.hosts
+    }
+}
+
+impl GnapConfigTrait for GnapConfig {
     fn get_api_path(&self) -> String {
         self.api_path.clone()
     }

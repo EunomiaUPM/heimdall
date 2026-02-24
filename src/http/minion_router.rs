@@ -23,7 +23,6 @@ use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::routing::get;
 use axum::{Json, Router};
-use ymir::errors::CustomToResponse;
 
 pub struct MinionRouter {
     gru: Arc<dyn CoreMinionTrait>,
@@ -43,25 +42,16 @@ impl MinionRouter {
     }
 
     async fn get_all(State(gru): State<Arc<dyn CoreMinionTrait>>) -> impl IntoResponse {
-        match gru.get_all().await {
-            Ok(data) => (StatusCode::OK, Json(data)).into_response(),
-            Err(e) => e.to_response(),
-        }
+        gru.get_all().await.map(|data| (StatusCode::OK, Json(data))).into_response()
     }
     async fn get_by_id(
         State(gru): State<Arc<dyn CoreMinionTrait>>,
         Path(id): Path<String>,
     ) -> impl IntoResponse {
-        match gru.get_by_id(id).await {
-            Ok(data) => (StatusCode::OK, Json(data)).into_response(),
-            Err(e) => e.to_response(),
-        }
+        gru.get_by_id(id).await.map(|data| (StatusCode::OK, Json(data))).into_response()
     }
 
     async fn get_me(State(gru): State<Arc<dyn CoreMinionTrait>>) -> impl IntoResponse {
-        match gru.get_me().await {
-            Ok(data) => (StatusCode::OK, Json(data)).into_response(),
-            Err(e) => e.to_response(),
-        }
+        gru.get_me().await.map(|data| (StatusCode::OK, Json(data))).into_response()
     }
 }

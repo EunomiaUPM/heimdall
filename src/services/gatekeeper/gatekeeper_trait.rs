@@ -18,6 +18,7 @@
 use async_trait::async_trait;
 use serde_json::Value;
 use ymir::data::entities::{recv_interaction, vc_request};
+use ymir::errors::Outcome;
 use ymir::types::gnap::grant_request::{GrantRequest, Interact4GR};
 use ymir::types::gnap::grant_response::GrantResponse;
 use ymir::types::vcs::VcType;
@@ -26,30 +27,23 @@ use ymir::types::vcs::VcType;
 pub trait GateKeeperTrait: Send + Sync + 'static {
     fn start(
         &self,
-        grant_request: GrantRequest,
-    ) -> anyhow::Result<(vc_request::NewModel, recv_interaction::NewModel)>;
-    fn validate_acc_req(&self, payload: &GrantRequest) -> anyhow::Result<Interact4GR>;
-    fn validate_vc_to_issue(&self, vc_type: &VcType) -> anyhow::Result<()>;
+        grant_request: &GrantRequest,
+    ) -> Outcome<(vc_request::NewModel, recv_interaction::NewModel)>;
+    fn validate_acc_req(&self, payload: &GrantRequest) -> Outcome<Interact4GR>;
+    fn validate_vc_to_issue(&self, vc_type: &VcType) -> Outcome<()>;
     fn validate_cont_req(
         &self,
         int_model: &recv_interaction::Model,
         int_ref: String,
         token: String,
-    ) -> anyhow::Result<()>;
-    async fn end_verification(
-        &self,
-        model: recv_interaction::Model,
-    ) -> anyhow::Result<Option<String>>;
+    ) -> Outcome<()>;
+    async fn end_verification(&self, model: recv_interaction::Model) -> Outcome<Option<String>>;
     async fn apprv_dny_req(
         &self,
         approve: bool,
         req_model: &mut vc_request::Model,
         int_model: &recv_interaction::Model,
-    ) -> anyhow::Result<Value>;
-    async fn notify_minion(
-        &self,
-        int_model: &recv_interaction::Model,
-        body: Value,
-    ) -> anyhow::Result<()>;
-    fn manage_cross_user(&self, model: recv_interaction::Model) -> anyhow::Result<GrantResponse>;
+    ) -> Outcome<Value>;
+    async fn notify_minion(&self, int_model: &recv_interaction::Model, body: Value) -> Outcome<()>;
+    fn manage_cross_user(&self, model: recv_interaction::Model) -> Outcome<GrantResponse>;
 }

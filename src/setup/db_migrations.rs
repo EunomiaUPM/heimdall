@@ -15,10 +15,10 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
+use crate::data::Migrator;
 use sea_orm::DatabaseConnection;
 use sea_orm_migration::{MigrationTrait, MigratorTrait};
-
-use crate::data::Migrator;
+use ymir::errors::{Errors, Outcome};
 
 pub struct AuthorityMigration;
 
@@ -33,8 +33,9 @@ impl MigratorTrait for AuthorityMigration {
 }
 
 impl AuthorityMigration {
-    pub async fn run(db_connection: &DatabaseConnection) -> anyhow::Result<()> {
-        Self::refresh(db_connection).await?;
-        Ok(())
+    pub async fn run(db_connection: &DatabaseConnection) -> Outcome<()> {
+        Self::refresh(db_connection)
+            .await
+            .map_err(|e| Errors::db("Error migrating data", Some(anyhow::Error::from(e))))
     }
 }

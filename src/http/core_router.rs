@@ -42,23 +42,24 @@ impl RainbowAuthorityRouter {
     }
 
     pub fn router(self) -> Router {
-        let gatekeeper_router = GateKeeperRouter::new(self.core.clone()).router();
-        let issuer_router = IssuerRouter::new(self.core.clone()).router();
-        let verifier_router = VerifierRouter::new(self.core.clone()).router();
-        let approver_router = ApproverRouter::new(self.core.clone()).router();
-        let openapi_router = OpenapiRouter::new(self.openapi.clone()).router();
-        let minion_router = MinionRouter::new(self.core.clone()).router();
-        let health_router = HealthRouter::new().router();
+        let gatekeeper_router = GateKeeperRouter::new(self.core.clone());
+        let issuer_router = IssuerRouter::new(self.core.clone());
+        let verifier_router = VerifierRouter::new(self.core.clone());
+        let approver_router = ApproverRouter::new(self.core.clone());
+        let openapi_router = OpenapiRouter::new(self.openapi.clone());
+        let minion_router = MinionRouter::new(self.core.clone());
+        let health_router = HealthRouter::new();
 
         let api_path = self.core.config().get_api_version();
         let router = Router::new()
-            .nest(&format!("{}/health", api_path), health_router)
-            .nest(&format!("{}/minions", api_path), minion_router)
-            .nest(&format!("{}/approver", api_path), approver_router)
-            .nest(&format!("{}/gate", api_path), gatekeeper_router)
-            .nest(&format!("{}/issuer", api_path), issuer_router)
-            .nest(&format!("{}/verifier", api_path), verifier_router)
-            .nest(&format!("{}/docs", api_path), openapi_router);
+            .merge(issuer_router.well_known())
+            .nest(&format!("{}/health", api_path), health_router.router())
+            .nest(&format!("{}/minions", api_path), minion_router.router())
+            .nest(&format!("{}/approver", api_path), approver_router.router())
+            .nest(&format!("{}/gate", api_path), gatekeeper_router.router())
+            .nest(&format!("{}/issuer", api_path), issuer_router.router())
+            .nest(&format!("{}/verifier", api_path), verifier_router.router())
+            .nest(&format!("{}/docs", api_path), openapi_router.router());
 
         let router = if self.core.config().is_wallet_active() {
             let wallet = WalletRouter::new(self.core.clone());

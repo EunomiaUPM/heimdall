@@ -15,10 +15,7 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-use async_trait::async_trait;
-
-use super::BasicRepoTrait;
-use crate::data::entities::request::{Entity, NewModel};
-
-#[async_trait]
-pub trait RequestRepoTrait: BasicRepoTrait<Entity, NewModel> + Send + Sync {}
+mod role;
+mod role_trait;
+pub use role::*;
+pub use role_trait::RoleConfigTrait;

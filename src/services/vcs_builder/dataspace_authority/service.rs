@@ -17,62 +17,58 @@
 
 use std::str::FromStr;
 
-use anyhow::bail;
+use super::super::VcBuilderTrait;
+use crate::config::role::{AuthorityRole, RoleConfigTrait};
+use crate::services::vcs_builder::dataspace_authority::config::{
+    DataSpaceAuthorityConfig, DataSpaceAuthorityConfigTrait,
+};
 use serde_json::Value;
-use tracing::{error, info};
+use tracing::info;
 use ymir::data::entities::{issuing, vc_request};
-use ymir::errors::{ErrorLogTrait, Errors};
+use ymir::errors::{Errors, Outcome};
 use ymir::types::vcs::vc_specs::dataspace::DataSpaceParticipant;
 use ymir::types::vcs::VcType;
-use ymir::utils::get_from_opt;
-use crate::services::vcs_builder::BuilderConfigDefaultTrait;
-use super::super::VcBuilderTrait;
-use crate::services::vcs_builder::dataspace_authority::config::{
-    DataSpaceAuthorityConfig, DataSpaceAuthorityConfigTrait
-};
-use crate::types::role::AuthorityRole;
+use ymir::utils::{get_from_opt, parse_to_value};
 
 pub struct DataSpaceAuthorityVcBuilder {
-    config: DataSpaceAuthorityConfig
+    config: DataSpaceAuthorityConfig,
 }
 
 impl DataSpaceAuthorityVcBuilder {
-    pub fn new(config: DataSpaceAuthorityConfig) -> Self { Self { config } }
+    pub fn new(config: DataSpaceAuthorityConfig) -> Self {
+        Self { config }
+    }
+}
+
+impl RoleConfigTrait for DataSpaceAuthorityVcBuilder {
+    fn get_role(&self) -> &AuthorityRole {
+        &self.config.get_role()
+    }
 }
 
 impl VcBuilderTrait for DataSpaceAuthorityVcBuilder {
-    fn build_vc(&self, model: &issuing::Model) -> anyhow::Result<Value> {
+    fn build_vc(&self, model: &issuing::Model) -> Outcome<Value> {
         let vc_type = VcType::from_str(&model.vc_type)?;
 
-        match vc_type {
-            VcType::DataspaceParticipant => {}
-            _ => {
-                let error = Errors::unauthorized_new(&format!(
-                    "Cannot issue vc_type: {}",
-                    vc_type.to_string()
-                ));
-                error!("{}", error.log());
-                bail!(error)
-            }
+        if !matches!(vc_type, VcType::DataspaceParticipant) {
+            return Err(Errors::unauthorized(
+                format!("Cannot issue vc type: {}", vc_type),
+                None,
+            ));
         }
 
-        info!("Building {} credential", vc_type.to_string());
+        info!("Building {} credential", vc_type);
 
-        let holder_did = get_from_opt(&model.holder_did, "holder did")?;
+        let holder_did = get_from_opt(model.holder_did.as_ref(), "holder did")?;
         let dataspace_id = self.config.get_dataspace_id().to_string();
-        let fed_catalog_uri = self.config.get_catalog().to_string();
 
-        let cred_subj = DataSpaceParticipant::new(holder_did, dataspace_id, fed_catalog_uri);
+        let cred_subj = DataSpaceParticipant::new(holder_did, dataspace_id);
 
-        let credential_subject = serde_json::to_value(&cred_subj)?;
+        let credential_subject = parse_to_value(&cred_subj)?;
         self.just_build(&model, credential_subject, &self.config)
     }
 
-    fn gather_data(&self, _req_model: &vc_request::Model) -> anyhow::Result<String> {
+    fn gather_data(&self, _req_model: &vc_request::Model) -> Outcome<String> {
         Ok("WE DONT NEED DATA".to_string())
-    }
-
-    fn get_role(&self) -> &AuthorityRole {
-        &self.config.get_role()
     }
 }

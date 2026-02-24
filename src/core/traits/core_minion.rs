@@ -15,19 +15,22 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-use std::sync::Arc;
-use async_trait::async_trait;
 use crate::services::repo::RepoTrait;
+use async_trait::async_trait;
+use std::sync::Arc;
 use ymir::data::entities::minions::Model;
+use ymir::errors::Outcome;
 
 #[async_trait]
 pub trait CoreMinionTrait: Send + Sync + 'static {
     fn repo(&self) -> Arc<dyn RepoTrait>;
-    async fn get_all(&self) -> anyhow::Result<Vec<Model>> {
+    async fn get_all(&self) -> Outcome<Vec<Model>> {
         self.repo().minions().get_all(None, None).await
     }
-    async fn get_by_id(&self, id: String) -> anyhow::Result<Model> {
+    async fn get_by_id(&self, id: String) -> Outcome<Model> {
         self.repo().minions().get_by_id(&id).await
     }
-    async fn get_me(&self) -> anyhow::Result<Model> { self.repo().minions().get_me().await }
+    async fn get_me(&self) -> Outcome<Model> {
+        self.repo().minions().get_me().await
+    }
 }

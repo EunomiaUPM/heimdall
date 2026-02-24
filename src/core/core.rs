@@ -19,9 +19,7 @@
 
 use std::sync::Arc;
 
-use tracing::error;
 use ymir::core_traits::CoreWalletTrait;
-use ymir::errors::{ErrorLogTrait, Errors};
 use ymir::services::issuer::IssuerTrait;
 use ymir::services::repo::subtraits::{MatesTrait, MinionsTrait};
 use ymir::services::verifier::VerifierTrait;
@@ -132,11 +130,7 @@ impl CoreGatekeeperTrait for Core {
 
 impl CoreWalletTrait for Core {
     fn wallet(&self) -> Arc<dyn WalletTrait> {
-        self.wallet.clone().unwrap_or_else(|| {
-            let error = Errors::module_new("wallet");
-            error!("{}", error.log());
-            panic!("module wallet not implemented");
-        })
+        self.wallet.as_ref().map(Clone::clone).expect("Module wallet is not implemented")
     }
 
     fn mate(&self) -> Option<Arc<dyn MatesTrait>> {

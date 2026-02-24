@@ -18,10 +18,9 @@
 use std::str::FromStr;
 use std::sync::Arc;
 
-use anyhow::bail;
 use async_trait::async_trait;
-use tracing::{error, info};
-use ymir::errors::Errors;
+use tracing::info;
+use ymir::errors::{Errors, Outcome};
 use ymir::services::issuer::IssuerTrait;
 use ymir::services::verifier::VerifierTrait;
 use ymir::types::errors::BadFormat;
@@ -41,7 +40,13 @@ pub trait CoreGatekeeperTrait: Send + Sync + 'static {
     fn issuer(&self) -> Arc<dyn IssuerTrait>;
     fn repo(&self) -> Arc<dyn RepoTrait>;
     fn vc_builder(&self) -> Arc<dyn VcBuilderTrait>;
-    async fn manage_req(&self, payload: GrantRequest) -> anyhow::Result<GrantResponse> {
+    async fn manage_req(&self, payload: GrantRequest) -> Result<GrantResponse, GrantResponse> {
+        self.manage_ok_req(&payload).await.map_err(|e| {
+            e.log();
+            GrantResponse::error(e.to_string())
+        })
+    }
+    async fn manage_ok_req(&self, payload: &GrantRequest) -> Outcome<GrantResponse> {
         let (n_req_mod, n_int_model) = self.gatekeeper().start(payload)?;
 
         let req_model = self.repo().request().create(n_req_mod).await?;
@@ -56,25 +61,30 @@ pub trait CoreGatekeeperTrait: Send + Sync + 'static {
 
             let ver_model = self.repo().verification().create(n_ver_model).await?;
 
-            let uri = self.verifier().generate_verification_uri(ver_model);
+            let uri = self.verifier().generate_verification_uri(&ver_model);
 
-            let response = GrantResponse::new(InteractStart::Oidc4VP, &int_model, Some(uri));
+            let response = GrantResponse::new(&InteractStart::Oidc4VP, &int_model, Some(&uri));
 
             return Ok(response);
         }
         if int_model.start.contains(&InteractStart::CrossUser.to_string()) {
             return self.gatekeeper().manage_cross_user(int_model);
         }
-        let error = Errors::format_new(BadFormat::Received, "Interact method not supported");
-        error!("{}", error);
-        bail!(error)
+        let method = int_model.start.first().ok_or_else(|| {
+            Errors::format(BadFormat::Received, "Missing field interact method", None)
+        })?;
+        Err(Errors::format(
+            BadFormat::Received,
+            format!("Interact method '{}' not supported", method),
+            None,
+        ))
     }
     async fn manage_cont_req(
         &self,
         cont_id: String,
         payload: RefBody,
-        token: String
-    ) -> anyhow::Result<String> {
+        token: String,
+    ) -> Outcome<String> {
         let int_model = self.repo().interaction().get_by_cont_id(&cont_id).await?;
         let mut iss_model = self.repo().issuing().get_by_id(&int_model.id).await?;
         let mut req_model = self.repo().request().get_by_id(&int_model.id).await?;

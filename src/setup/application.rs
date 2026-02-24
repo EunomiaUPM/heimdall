@@ -26,11 +26,11 @@ use tokio::net::TcpListener;
 use tracing::info;
 use ymir::config::traits::{ConnectionConfigTrait, HostsConfigTrait};
 use ymir::config::types::HostType;
+use ymir::errors::{Errors, Outcome};
 use ymir::services::client::basic::BasicClientService;
 use ymir::services::issuer::basic::config::BasicIssuerConfig;
 use ymir::services::issuer::basic::BasicIssuerService;
-use ymir::services::vault::vault_rs::VaultService;
-use ymir::services::vault::VaultTrait;
+use ymir::services::vault::{VaultService, VaultTrait};
 use ymir::services::verifier::basic::config::BasicVerifierConfig;
 use ymir::services::verifier::basic::BasicVerifierService;
 use ymir::services::wallet::walt_id::config::WaltIdConfig;
@@ -39,6 +39,7 @@ use ymir::services::wallet::WalletTrait;
 use ymir::types::secrets::StringHelper;
 use ymir::utils::expect_from_env;
 
+use crate::config::role::{AuthorityRole, RoleConfigTrait};
 use crate::config::{CoreApplicationConfig, CoreConfigTrait};
 use crate::core::Core;
 use crate::http::RainbowAuthorityRouter;
@@ -47,10 +48,9 @@ use crate::services::repo::RepoForSql;
 use crate::services::vcs_builder::dataspace_authority::config::DataSpaceAuthorityConfig;
 use crate::services::vcs_builder::dataspace_authority::DataSpaceAuthorityVcBuilder;
 use crate::services::vcs_builder::legal_authority::{
-    config::LegalAuthorityConfig, LegalAuthorityVcBuilder,
+    LegalAuthorityConfig, LegalAuthorityVcBuilder,
 };
 use crate::services::vcs_builder::{EcoAuthorityBuilder, VcBuilderTrait};
-use crate::types::role::AuthorityRole;
 
 pub struct AuthorityApplication;
 
@@ -119,10 +119,7 @@ impl AuthorityApplication {
         RainbowAuthorityRouter::new(Arc::new(core)).router().layer(CorsLayer::permissive())
     }
 
-    pub async fn run_basic(
-        config: CoreApplicationConfig,
-        vault: Arc<VaultService>,
-    ) -> anyhow::Result<()> {
+    pub async fn run_basic(config: CoreApplicationConfig, vault: Arc<VaultService>) -> Outcome<()> {
         let router = Self::create_router(&config, vault).await;
 
         let server_message = format!(
@@ -137,24 +134,23 @@ impl AuthorityApplication {
                     "127.0.0.1{}",
                     config.hosts().get_weird_port(HostType::Http)
                 ))
-                .await?
+                .await
             }
             false => {
                 TcpListener::bind(format!(
                     "0.0.0.0{}",
                     config.hosts().get_weird_port(HostType::Http)
                 ))
-                .await?
+                .await
             }
-        };
+        }
+        .map_err(|e| Errors::crazy("Error with tcp listener", Some(anyhow::Error::from(e))))?;
 
-        serve(listener, router).await?;
-        Ok(())
+        serve(listener, router).await.map_err(|e| {
+            Errors::crazy("Error while running basic server", Some(anyhow::Error::from(e)))
+        })
     }
-    pub async fn run_tls(
-        config: &CoreApplicationConfig,
-        vault: Arc<VaultService>,
-    ) -> anyhow::Result<()> {
+    pub async fn run_tls(config: &CoreApplicationConfig, vault: Arc<VaultService>) -> Outcome<()> {
         let cert = expect_from_env("VAULT_APP_ROOT_CLIENT_KEY");
         let pkey = expect_from_env("VAULT_APP_CLIENT_KEY");
         let cert: StringHelper = vault.read(None, &cert).await?;
@@ -168,7 +164,10 @@ impl AuthorityApplication {
             cert.data().as_bytes().to_vec(),
             pkey.data().as_bytes().to_vec(),
         )
-        .await?;
+        .await
+        .map_err(|e| {
+            Errors::crazy("Errors parsing certificate stuff", Some(anyhow::Error::from(e)))
+        })?;
 
         let router = Self::create_router(config, vault).await;
 
@@ -178,16 +177,20 @@ impl AuthorityApplication {
         } else {
             format!("0.0.0.0:{}", port)
         };
-        let addr: SocketAddr = addr_str.parse()?;
+        let addr: SocketAddr = addr_str.parse().map_err(|e| {
+            Errors::crazy("Errors with socker address", Some(anyhow::Error::from(e)))
+        })?;
         info!("Starting Authority server with TLS in {}", addr);
 
-        axum_server::bind_rustls(addr, tls_config).serve(router.into_make_service()).await?;
+        axum_server::bind_rustls(addr, tls_config)
+            .serve(router.into_make_service())
+            .await
+            .map_err(|e| {
+                Errors::crazy("Error while running basic server", Some(anyhow::Error::from(e)))
+            })?;
         Ok(())
     }
-    pub async fn run(
-        config: CoreApplicationConfig,
-        vault: Arc<VaultService>,
-    ) -> anyhow::Result<()> {
+    pub async fn run(config: CoreApplicationConfig, vault: Arc<VaultService>) -> Outcome<()> {
         if config.is_tls_enabled() {
             Self::run_tls(&config, vault.clone()).await
         } else {

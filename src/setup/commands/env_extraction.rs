@@ -15,14 +15,14 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-use tracing::info;
-
 use crate::config::CoreApplicationConfig;
+use tracing::info;
+use ymir::errors::Outcome;
+use ymir::utils::parse_to_value;
 
-pub fn extract_env_config(env_file: String) -> anyhow::Result<CoreApplicationConfig> {
+pub fn extract_env_config(env_file: String) -> Outcome<CoreApplicationConfig> {
     let config = CoreApplicationConfig::load(env_file);
-    let table =
-        json_to_table::json_to_table(&serde_json::to_value(&config)?).collapse().to_string();
+    let table = json_to_table::json_to_table(&parse_to_value(&config)?).collapse().to_string();
     info!("Current Application Authority Config:\n{}", table);
     Ok(config)
 }
