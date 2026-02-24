@@ -15,10 +15,11 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-use crate::config::CoreApplicationConfig;
 use tracing::info;
 use ymir::errors::Outcome;
 use ymir::utils::parse_to_value;
+
+use crate::config::CoreApplicationConfig;
 
 pub fn extract_env_config(env_file: String) -> Outcome<CoreApplicationConfig> {
     let config = CoreApplicationConfig::load(env_file);

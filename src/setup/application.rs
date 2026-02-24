@@ -18,11 +18,10 @@
 use std::net::SocketAddr;
 use std::sync::Arc;
 
-use tower_http::cors::CorsLayer;
-
 use axum::{serve, Router};
 use axum_server::tls_rustls::RustlsConfig;
 use tokio::net::TcpListener;
+use tower_http::cors::CorsLayer;
 use tracing::info;
 use ymir::config::traits::{ConnectionConfigTrait, HostsConfigTrait};
 use ymir::config::types::HostType;
@@ -48,7 +47,7 @@ use crate::services::repo::RepoForSql;
 use crate::services::vcs_builder::dataspace_authority::config::DataSpaceAuthorityConfig;
 use crate::services::vcs_builder::dataspace_authority::DataSpaceAuthorityVcBuilder;
 use crate::services::vcs_builder::legal_authority::{
-    LegalAuthorityConfig, LegalAuthorityVcBuilder,
+    LegalAuthorityConfig, LegalAuthorityVcBuilder
 };
 use crate::services::vcs_builder::{EcoAuthorityBuilder, VcBuilderTrait};
 
@@ -109,7 +108,7 @@ impl AuthorityApplication {
                 let walt_id_config = WaltIdConfig::from(config.clone());
                 Some(Arc::new(WaltIdService::new(walt_id_config, client.clone(), vault)))
             }
-            false => None,
+            false => None
         };
 
         // CORE
@@ -162,7 +161,7 @@ impl AuthorityApplication {
 
         let tls_config = RustlsConfig::from_pem(
             cert.data().as_bytes().to_vec(),
-            pkey.data().as_bytes().to_vec(),
+            pkey.data().as_bytes().to_vec()
         )
         .await
         .map_err(|e| {

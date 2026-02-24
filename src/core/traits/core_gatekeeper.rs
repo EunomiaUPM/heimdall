@@ -76,14 +76,14 @@ pub trait CoreGatekeeperTrait: Send + Sync + 'static {
         Err(Errors::format(
             BadFormat::Received,
             format!("Interact method '{}' not supported", method),
-            None,
+            None
         ))
     }
     async fn manage_cont_req(
         &self,
         cont_id: String,
         payload: RefBody,
-        token: String,
+        token: String
     ) -> Outcome<String> {
         let int_model = self.repo().interaction().get_by_cont_id(&cont_id).await?;
         let mut iss_model = self.repo().issuing().get_by_id(&int_model.id).await?;

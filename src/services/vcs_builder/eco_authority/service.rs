@@ -15,35 +15,35 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-use crate::config::role::{AuthorityRole, RoleConfigTrait};
-use crate::services::vcs_builder::dataspace_authority::DataSpaceAuthorityVcBuilder;
-use crate::services::vcs_builder::legal_authority::LegalAuthorityVcBuilder;
-use crate::services::vcs_builder::VcBuilderTrait;
-use serde_json::Value;
 use std::str::FromStr;
 use std::sync::Arc;
+
+use serde_json::Value;
 use ymir::data::entities::{issuing, vc_request};
 use ymir::errors::{Errors, Outcome};
 use ymir::types::vcs::VcType;
 
+use crate::config::role::{AuthorityRole, RoleConfigTrait};
+use crate::services::vcs_builder::dataspace_authority::DataSpaceAuthorityVcBuilder;
+use crate::services::vcs_builder::legal_authority::LegalAuthorityVcBuilder;
+use crate::services::vcs_builder::VcBuilderTrait;
+
 pub struct EcoAuthorityBuilder {
     legal: Arc<LegalAuthorityVcBuilder>,
-    dataspace: Arc<DataSpaceAuthorityVcBuilder>,
+    dataspace: Arc<DataSpaceAuthorityVcBuilder>
 }
 
 impl EcoAuthorityBuilder {
     pub fn new(
         legal: Arc<LegalAuthorityVcBuilder>,
-        dataspace: Arc<DataSpaceAuthorityVcBuilder>,
+        dataspace: Arc<DataSpaceAuthorityVcBuilder>
     ) -> Self {
         Self { legal, dataspace }
     }
 }
 
 impl RoleConfigTrait for EcoAuthorityBuilder {
-    fn get_role(&self) -> &AuthorityRole {
-        &AuthorityRole::EcoAuthority
-    }
+    fn get_role(&self) -> &AuthorityRole { &AuthorityRole::EcoAuthority }
 }
 
 impl VcBuilderTrait for EcoAuthorityBuilder {
@@ -54,8 +54,8 @@ impl VcBuilderTrait for EcoAuthorityBuilder {
             VcType::DataspaceParticipant => self.dataspace.build_vc(model),
             _ => Err(Errors::unauthorized(
                 format!("Cannot issue vc type: {}", vc_type),
-                None,
-            )),
+                None
+            ))
         }
     }
 
@@ -66,8 +66,8 @@ impl VcBuilderTrait for EcoAuthorityBuilder {
             VcType::DataspaceParticipant => self.dataspace.gather_data(&req_model),
             _ => Err(Errors::unauthorized(
                 format!("Cannot issue vc type: {}", vc_type),
-                None,
-            )),
+                None
+            ))
         }
     }
 }

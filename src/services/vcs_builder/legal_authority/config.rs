@@ -24,19 +24,15 @@ use crate::services::vcs_builder::BuilderConfigDefaultTrait;
 
 pub struct LegalAuthorityConfig {
     vc_config: VcConfig,
-    role: AuthorityRole,
+    role: AuthorityRole
 }
 
 impl VcConfigTrait for LegalAuthorityConfig {
-    fn vc_config(&self) -> &VcConfig {
-        &self.vc_config
-    }
+    fn vc_config(&self) -> &VcConfig { &self.vc_config }
 }
 
 impl RoleConfigTrait for LegalAuthorityConfig {
-    fn get_role(&self) -> &AuthorityRole {
-        &self.role
-    }
+    fn get_role(&self) -> &AuthorityRole { &self.role }
 }
 
 impl BuilderConfigDefaultTrait for LegalAuthorityConfig {}

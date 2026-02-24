@@ -15,11 +15,12 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-use crate::config::role::RoleConfigTrait;
 use ymir::config::traits::{
     ApiConfigTrait, ConnectionConfigTrait, DatabaseConfigTrait, DidConfigTrait, HostsConfigTrait,
-    IssueConfigTrait, VcConfigTrait, VerifyReqConfigTrait, WalletConfigTrait,
+    IssueConfigTrait, VcConfigTrait, VerifyReqConfigTrait, WalletConfigTrait
 };
+
+use crate::config::role::RoleConfigTrait;
 
 pub trait CoreConfigTrait:
     HostsConfigTrait

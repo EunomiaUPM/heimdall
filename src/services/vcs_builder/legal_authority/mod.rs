@@ -17,5 +17,5 @@
 
 mod config;
 mod service;
-pub use service::LegalAuthorityVcBuilder;
 pub use config::*;
+pub use service::LegalAuthorityVcBuilder;

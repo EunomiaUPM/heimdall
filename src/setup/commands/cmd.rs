@@ -18,10 +18,6 @@
 use std::cmp::PartialEq;
 use std::sync::Arc;
 
-use super::env_extraction::extract_env_config;
-use crate::config::CoreApplicationConfig;
-use crate::setup::application::AuthorityApplication;
-use crate::setup::db_migrations::AuthorityMigration;
 use clap::{Parser, Subcommand};
 use tracing::debug;
 use ymir::config::traits::ConnectionConfigTrait;
@@ -30,24 +26,29 @@ use ymir::services::vault::fake_vault::FakeVaultService;
 use ymir::services::vault::vault_rs::RealVaultService;
 use ymir::services::vault::{VaultService, VaultTrait};
 
+use super::env_extraction::extract_env_config;
+use crate::config::CoreApplicationConfig;
+use crate::setup::application::AuthorityApplication;
+use crate::setup::db_migrations::AuthorityMigration;
+
 #[derive(Parser, Debug)]
 #[command(name = "Rainbow Dataspace Authority Server")]
 #[command(version = "0.1")]
 struct AuthorityCli {
     #[command(subcommand)]
-    command: AuthorityCliCommands,
+    command: AuthorityCliCommands
 }
 
 #[derive(Parser, Debug, PartialEq)]
 pub struct AuthCliArgs {
     #[arg(short, long)]
-    env_file: String,
+    env_file: String
 }
 
 #[derive(Subcommand, Debug, PartialEq)]
 pub enum AuthorityCliCommands {
     Start(AuthCliArgs),
-    Setup(AuthCliArgs),
+    Setup(AuthCliArgs)
 }
 
 pub struct AuthorityCommands;

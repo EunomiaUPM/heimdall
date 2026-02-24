@@ -17,11 +17,6 @@
 
 use std::str::FromStr;
 
-use super::super::VcBuilderTrait;
-use crate::config::role::{AuthorityRole, RoleConfigTrait};
-use crate::services::vcs_builder::dataspace_authority::config::{
-    DataSpaceAuthorityConfig, DataSpaceAuthorityConfigTrait,
-};
 use serde_json::Value;
 use tracing::info;
 use ymir::data::entities::{issuing, vc_request};
@@ -30,20 +25,22 @@ use ymir::types::vcs::vc_specs::dataspace::DataSpaceParticipant;
 use ymir::types::vcs::VcType;
 use ymir::utils::{get_from_opt, parse_to_value};
 
+use super::super::VcBuilderTrait;
+use crate::config::role::{AuthorityRole, RoleConfigTrait};
+use crate::services::vcs_builder::dataspace_authority::config::{
+    DataSpaceAuthorityConfig, DataSpaceAuthorityConfigTrait
+};
+
 pub struct DataSpaceAuthorityVcBuilder {
-    config: DataSpaceAuthorityConfig,
+    config: DataSpaceAuthorityConfig
 }
 
 impl DataSpaceAuthorityVcBuilder {
-    pub fn new(config: DataSpaceAuthorityConfig) -> Self {
-        Self { config }
-    }
+    pub fn new(config: DataSpaceAuthorityConfig) -> Self { Self { config } }
 }
 
 impl RoleConfigTrait for DataSpaceAuthorityVcBuilder {
-    fn get_role(&self) -> &AuthorityRole {
-        &self.config.get_role()
-    }
+    fn get_role(&self) -> &AuthorityRole { &self.config.get_role() }
 }
 
 impl VcBuilderTrait for DataSpaceAuthorityVcBuilder {
@@ -53,7 +50,7 @@ impl VcBuilderTrait for DataSpaceAuthorityVcBuilder {
         if !matches!(vc_type, VcType::DataspaceParticipant) {
             return Err(Errors::unauthorized(
                 format!("Cannot issue vc type: {}", vc_type),
-                None,
+                None
             ));
         }
 

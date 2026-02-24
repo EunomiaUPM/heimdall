@@ -17,21 +17,20 @@
 
 use std::sync::Arc;
 
-use crate::core::traits::CoreMinionTrait;
 use axum::extract::{Path, State};
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::routing::get;
 use axum::{Json, Router};
 
+use crate::core::traits::CoreMinionTrait;
+
 pub struct MinionRouter {
-    gru: Arc<dyn CoreMinionTrait>,
+    gru: Arc<dyn CoreMinionTrait>
 }
 
 impl MinionRouter {
-    pub fn new(gru: Arc<dyn CoreMinionTrait>) -> MinionRouter {
-        MinionRouter { gru }
-    }
+    pub fn new(gru: Arc<dyn CoreMinionTrait>) -> MinionRouter { MinionRouter { gru } }
 
     pub fn router(self) -> Router {
         Router::new()
@@ -46,7 +45,7 @@ impl MinionRouter {
     }
     async fn get_by_id(
         State(gru): State<Arc<dyn CoreMinionTrait>>,
-        Path(id): Path<String>,
+        Path(id): Path<String>
     ) -> impl IntoResponse {
         gru.get_by_id(id).await.map(|data| (StatusCode::OK, Json(data))).into_response()
     }

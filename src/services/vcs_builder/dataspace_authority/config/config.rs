@@ -26,27 +26,21 @@ use crate::services::vcs_builder::BuilderConfigDefaultTrait;
 pub struct DataSpaceAuthorityConfig {
     vc_config: VcConfig,
     dataspace_id: String,
-    role: AuthorityRole,
+    role: AuthorityRole
 }
 
 impl VcConfigTrait for DataSpaceAuthorityConfig {
-    fn vc_config(&self) -> &VcConfig {
-        &self.vc_config
-    }
+    fn vc_config(&self) -> &VcConfig { &self.vc_config }
 }
 
 impl RoleConfigTrait for DataSpaceAuthorityConfig {
-    fn get_role(&self) -> &AuthorityRole {
-        &self.role
-    }
+    fn get_role(&self) -> &AuthorityRole { &self.role }
 }
 
 impl BuilderConfigDefaultTrait for DataSpaceAuthorityConfig {}
 
 impl DataSpaceAuthorityConfigTrait for DataSpaceAuthorityConfig {
-    fn get_dataspace_id(&self) -> &str {
-        &self.dataspace_id
-    }
+    fn get_dataspace_id(&self) -> &str { &self.dataspace_id }
 }
 
 impl From<CoreApplicationConfig> for DataSpaceAuthorityConfig {

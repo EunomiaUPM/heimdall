@@ -15,11 +15,13 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-use crate::services::repo::RepoTrait;
-use async_trait::async_trait;
 use std::sync::Arc;
+
+use async_trait::async_trait;
 use ymir::data::entities::minions::Model;
 use ymir::errors::Outcome;
+
+use crate::services::repo::RepoTrait;
 
 #[async_trait]
 pub trait CoreMinionTrait: Send + Sync + 'static {
@@ -30,7 +32,5 @@ pub trait CoreMinionTrait: Send + Sync + 'static {
     async fn get_by_id(&self, id: String) -> Outcome<Model> {
         self.repo().minions().get_by_id(&id).await
     }
-    async fn get_me(&self) -> Outcome<Model> {
-        self.repo().minions().get_me().await
-    }
+    async fn get_me(&self) -> Outcome<Model> { self.repo().minions().get_me().await }
 }

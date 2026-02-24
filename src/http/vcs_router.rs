@@ -17,7 +17,6 @@
 
 use std::sync::Arc;
 
-use crate::core::traits::CoreApproverTrait;
 use axum::extract::rejection::JsonRejection;
 use axum::extract::{Path, State};
 use axum::http::StatusCode;
@@ -27,14 +26,14 @@ use axum::{Json, Router};
 use ymir::types::vcs::vc_decision_approval::VcDecisionApproval;
 use ymir::utils::match_json_payload;
 
+use crate::core::traits::CoreApproverTrait;
+
 pub struct ApproverRouter {
-    approver: Arc<dyn CoreApproverTrait>,
+    approver: Arc<dyn CoreApproverTrait>
 }
 
 impl ApproverRouter {
-    pub fn new(approver: Arc<dyn CoreApproverTrait>) -> Self {
-        Self { approver }
-    }
+    pub fn new(approver: Arc<dyn CoreApproverTrait>) -> Self { Self { approver } }
     pub fn router(self) -> Router {
         Router::new()
             .route("/all", get(Self::get_all_requests))
@@ -44,14 +43,14 @@ impl ApproverRouter {
     }
 
     async fn get_all_requests(
-        State(approver): State<Arc<dyn CoreApproverTrait>>,
+        State(approver): State<Arc<dyn CoreApproverTrait>>
     ) -> impl IntoResponse {
         approver.get_all().await.map(|data| (StatusCode::OK, Json(data))).into_response()
     }
 
     async fn get_one_request(
         State(approver): State<Arc<dyn CoreApproverTrait>>,
-        Path(id): Path<String>,
+        Path(id): Path<String>
     ) -> impl IntoResponse {
         approver.get_by_id(id).await.map(|data| (StatusCode::OK, Json(data))).into_response()
     }
@@ -59,11 +58,11 @@ impl ApproverRouter {
     async fn manage_request(
         State(approver): State<Arc<dyn CoreApproverTrait>>,
         Path(id): Path<String>,
-        payload: Result<Json<VcDecisionApproval>, JsonRejection>,
+        payload: Result<Json<VcDecisionApproval>, JsonRejection>
     ) -> impl IntoResponse {
         let payload = match match_json_payload(payload) {
             Ok(data) => data,
-            Err(res) => return res,
+            Err(res) => return res
         };
 
         approver
