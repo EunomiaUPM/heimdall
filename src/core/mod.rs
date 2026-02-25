@@ -15,7 +15,10 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
+mod builder;
 mod core;
 pub mod traits;
 
 pub use core::Core;
+
+pub use builder::CoreBuilder;

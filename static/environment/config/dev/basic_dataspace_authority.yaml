@@ -2,8 +2,8 @@
 # COMMON ANCHORS
 # ==========================
 http_host: &http_host
-  protocol: "https"
-  url: "dev-dataspaces.dit.upm.es"
+  protocol: "http"
+  url: "host.docker.internal"
   port: "1500"
 
 # ==========================
@@ -16,8 +16,9 @@ hosts_config:
   graphql: null
 
 connection_config:
-  is_local: false
-  is_tls_enabled: true
+  is_local: true
+  is_tls_enabled: false
+  is_vault_real: true
 
 db_config:
   db_type: Postgres
@@ -26,9 +27,9 @@ db_config:
 
 wallet_config:
   api:
-    protocol: "https"
-    url: "wallet.demo.walt.id"
-    port: null
+    protocol: "http"
+    url: "host.docker.internal"
+    port: "7001"
   id: null
 
 did_config:
@@ -50,7 +51,6 @@ vc_config:
 
 issue_config:
   dataspace_id: "RainbowDataspace"
-  federated_catalog_uri: "http://uri_to_federated_catalog"
 
 verify_req_config:
   is_cert_allowed: true

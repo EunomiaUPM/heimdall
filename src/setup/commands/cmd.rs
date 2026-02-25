@@ -28,7 +28,7 @@ use ymir::services::vault::{VaultService, VaultTrait};
 
 use super::env_extraction::extract_env_config;
 use crate::config::CoreApplicationConfig;
-use crate::setup::application::AuthorityApplication;
+use crate::setup::app::AuthorityApp;
 use crate::setup::db_migrations::AuthorityMigration;
 
 #[derive(Parser, Debug)]
@@ -61,7 +61,7 @@ impl AuthorityCommands {
         match cli.command {
             AuthorityCliCommands::Start(args) => {
                 let (config, vault) = Self::bootstrap(args)?;
-                AuthorityApplication::run(config, Arc::new(vault)).await?
+                AuthorityApp::run(config, Arc::new(vault)).await?
             }
             AuthorityCliCommands::Setup(args) => {
                 let (config, vault) = Self::bootstrap(args)?;

@@ -17,17 +17,14 @@
 
 use std::sync::Arc;
 
-use axum::extract::Request;
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::Router;
-use tower_http::services::{ServeDir, ServeFile};
-use tower_http::trace::{DefaultOnResponse, TraceLayer};
-use tracing::{error, info, Level};
-use uuid::Uuid;
+use tracing::error;
 use ymir::http::{HealthRouter, OpenapiRouter, WalletRouter};
 
 use crate::core::traits::CoreTrait;
+use crate::http::builder::RouterBuilder;
 use crate::http::{ApproverRouter, GateKeeperRouter, IssuerRouter, MinionRouter, VerifierRouter};
 
 pub struct RainbowAuthorityRouter {
@@ -42,54 +39,27 @@ impl RainbowAuthorityRouter {
     }
 
     pub fn router(self) -> Router {
-        let gatekeeper_router = GateKeeperRouter::new(self.core.clone());
-        let issuer_router = IssuerRouter::new(self.core.clone());
-        let verifier_router = VerifierRouter::new(self.core.clone());
-        let approver_router = ApproverRouter::new(self.core.clone());
-        let openapi_router = OpenapiRouter::new(self.openapi.clone());
-        let minion_router = MinionRouter::new(self.core.clone());
-        let health_router = HealthRouter::new();
-
-        let api_path = self.core.config().get_api_version();
-        let router = Router::new()
-            .merge(issuer_router.well_known())
-            .nest(&format!("{}/health", api_path), health_router.router())
-            .nest(&format!("{}/minions", api_path), minion_router.router())
-            .nest(&format!("{}/approver", api_path), approver_router.router())
-            .nest(&format!("{}/gate", api_path), gatekeeper_router.router())
-            .nest(&format!("{}/issuer", api_path), issuer_router.router())
-            .nest(&format!("{}/verifier", api_path), verifier_router.router())
-            .nest(&format!("{}/docs", api_path), openapi_router.router());
-
-        let router = if self.core.config().is_wallet_active() {
-            let wallet = WalletRouter::new(self.core.clone());
-            router.merge(wallet.well_known()).nest(&format!("{}/wallet", api_path), wallet.router())
-        } else {
-            router
+        let wallet = match self.core.config().is_wallet_active() {
+            true => Some(WalletRouter::new(self.core.clone())),
+            false => None
         };
 
-        let router = if self.core.config().is_react() {
-            router.nest_service(
-                "/admin",
-                ServeDir::new("./react/dist")
-                    .not_found_service(ServeFile::new("./react/dist/index.html"))
-            )
-        } else {
-            router
-        };
+        let router = RouterBuilder::new()
+            .gatekeeper(GateKeeperRouter::new(self.core.clone()))
+            .issuer(IssuerRouter::new(self.core.clone()))
+            .verifier(VerifierRouter::new(self.core.clone()))
+            .approver(ApproverRouter::new(self.core.clone()))
+            .minion(MinionRouter::new(self.core.clone()))
+            .wallet(wallet)
+            .react(self.core.config().is_react())
+            .openapi(OpenapiRouter::new(self.openapi.clone()))
+            .health(HealthRouter::new())
+            .api_path(self.core.config().get_api_version())
+            .build();
 
-        router.fallback(Self::fallback).layer(
-            TraceLayer::new_for_http()
-                .make_span_with(
-                    |_req: &Request<_>| tracing::info_span!("request", id = %Uuid::new_v4())
-                )
-                .on_request(|req: &Request<_>, _span: &tracing::Span| {
-                    info!("{} {}", req.method(), req.uri().path());
-                })
-                .on_response(DefaultOnResponse::new().level(Level::TRACE))
-        )
+        // Builder already includes a layer for logging
+        router.fallback(Self::fallback)
     }
-
     async fn fallback() -> impl IntoResponse {
         error!("Wrong route");
         StatusCode::NOT_FOUND.into_response()
