@@ -24,7 +24,7 @@ use axum::response::IntoResponse;
 use axum::routing::{get, post};
 use axum::{Json, Router};
 use ymir::types::vcs::vc_decision_approval::VcDecisionApproval;
-use ymir::utils::match_json_payload;
+use ymir::utils::extract_payload;
 
 use crate::core::traits::CoreApproverTrait;
 
@@ -60,7 +60,7 @@ impl ApproverRouter {
         Path(id): Path<String>,
         payload: Result<Json<VcDecisionApproval>, JsonRejection>
     ) -> impl IntoResponse {
-        let payload = match match_json_payload(payload) {
+        let payload = match extract_payload(payload) {
             Ok(data) => data,
             Err(res) => return res
         };

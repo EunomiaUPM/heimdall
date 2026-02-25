@@ -26,7 +26,7 @@ use axum::{Json, Router};
 use ymir::errors::Errors;
 use ymir::types::gnap::grant_request::GrantRequest;
 use ymir::types::gnap::RefBody;
-use ymir::utils::{extract_gnap_token, match_json_payload};
+use ymir::utils::{extract_gnap_token, extract_payload};
 
 use crate::core::traits::CoreGatekeeperTrait;
 
@@ -48,7 +48,7 @@ impl GateKeeperRouter {
         State(gatekeeper): State<Arc<dyn CoreGatekeeperTrait>>,
         payload: Result<Json<GrantRequest>, JsonRejection>
     ) -> impl IntoResponse {
-        let payload = match match_json_payload(payload) {
+        let payload = match extract_payload(payload) {
             Ok(data) => data,
             Err(res) => return res
         };
@@ -74,7 +74,7 @@ impl GateKeeperRouter {
             }
         };
 
-        let payload = match match_json_payload(payload) {
+        let payload = match extract_payload(payload) {
             Ok(data) => data,
             Err(res) => return res
         };

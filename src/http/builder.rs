@@ -40,7 +40,7 @@ pub struct RouterBuilder<GT, ISS, VER, APP, MIN, REA, OPN, HEA, API> {
     openapi: Option<OpenapiRouter>,
     health: Option<HealthRouter>,
     api_path: Option<String>,
-    _marker: PhantomData<(GT, ISS, VER, APP, MIN, REA, OPN, HEA, API)>,
+    _marker: PhantomData<(GT, ISS, VER, APP, MIN, REA, OPN, HEA, API)>
 }
 
 impl
@@ -58,7 +58,7 @@ impl
             openapi: None,
             health: None,
             api_path: None,
-            _marker: PhantomData,
+            _marker: PhantomData
         }
     }
 }
@@ -67,7 +67,7 @@ impl<GT, ISS, VER, APP, MIN, REA, OPN, HEA, API>
 {
     pub fn gatekeeper(
         self,
-        gatekeeper: GateKeeperRouter,
+        gatekeeper: GateKeeperRouter
     ) -> RouterBuilder<Present, ISS, VER, APP, MIN, REA, OPN, HEA, API> {
         RouterBuilder {
             gatekeeper: Some(gatekeeper),
@@ -80,13 +80,13 @@ impl<GT, ISS, VER, APP, MIN, REA, OPN, HEA, API>
             openapi: self.openapi,
             health: self.health,
             api_path: self.api_path,
-            _marker: PhantomData,
+            _marker: PhantomData
         }
     }
 
     pub fn issuer(
         self,
-        issuer: IssuerRouter,
+        issuer: IssuerRouter
     ) -> RouterBuilder<GT, Present, VER, APP, MIN, REA, OPN, HEA, API> {
         RouterBuilder {
             gatekeeper: self.gatekeeper,
@@ -99,13 +99,13 @@ impl<GT, ISS, VER, APP, MIN, REA, OPN, HEA, API>
             openapi: self.openapi,
             health: self.health,
             api_path: self.api_path,
-            _marker: PhantomData,
+            _marker: PhantomData
         }
     }
 
     pub fn verifier(
         self,
-        verifier: VerifierRouter,
+        verifier: VerifierRouter
     ) -> RouterBuilder<GT, ISS, Present, APP, MIN, REA, OPN, HEA, API> {
         RouterBuilder {
             gatekeeper: self.gatekeeper,
@@ -118,13 +118,13 @@ impl<GT, ISS, VER, APP, MIN, REA, OPN, HEA, API>
             openapi: self.openapi,
             health: self.health,
             api_path: self.api_path,
-            _marker: PhantomData,
+            _marker: PhantomData
         }
     }
 
     pub fn approver(
         self,
-        approver: ApproverRouter,
+        approver: ApproverRouter
     ) -> RouterBuilder<GT, ISS, VER, Present, MIN, REA, OPN, HEA, API> {
         RouterBuilder {
             gatekeeper: self.gatekeeper,
@@ -137,13 +137,13 @@ impl<GT, ISS, VER, APP, MIN, REA, OPN, HEA, API>
             openapi: self.openapi,
             health: self.health,
             api_path: self.api_path,
-            _marker: PhantomData,
+            _marker: PhantomData
         }
     }
 
     pub fn minion(
         self,
-        minion: MinionRouter,
+        minion: MinionRouter
     ) -> RouterBuilder<GT, ISS, VER, APP, Present, REA, OPN, HEA, API> {
         RouterBuilder {
             gatekeeper: self.gatekeeper,
@@ -156,13 +156,13 @@ impl<GT, ISS, VER, APP, MIN, REA, OPN, HEA, API>
             openapi: self.openapi,
             health: self.health,
             api_path: self.api_path,
-            _marker: PhantomData,
+            _marker: PhantomData
         }
     }
 
     pub fn wallet(
         self,
-        wallet: Option<WalletRouter>,
+        wallet: Option<WalletRouter>
     ) -> RouterBuilder<GT, ISS, VER, APP, MIN, REA, OPN, HEA, API> {
         RouterBuilder {
             gatekeeper: self.gatekeeper,
@@ -175,13 +175,13 @@ impl<GT, ISS, VER, APP, MIN, REA, OPN, HEA, API>
             openapi: self.openapi,
             health: self.health,
             api_path: self.api_path,
-            _marker: PhantomData,
+            _marker: PhantomData
         }
     }
 
     pub fn react(
         self,
-        react: bool,
+        react: bool
     ) -> RouterBuilder<GT, ISS, VER, APP, MIN, Present, OPN, HEA, API> {
         RouterBuilder {
             gatekeeper: self.gatekeeper,
@@ -194,13 +194,13 @@ impl<GT, ISS, VER, APP, MIN, REA, OPN, HEA, API>
             openapi: self.openapi,
             health: self.health,
             api_path: self.api_path,
-            _marker: PhantomData,
+            _marker: PhantomData
         }
     }
 
     pub fn openapi(
         self,
-        openapi: OpenapiRouter,
+        openapi: OpenapiRouter
     ) -> RouterBuilder<GT, ISS, VER, APP, MIN, REA, Present, HEA, API> {
         RouterBuilder {
             gatekeeper: self.gatekeeper,
@@ -213,13 +213,13 @@ impl<GT, ISS, VER, APP, MIN, REA, OPN, HEA, API>
             openapi: Some(openapi),
             health: self.health,
             api_path: self.api_path,
-            _marker: PhantomData,
+            _marker: PhantomData
         }
     }
 
     pub fn health(
         self,
-        health: HealthRouter,
+        health: HealthRouter
     ) -> RouterBuilder<GT, ISS, VER, APP, MIN, REA, OPN, Present, API> {
         RouterBuilder {
             gatekeeper: self.gatekeeper,
@@ -232,13 +232,13 @@ impl<GT, ISS, VER, APP, MIN, REA, OPN, HEA, API>
             openapi: self.openapi,
             health: Some(health),
             api_path: self.api_path,
-            _marker: PhantomData,
+            _marker: PhantomData
         }
     }
 
     pub fn api_path(
         self,
-        path: String,
+        path: String
     ) -> RouterBuilder<GT, ISS, VER, APP, MIN, REA, OPN, HEA, Present> {
         RouterBuilder {
             gatekeeper: self.gatekeeper,
@@ -251,7 +251,7 @@ impl<GT, ISS, VER, APP, MIN, REA, OPN, HEA, API>
             openapi: self.openapi,
             health: self.health,
             api_path: Some(path),
-            _marker: PhantomData,
+            _marker: PhantomData
         }
     }
 }
@@ -286,7 +286,7 @@ impl
             base_router.nest_service(
                 "/admin",
                 ServeDir::new("./react/dist")
-                    .not_found_service(ServeFile::new("./react/dist/index.html")),
+                    .not_found_service(ServeFile::new("./react/dist/index.html"))
             )
         } else {
             base_router
@@ -296,12 +296,12 @@ impl
             .layer(
                 TraceLayer::new_for_http()
                     .make_span_with(
-                        |_req: &Request<_>| tracing::info_span!("request", id = %Uuid::new_v4()),
+                        |_req: &Request<_>| tracing::info_span!("request", id = %Uuid::new_v4())
                     )
                     .on_request(|req: &Request<_>, _span: &tracing::Span| {
                         info!("{} {}", req.method(), req.uri().path());
                     })
-                    .on_response(DefaultOnResponse::new().level(Level::TRACE)),
+                    .on_response(DefaultOnResponse::new().level(Level::TRACE))
             )
             .layer(CorsLayer::permissive())
     }

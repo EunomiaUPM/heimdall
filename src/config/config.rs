@@ -28,6 +28,7 @@ use ymir::config::types::{
     ApiConfig, CommonHostsConfig, ConnectionConfig, DatabaseConfig, DidConfig, IssueConfig,
     VcConfig, VerifyReqConfig, WalletConfig
 };
+use ymir::errors::{Errors, Outcome};
 
 use super::CoreConfigTrait;
 use crate::config::role::{AuthorityRole, RoleConfigTrait};
@@ -48,12 +49,13 @@ pub struct CoreApplicationConfig {
 }
 
 impl CoreApplicationConfig {
-    pub fn load(env_file: String) -> Self {
+    pub fn load(env_file: String) -> Outcome<Self> {
         let path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join(env_file);
         debug!("Config file path: {}", path.display());
 
         let data = fs::read_to_string(&path).expect("Unable to read config file");
-        serde_norway::from_str(&data).expect("Unable to parse config file")
+        serde_norway::from_str(&data)
+            .map_err(|e| Errors::parse("Unable to parse config file", Some(anyhow::Error::from(e))))
     }
 }
 

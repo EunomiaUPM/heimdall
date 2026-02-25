@@ -24,7 +24,7 @@ use axum::response::IntoResponse;
 use axum::routing::{get, post};
 use axum::{Form, Json, Router};
 use ymir::types::verifying::VerifyPayload;
-use ymir::utils::match_form_payload;
+use ymir::utils::extract_form_payload;
 
 use crate::core::traits::CoreVerifierTrait;
 
@@ -52,7 +52,7 @@ impl VerifierRouter {
         Path(state): Path<String>,
         payload: Result<Form<VerifyPayload>, FormRejection>
     ) -> impl IntoResponse {
-        let payload = match match_form_payload(payload) {
+        let payload = match extract_form_payload(payload) {
             Ok(data) => data,
             Err(res) => return res
         };

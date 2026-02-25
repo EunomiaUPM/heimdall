@@ -27,7 +27,7 @@ use axum::{Form, Json, Router};
 use ymir::errors::Errors;
 use ymir::types::errors::BadFormat;
 use ymir::types::issuing::{CredentialRequest, TokenRequest};
-use ymir::utils::{extract_bearer_token, match_form_payload, match_json_payload};
+use ymir::utils::{extract_bearer_token, extract_form_payload, extract_payload};
 
 use crate::core::traits::CoreIssuerTrait;
 
@@ -95,7 +95,7 @@ impl IssuerRouter {
         State(issuer): State<Arc<dyn CoreIssuerTrait>>,
         payload: Result<Form<TokenRequest>, FormRejection>
     ) -> impl IntoResponse {
-        let payload = match match_form_payload(payload) {
+        let payload = match extract_form_payload(payload) {
             Ok(data) => data,
             Err(res) => return res
         };
@@ -108,7 +108,7 @@ impl IssuerRouter {
         headers: HeaderMap,
         payload: Result<Json<CredentialRequest>, JsonRejection>
     ) -> impl IntoResponse {
-        let payload = match match_json_payload(payload) {
+        let payload = match extract_payload(payload) {
             Ok(data) => data,
             Err(res) => return res
         };
