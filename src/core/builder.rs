@@ -16,8 +16,7 @@
  */
 
 use std::sync::Arc;
-
-use ymir::services::client::basic::BasicClientService;
+use ymir::services::client::ClientService;
 use ymir::services::issuer::basic::config::BasicIssuerConfig;
 use ymir::services::issuer::basic::BasicIssuerService;
 use ymir::services::vault::{VaultService, VaultTrait};
@@ -34,15 +33,15 @@ use crate::services::gatekeeper::gnap::{config::GnapConfig, GnapService};
 use crate::services::repo::RepoForSql;
 use crate::services::repo::RepoTrait;
 use crate::services::vcs_builder::dataspace_authority::{
-    config::DataSpaceAuthorityConfig, DataSpaceAuthorityVcBuilder
+    config::DataSpaceAuthorityConfig, DataSpaceAuthorityVcBuilder,
 };
 use crate::services::vcs_builder::legal_authority::{
-    LegalAuthorityConfig, LegalAuthorityVcBuilder
+    LegalAuthorityConfig, LegalAuthorityVcBuilder,
 };
 use crate::services::vcs_builder::{EcoAuthorityBuilder, VcBuilderTrait};
 
 pub struct CoreBuilder {
-    core: Core
+    core: Core,
 }
 
 impl CoreBuilder {
@@ -91,7 +90,7 @@ impl CoreBuilder {
         let db_connection = vault.get_db_connection(&config).await;
         let repo: Arc<dyn RepoTrait> = Arc::new(RepoForSql::new(db_connection));
 
-        let client = Arc::new(BasicClientService::new());
+        let client = Arc::new(ClientService::default());
 
         let gatekeeper = Arc::new(GnapService::new(gnap_config, client.clone()));
         let issuer =
@@ -110,5 +109,7 @@ impl CoreBuilder {
         Self { core }
     }
 
-    pub fn build(self) -> Core { self.core }
+    pub fn build(self) -> Core {
+        self.core
+    }
 }

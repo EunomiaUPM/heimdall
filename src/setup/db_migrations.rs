@@ -37,6 +37,6 @@ impl AuthorityMigration {
     pub async fn run(db_connection: &DatabaseConnection) -> Outcome<()> {
         Self::refresh(db_connection)
             .await
-            .map_err(|e| Errors::db("Error migrating data", Some(anyhow::Error::from(e))))
+            .map_err(|e| Errors::db("Error migrating data", Some(Box::new(e))))
     }
 }

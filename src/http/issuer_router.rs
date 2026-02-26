@@ -24,19 +24,20 @@ use axum::http::{HeaderMap, StatusCode};
 use axum::response::IntoResponse;
 use axum::routing::{get, post};
 use axum::{Form, Json, Router};
-use ymir::errors::Errors;
-use ymir::types::errors::BadFormat;
+use ymir::errors::{BadFormat, Errors};
 use ymir::types::issuing::{CredentialRequest, TokenRequest};
 use ymir::utils::{extract_bearer_token, extract_form_payload, extract_payload};
 
 use crate::core::traits::CoreIssuerTrait;
 
 pub struct IssuerRouter {
-    issuer: Arc<dyn CoreIssuerTrait>
+    issuer: Arc<dyn CoreIssuerTrait>,
 }
 
 impl IssuerRouter {
-    pub fn new(issuer: Arc<dyn CoreIssuerTrait>) -> Self { Self { issuer } }
+    pub fn new(issuer: Arc<dyn CoreIssuerTrait>) -> Self {
+        Self { issuer }
+    }
 
     pub fn router(self) -> Router {
         Router::new()
@@ -58,7 +59,7 @@ impl IssuerRouter {
 
     async fn cred_offer(
         State(issuer): State<Arc<dyn CoreIssuerTrait>>,
-        Query(params): Query<HashMap<String, String>>
+        Query(params): Query<HashMap<String, String>>,
     ) -> impl IntoResponse {
         let id = match params.get("id") {
             Some(hash) => hash,
@@ -66,7 +67,7 @@ impl IssuerRouter {
                 return Errors::format(
                     BadFormat::Received,
                     "Unable to retrieve hash from callback",
-                    None
+                    None,
                 )
                 .into_response()
             }
@@ -93,11 +94,11 @@ impl IssuerRouter {
 
     async fn get_token(
         State(issuer): State<Arc<dyn CoreIssuerTrait>>,
-        payload: Result<Form<TokenRequest>, FormRejection>
+        payload: Result<Form<TokenRequest>, FormRejection>,
     ) -> impl IntoResponse {
         let payload = match extract_form_payload(payload) {
             Ok(data) => data,
-            Err(res) => return res
+            Err(res) => return res,
         };
 
         issuer.get_token(payload).await.map(|data| (StatusCode::OK, Json(data))).into_response()
@@ -106,16 +107,16 @@ impl IssuerRouter {
     async fn post_credential(
         State(authority): State<Arc<dyn CoreIssuerTrait>>,
         headers: HeaderMap,
-        payload: Result<Json<CredentialRequest>, JsonRejection>
+        payload: Result<Json<CredentialRequest>, JsonRejection>,
     ) -> impl IntoResponse {
         let payload = match extract_payload(payload) {
             Ok(data) => data,
-            Err(res) => return res
+            Err(res) => return res,
         };
 
         let token = match extract_bearer_token(headers) {
             Some(token) => token,
-            None => return Errors::unauthorized("Missing token", None).into_response()
+            None => return Errors::unauthorized("Missing token", None).into_response(),
         };
 
         authority

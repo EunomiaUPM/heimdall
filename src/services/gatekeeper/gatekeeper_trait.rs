@@ -34,10 +34,10 @@ pub trait GateKeeperTrait: Send + Sync + 'static {
     fn validate_cont_req(
         &self,
         int_model: &recv_interaction::Model,
-        int_ref: String,
-        token: String
+        int_ref: &str,
+        token: &str
     ) -> Outcome<()>;
-    async fn end_verification(&self, model: recv_interaction::Model) -> Outcome<Option<String>>;
+    async fn end_verification(&self, model: &recv_interaction::Model) -> Outcome<Option<String>>;
     async fn apprv_dny_req(
         &self,
         approve: bool,
@@ -45,5 +45,5 @@ pub trait GateKeeperTrait: Send + Sync + 'static {
         int_model: &recv_interaction::Model
     ) -> Outcome<Value>;
     async fn notify_minion(&self, int_model: &recv_interaction::Model, body: Value) -> Outcome<()>;
-    fn manage_cross_user(&self, model: recv_interaction::Model) -> Outcome<GrantResponse>;
+    fn manage_cross_user(&self, model: &recv_interaction::Model) -> Outcome<GrantResponse>;
 }

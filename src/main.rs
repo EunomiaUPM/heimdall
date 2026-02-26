@@ -44,7 +44,7 @@ async fn main() -> Outcome<()> {
         .with_default_directive(LevelFilter::INFO.into())
         .parse("debug,sqlx::query=off")
         .map_err(|e| {
-            let error = Errors::crazy("Unexpected error on main", Some(anyhow::Error::from(e)));
+            let error = Errors::crazy("Unexpected error on main", Some(Box::new(e)));
             error.log();
             error
         })?;

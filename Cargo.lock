@@ -1274,7 +1274,6 @@ checksum = "2304e00983f87ffb38b55b444b5e3b60a884b5d30c0fca7d82fe33449bbe55ea"
 name = "heimdall"
 version = "0.1.0"
 dependencies = [
- "anyhow",
  "async-trait",
  "axum",
  "axum-server",
@@ -4618,9 +4617,7 @@ checksum = "cfe53a6657fd280eaa890a3bc59152892ffa3e30101319d168b781ed6529b049"
 [[package]]
 name = "ymir"
 version = "0.1.0"
-source = "git+https://github.com/EunomiaUPM/ymir.git?tag=test#6f29e28aae17c1b366e69810a2bcb31d90aef8f1"
 dependencies = [
- "anyhow",
  "async-trait",
  "axum",
  "base64",
@@ -4634,6 +4631,7 @@ dependencies = [
  "sea-orm-migration",
  "serde",
  "serde_json",
+ "serde_urlencoded",
  "sha2",
  "tokio",
  "tracing",
