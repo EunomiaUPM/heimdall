@@ -25,7 +25,7 @@ use x509_parser::parse_x509_certificate;
 use ymir::data::entities::{issuing, vc_request};
 use ymir::errors::{BadFormat, Errors, Outcome};
 use ymir::types::vcs::vc_specs::legal_authority::{
-    LegalRegistrationNumberCredSubj, LegalRegistrationNumberTypes, VCData,
+    LegalRegistrationNumberCredSubj, LegalRegistrationNumberTypes, VCData
 };
 use ymir::types::vcs::VcType;
 use ymir::utils::{get_from_opt, parse_from_str, parse_to_string, parse_to_value};
@@ -35,19 +35,15 @@ use crate::config::role::{AuthorityRole, RoleConfigTrait};
 use crate::services::vcs_builder::legal_authority::config::LegalAuthorityConfig;
 
 pub struct LegalAuthorityVcBuilder {
-    config: LegalAuthorityConfig,
+    config: LegalAuthorityConfig
 }
 
 impl LegalAuthorityVcBuilder {
-    pub fn new(config: LegalAuthorityConfig) -> Self {
-        Self { config }
-    }
+    pub fn new(config: LegalAuthorityConfig) -> Self { Self { config } }
 }
 
 impl RoleConfigTrait for LegalAuthorityVcBuilder {
-    fn get_role(&self) -> &AuthorityRole {
-        &self.config.get_role()
-    }
+    fn get_role(&self) -> &AuthorityRole { &self.config.get_role() }
 }
 
 impl VcBuilderTrait for LegalAuthorityVcBuilder {
@@ -62,7 +58,7 @@ impl VcBuilderTrait for LegalAuthorityVcBuilder {
         let VcType::LegalRegistrationNumber(data) = vc_type else {
             return Err(Errors::unauthorized(
                 format!("Cannot issue vc type: {}", vc_type),
-                None,
+                None
             ));
         };
 
@@ -92,7 +88,7 @@ impl VcBuilderTrait for LegalAuthorityVcBuilder {
         let VcType::LegalRegistrationNumber(data) = vc_type else {
             return Err(Errors::unauthorized(
                 format!("Cannot issue vc type: {}", vc_type),
-                None,
+                None
             ));
         };
 
@@ -104,7 +100,7 @@ impl VcBuilderTrait for LegalAuthorityVcBuilder {
                 Errors::format(
                     BadFormat::Received,
                     "No organizational identifier found in certificate",
-                    None,
+                    None
                 )
             })?;
 
@@ -117,7 +113,7 @@ impl VcBuilderTrait for LegalAuthorityVcBuilder {
             LegalRegistrationNumberTypes::Euid => "EUID",
             LegalRegistrationNumberTypes::Eori => "EORI",
             LegalRegistrationNumberTypes::VatId => "VAT",
-            LegalRegistrationNumberTypes::LeiCode => "LEI",
+            LegalRegistrationNumberTypes::LeiCode => "LEI"
         };
 
         let shitty_code = org_id_str
@@ -127,7 +123,7 @@ impl VcBuilderTrait for LegalAuthorityVcBuilder {
                 Errors::format(
                     BadFormat::Received,
                     format!("No matching code found in cert for {:?}", data),
-                    None,
+                    None
                 )
             })?
             .to_string();

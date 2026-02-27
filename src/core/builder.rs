@@ -16,6 +16,7 @@
  */
 
 use std::sync::Arc;
+
 use ymir::services::client::ClientService;
 use ymir::services::issuer::basic::config::BasicIssuerConfig;
 use ymir::services::issuer::basic::BasicIssuerService;
@@ -33,15 +34,15 @@ use crate::services::gatekeeper::gnap::{config::GnapConfig, GnapService};
 use crate::services::repo::RepoForSql;
 use crate::services::repo::RepoTrait;
 use crate::services::vcs_builder::dataspace_authority::{
-    config::DataSpaceAuthorityConfig, DataSpaceAuthorityVcBuilder,
+    config::DataSpaceAuthorityConfig, DataSpaceAuthorityVcBuilder
 };
 use crate::services::vcs_builder::legal_authority::{
-    LegalAuthorityConfig, LegalAuthorityVcBuilder,
+    LegalAuthorityConfig, LegalAuthorityVcBuilder
 };
 use crate::services::vcs_builder::{EcoAuthorityBuilder, VcBuilderTrait};
 
 pub struct CoreBuilder {
-    core: Core,
+    core: Core
 }
 
 impl CoreBuilder {
@@ -109,7 +110,5 @@ impl CoreBuilder {
         Self { core }
     }
 
-    pub fn build(self) -> Core {
-        self.core
-    }
+    pub fn build(self) -> Core { self.core }
 }

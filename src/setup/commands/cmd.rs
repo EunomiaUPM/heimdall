@@ -19,9 +19,9 @@ use std::cmp::PartialEq;
 use std::sync::Arc;
 
 use clap::{Parser, Subcommand};
-use tracing::debug;
+use tracing::{debug, info};
 use ymir::config::traits::ConnectionConfigTrait;
-use ymir::errors::Outcome;
+use ymir::errors::{Errors, Outcome};
 use ymir::services::vault::fake_vault::FakeVaultService;
 use ymir::services::vault::vault_rs::RealVaultService;
 use ymir::services::vault::{VaultService, VaultTrait};
@@ -65,10 +65,9 @@ impl AuthorityCommands {
             }
             AuthorityCliCommands::Setup(args) => {
                 let (config, vault) = Self::bootstrap(args)?;
-                if config.is_tls_enabled() {
-                    vault.write_all_secrets(None).await?;
-                } else {
-                    vault.write_local_secrets(None).await?;
+                match config.is_tls_enabled() {
+                    true => vault.write_all_secrets(None).await?,
+                    false => vault.write_local_secrets(None).await?
                 }
                 let db_connection = vault.get_db_connection(&config).await;
                 AuthorityMigration::run(&db_connection).await?;
@@ -85,6 +84,13 @@ impl AuthorityCommands {
         } else {
             VaultService::Fake(FakeVaultService::new())
         };
+        let table = json_to_table::json_to_table(
+            &serde_json::to_value(&config)
+                .map_err(|e| Errors::parse("Error with config table", Some(Box::new(e))))?
+        )
+        .collapse()
+        .to_string();
+        info!("Current Heimdall Config Config:\n{}", table);
         Ok((config, vault))
     }
 }

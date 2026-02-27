@@ -54,13 +54,11 @@ impl AuthorityApp {
         let listener =
             TcpListener::bind(format!("0.0.0.0:{}", config.hosts().get_tls_port(HostType::Http)))
                 .await
-                .map_err(|e| {
-                    Errors::crazy("Error with tcp listener", Some(Box::new(e)))
-                })?;
+                .map_err(|e| Errors::crazy("Error with tcp listener", Some(Box::new(e))))?;
 
-        serve(listener, router).await.map_err(|e| {
-            Errors::crazy("Error while running basic server", Some(Box::new(e)))
-        })
+        serve(listener, router)
+            .await
+            .map_err(|e| Errors::crazy("Error while running basic server", Some(Box::new(e))))
     }
     pub async fn run_tls(config: &CoreApplicationConfig, vault: Arc<VaultService>) -> Outcome<()> {
         let cert = expect_from_env("VAULT_APP_ROOT_CLIENT_KEY");
@@ -77,25 +75,21 @@ impl AuthorityApp {
             pkey.data().as_bytes().to_vec()
         )
         .await
-        .map_err(|e| {
-            Errors::crazy("Errors parsing certificate stuff", Some(Box::new(e)))
-        })?;
+        .map_err(|e| Errors::crazy("Errors parsing certificate stuff", Some(Box::new(e))))?;
 
         let router = Self::create_router(config, vault).await;
 
         let port = config.hosts().get_tls_port(HostType::Http);
         let addr_str = format!("0.0.0.0:{}", port);
-        let addr: SocketAddr = addr_str.parse().map_err(|e| {
-            Errors::crazy("Errors with socker address", Some(Box::new(e)))
-        })?;
+        let addr: SocketAddr = addr_str
+            .parse()
+            .map_err(|e| Errors::crazy("Errors with socker address", Some(Box::new(e))))?;
         info!("Starting Authority server with TLS in {}", addr);
 
         axum_server::bind_rustls(addr, tls_config)
             .serve(router.into_make_service())
             .await
-            .map_err(|e| {
-                Errors::crazy("Error while running basic server", Some(Box::new(e)))
-            })?;
+            .map_err(|e| Errors::crazy("Error while running basic server", Some(Box::new(e))))?;
         Ok(())
     }
     pub async fn run(config: CoreApplicationConfig, vault: Arc<VaultService>) -> Outcome<()> {

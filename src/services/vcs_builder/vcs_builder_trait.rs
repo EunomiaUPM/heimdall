@@ -37,14 +37,14 @@ pub trait VcBuilderTrait: RoleConfigTrait + Send + Sync + 'static {
         &self,
         model: &issuing::Model,
         credential_subject: Value,
-        config: &dyn BuilderConfigDefaultTrait,
+        config: &dyn BuilderConfigDefaultTrait
     ) -> Outcome<Value> {
         let subject_id =
             credential_subject.get("id").and_then(|v| v.as_str()).ok_or_else(|| {
                 Errors::format(
                     BadFormat::Received,
                     "Unable to retrieve credential subject id",
-                    None,
+                    None
                 )
             })?;
 
@@ -71,11 +71,11 @@ pub trait VcBuilderTrait: RoleConfigTrait + Send + Sync + 'static {
                             credential_subject,
                             issuer: VCIssuer {
                                 id: issuer_did,
-                                name: Some("RainbowAuthority".to_string()),
+                                name: Some("RainbowAuthority".to_string())
                             },
                             valid_from: Some(now),
-                            valid_until: Some(now + Duration::days(365)),
-                        },
+                            valid_until: Some(now + Duration::days(365))
+                        }
                     })?,
                     W3cDataModelVersion::V2 => parse_to_value(&VCClaimsV2 {
                         exp: None,
@@ -89,18 +89,18 @@ pub trait VcBuilderTrait: RoleConfigTrait + Send + Sync + 'static {
                         credential_subject,
                         issuer: VCIssuer {
                             id: issuer_did,
-                            name: Some("RainbowAuthority".to_string()),
+                            name: Some("RainbowAuthority".to_string())
                         },
                         valid_from: Some(now),
-                        valid_until: Some(now + Duration::days(365)),
-                    })?,
+                        valid_until: Some(now + Duration::days(365))
+                    })?
                 };
                 Ok(vc)
             }
             VcModel::SdJwtVc => Err(Errors::not_impl(
                 "Cannot issue vcs with the format 'sd_jwt' right now",
-                None,
-            )),
+                None
+            ))
         }
     }
 }

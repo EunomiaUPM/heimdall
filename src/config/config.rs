@@ -15,17 +15,18 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-use serde::{Deserialize, Serialize};
 use std::env;
 use std::path::PathBuf;
+
+use serde::{Deserialize, Serialize};
 use tracing::debug;
 use ymir::config::traits::{
     ApiConfigTrait, ConnectionConfigTrait, DatabaseConfigTrait, DidConfigTrait, HostsConfigTrait,
-    IssueConfigTrait, VcConfigTrait, VerifyReqConfigTrait, WalletConfigTrait,
+    IssueConfigTrait, VcConfigTrait, VerifyReqConfigTrait, WalletConfigTrait
 };
 use ymir::config::types::{
     ApiConfig, CommonHostsConfig, ConnectionConfig, DatabaseConfig, DidConfig, IssueConfig,
-    VcConfig, VerifyReqConfig, WalletConfig,
+    VcConfig, VerifyReqConfig, WalletConfig
 };
 use ymir::errors::{Errors, Outcome};
 use ymir::utils::read;
@@ -45,7 +46,7 @@ pub struct CoreApplicationConfig {
     vc_config: VcConfig,
     verify_req_config: VerifyReqConfig,
     role: AuthorityRole,
-    is_react: bool,
+    is_react: bool
 }
 
 impl CoreApplicationConfig {
@@ -60,51 +61,35 @@ impl CoreApplicationConfig {
 }
 
 impl DatabaseConfigTrait for CoreApplicationConfig {
-    fn db(&self) -> &DatabaseConfig {
-        &self.db_config
-    }
+    fn db(&self) -> &DatabaseConfig { &self.db_config }
 }
 
 impl ApiConfigTrait for CoreApplicationConfig {
-    fn api(&self) -> &ApiConfig {
-        &self.api_config
-    }
+    fn api(&self) -> &ApiConfig { &self.api_config }
 }
 
 impl ConnectionConfigTrait for CoreApplicationConfig {
-    fn connection(&self) -> &ConnectionConfig {
-        &self.connection_config
-    }
+    fn connection(&self) -> &ConnectionConfig { &self.connection_config }
 }
 
 impl HostsConfigTrait for CoreApplicationConfig {
-    fn hosts(&self) -> &CommonHostsConfig {
-        &self.hosts_config
-    }
+    fn hosts(&self) -> &CommonHostsConfig { &self.hosts_config }
 }
 
 impl DidConfigTrait for CoreApplicationConfig {
-    fn did_config(&self) -> &DidConfig {
-        &self.did_config
-    }
+    fn did_config(&self) -> &DidConfig { &self.did_config }
 }
 
 impl IssueConfigTrait for CoreApplicationConfig {
-    fn issue_config(&self) -> &IssueConfig {
-        &self.issue_config
-    }
+    fn issue_config(&self) -> &IssueConfig { &self.issue_config }
 }
 
 impl VerifyReqConfigTrait for CoreApplicationConfig {
-    fn verify_req_config(&self) -> &VerifyReqConfig {
-        &self.verify_req_config
-    }
+    fn verify_req_config(&self) -> &VerifyReqConfig { &self.verify_req_config }
 }
 
 impl VcConfigTrait for CoreApplicationConfig {
-    fn vc_config(&self) -> &VcConfig {
-        &self.vc_config
-    }
+    fn vc_config(&self) -> &VcConfig { &self.vc_config }
 }
 
 impl WalletConfigTrait for CoreApplicationConfig {
@@ -114,17 +99,11 @@ impl WalletConfigTrait for CoreApplicationConfig {
 }
 
 impl RoleConfigTrait for CoreApplicationConfig {
-    fn get_role(&self) -> &AuthorityRole {
-        &self.role
-    }
+    fn get_role(&self) -> &AuthorityRole { &self.role }
 }
 
 impl CoreConfigTrait for CoreApplicationConfig {
-    fn is_wallet_active(&self) -> bool {
-        self.wallet_config.is_some()
-    }
+    fn is_wallet_active(&self) -> bool { self.wallet_config.is_some() }
 
-    fn is_react(&self) -> bool {
-        self.is_react
-    }
+    fn is_react(&self) -> bool { self.is_react }
 }

@@ -18,10 +18,10 @@
 use std::sync::Arc;
 
 use axum::extract::{Path, State};
-use axum::http::StatusCode;
-use axum::response::IntoResponse;
 use axum::routing::get;
 use axum::{Json, Router};
+use ymir::data::entities::minions::Model;
+use ymir::errors::AppResult;
 
 use crate::core::traits::CoreMinionTrait;
 
@@ -40,17 +40,18 @@ impl MinionRouter {
             .with_state(self.gru)
     }
 
-    async fn get_all(State(gru): State<Arc<dyn CoreMinionTrait>>) -> impl IntoResponse {
-        gru.get_all().await.map(|data| (StatusCode::OK, Json(data))).into_response()
+    async fn get_all(State(gru): State<Arc<dyn CoreMinionTrait>>) -> AppResult<Json<Vec<Model>>> {
+        Ok(Json(gru.get_all().await?))
     }
+
     async fn get_by_id(
         State(gru): State<Arc<dyn CoreMinionTrait>>,
         Path(id): Path<String>
-    ) -> impl IntoResponse {
-        gru.get_by_id(id).await.map(|data| (StatusCode::OK, Json(data))).into_response()
+    ) -> AppResult<Json<Model>> {
+        Ok(Json(gru.get_by_id(id).await?))
     }
 
-    async fn get_me(State(gru): State<Arc<dyn CoreMinionTrait>>) -> impl IntoResponse {
-        gru.get_me().await.map(|data| (StatusCode::OK, Json(data))).into_response()
+    async fn get_me(State(gru): State<Arc<dyn CoreMinionTrait>>) -> AppResult<Json<Model>> {
+        Ok(Json(gru.get_me().await?))
     }
 }
