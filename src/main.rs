@@ -48,10 +48,7 @@ async fn main() -> Outcome<()> {
             error.log();
             error
         })?;
-    tracing_subscriber::fmt()
-        .event_format(tracing_subscriber::fmt::format().with_line_number(true))
-        .with_env_filter(filter)
-        .init();
+    tracing_subscriber::fmt().with_env_filter(filter).init();
     info!("{}", INFO);
     AuthorityCommands::init_command_line().await?;
     Ok(())

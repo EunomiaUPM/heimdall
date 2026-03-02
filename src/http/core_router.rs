@@ -15,12 +15,15 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-use std::sync::Arc;
-
+use axum::extract::Request;
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::Router;
-use tracing::error;
+use std::sync::Arc;
+use tower_http::cors::CorsLayer;
+use tower_http::trace::{DefaultOnResponse, TraceLayer};
+use tracing::{error, info, Level};
+use uuid::Uuid;
 use ymir::http::{HealthRouter, OpenapiRouter, WalletRouter};
 
 use crate::core::traits::CoreTrait;
@@ -29,7 +32,7 @@ use crate::http::{ApproverRouter, GateKeeperRouter, IssuerRouter, MinionRouter, 
 
 pub struct RainbowAuthorityRouter {
     core: Arc<dyn CoreTrait>,
-    openapi: String
+    openapi: String,
 }
 
 impl RainbowAuthorityRouter {
@@ -41,7 +44,7 @@ impl RainbowAuthorityRouter {
     pub fn router(self) -> Router {
         let wallet = match self.core.config().is_wallet_active() {
             true => Some(WalletRouter::new(self.core.clone())),
-            false => None
+            false => None,
         };
 
         let router = RouterBuilder::new()
@@ -57,8 +60,19 @@ impl RainbowAuthorityRouter {
             .api_path(self.core.config().get_api_version())
             .build();
 
-        // Builder already includes a layer for logging
-        router.fallback(Self::fallback)
+        router
+            .fallback(Self::fallback)
+            .layer(
+                TraceLayer::new_for_http()
+                    .make_span_with(
+                        |_req: &Request<_>| tracing::info_span!("request", id = %Uuid::new_v4()),
+                    )
+                    .on_request(|req: &Request<_>, _span: &tracing::Span| {
+                        info!("{} {}", req.method(), req.uri().path());
+                    })
+                    .on_response(DefaultOnResponse::new().level(Level::TRACE)),
+            )
+            .layer(CorsLayer::permissive())
     }
     async fn fallback() -> impl IntoResponse {
         error!("Wrong route");

@@ -10,7 +10,7 @@ services:
 
   heimdall: 
     container_name: heimdall
-    image: rmenendez8/heimdall:v1.2.0
+    image: rmenendez8/heimdall:v1.2.2
     # build:
     #   context: .
     #   dockerfile: Dockerfile
