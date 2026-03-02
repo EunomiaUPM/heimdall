@@ -19,10 +19,8 @@ use std::fmt;
 use std::fmt::Formatter;
 use std::str::FromStr;
 
-use anyhow::bail;
 use serde::{Deserialize, Serialize};
-use tracing::error;
-use ymir::errors::{ErrorLogTrait, Errors};
+use ymir::errors::Errors;
 use ymir::types::vcs::vc_specs::legal_authority::LegalRegistrationNumberTypes;
 use ymir::types::vcs::VcType;
 
@@ -32,11 +30,11 @@ pub enum AuthorityRole {
     ClearingHouse,
     ClearingHouseProxy,
     DataSpaceAuthority,
-    EcoAuthority,
+    EcoAuthority
 }
 
 impl FromStr for AuthorityRole {
-    type Err = anyhow::Error;
+    type Err = Errors;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
             "LegalAuthority" => Ok(Self::LegalAuthority),
@@ -45,11 +43,7 @@ impl FromStr for AuthorityRole {
             "DataSpaceAuthority" => Ok(Self::DataSpaceAuthority),
             "DataspaceAuthority" => Ok(Self::DataSpaceAuthority),
             "EcoAuthority" => Ok(Self::EcoAuthority),
-            _ => {
-                let error = Errors::parse_new("Invalid Authority role");
-                error!("{}", error.log());
-                bail!(error)
-            }
+            _ => Err(Errors::parse("Invalid Authority Role", None))
         }
     }
 }
@@ -61,7 +55,7 @@ impl fmt::Display for AuthorityRole {
             AuthorityRole::ClearingHouse => "ClearingHouse",
             AuthorityRole::ClearingHouseProxy => "ClearingHouseProxy",
             AuthorityRole::DataSpaceAuthority => "DataSpaceAuthority",
-            AuthorityRole::EcoAuthority => "EcoAuthority",
+            AuthorityRole::EcoAuthority => "EcoAuthority"
         };
 
         write!(f, "{s}")
@@ -75,11 +69,9 @@ impl AuthorityRole {
                 vec![VcType::LegalRegistrationNumber(LegalRegistrationNumberTypes::Eori)]
             }
             AuthorityRole::ClearingHouse => {
-                // TODO
                 vec![VcType::DataspaceParticipant]
             }
             AuthorityRole::ClearingHouseProxy => {
-                // TODO
                 vec![VcType::DataspaceParticipant]
             }
             AuthorityRole::DataSpaceAuthority => {

@@ -22,7 +22,6 @@ clap = { version = "4.4.9", features = [
     "unicode",
 ] }
 tokio = { version = "1.35.0", features = ["full"] }
-anyhow = "1.0.80"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 axum = { version = "0.8.8", features = ["ws"] }
@@ -39,4 +38,4 @@ serde_norway = "0.9.42"
 axum-server = { version = "0.8.0", features = ["tls-rustls"] }
 rustls = { version = "0.23", features = ["ring"] }
 #ymir = { path = "./../ymir" }
-ymir = {git = "https://github.com/EunomiaUPM/ymir.git", tag = "v0.4.5"}
+ymir = {git = "https://github.com/EunomiaUPM/ymir.git", tag = "v0.5.0"}

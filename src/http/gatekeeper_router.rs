@@ -23,11 +23,10 @@ use axum::http::{HeaderMap, StatusCode};
 use axum::response::IntoResponse;
 use axum::routing::post;
 use axum::{Json, Router};
-use tracing::error;
-use ymir::errors::{CustomToResponse, ErrorLogTrait, Errors};
+use ymir::errors::AppResult;
 use ymir::types::gnap::grant_request::GrantRequest;
 use ymir::types::gnap::RefBody;
-use ymir::utils::extract_gnap_token;
+use ymir::utils::{extract_gnap_token, extract_payload};
 
 use crate::core::traits::CoreGatekeeperTrait;
 
@@ -48,16 +47,14 @@ impl GateKeeperRouter {
     async fn access_req(
         State(gatekeeper): State<Arc<dyn CoreGatekeeperTrait>>,
         payload: Result<Json<GrantRequest>, JsonRejection>
-    ) -> impl IntoResponse {
-        let payload = match payload {
-            Ok(Json(data)) => data,
-            Err(e) => return e.to_response()
-        };
-
-        match gatekeeper.manage_req(payload).await {
-            Ok(data) => (StatusCode::OK, Json(data)).into_response(),
-            Err(e) => e.to_response()
-        }
+    ) -> AppResult {
+        let payload = extract_payload(payload)?;
+        Ok(gatekeeper
+            .manage_req(payload)
+            .await
+            .map(Json)
+            .map_err(|e| (StatusCode::BAD_REQUEST, Json(e)))
+            .into_response())
     }
 
     async fn continue_req(
@@ -65,24 +62,9 @@ impl GateKeeperRouter {
         headers: HeaderMap,
         Path(id): Path<String>,
         payload: Result<Json<RefBody>, JsonRejection>
-    ) -> impl IntoResponse {
-        let token = match extract_gnap_token(headers) {
-            Some(token) => token,
-            None => {
-                let error = Errors::unauthorized_new("Missing token");
-                error!("{}", error.log());
-                return error.into_response();
-            }
-        };
-
-        let payload = match payload {
-            Ok(Json(data)) => data,
-            Err(e) => return e.to_response()
-        };
-
-        match authority.manage_cont_req(id, payload, token).await {
-            Ok(data) => data.into_response(),
-            Err(e) => e.to_response()
-        }
+    ) -> AppResult<String> {
+        let token = extract_gnap_token(headers)?;
+        let payload = extract_payload(payload)?;
+        authority.manage_cont_req(id, payload, token).await
     }
 }

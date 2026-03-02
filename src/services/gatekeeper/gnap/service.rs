@@ -18,32 +18,28 @@
 use std::str::FromStr;
 use std::sync::Arc;
 
-use anyhow::bail;
 use async_trait::async_trait;
-use axum::http::header::{ACCEPT, CONTENT_TYPE};
-use axum::http::HeaderMap;
 use serde_json::Value;
-use tracing::{error, info};
+use tracing::info;
 use ymir::config::traits::HostsConfigTrait;
 use ymir::config::types::HostType;
 use ymir::data::entities::{recv_interaction, vc_request};
-use ymir::errors::{ErrorLogTrait, Errors};
+use ymir::errors::{BadFormat, Errors, Outcome};
 use ymir::services::client::ClientTrait;
-use ymir::types::errors::BadFormat;
 use ymir::types::gnap::grant_request::{GrantRequest, Interact4GR, InteractStart};
 use ymir::types::gnap::grant_response::GrantResponse;
 use ymir::types::gnap::{ApprovedCallbackBody, RejectedCallbackBody};
 use ymir::types::http::Body;
 use ymir::types::vcs::VcType;
-use ymir::utils::create_opaque_token;
+use ymir::utils::{create_opaque_token, json_headers, parse_to_value};
 
 use super::config::{GnapConfig, GnapConfigTrait};
+use crate::config::role::{AuthorityRole, RoleConfigTrait};
 use crate::services::gatekeeper::GateKeeperTrait;
-use crate::types::role::AuthorityRole;
 
 pub struct GnapService {
     config: GnapConfig,
-    client: Arc<dyn ClientTrait>,
+    client: Arc<dyn ClientTrait>
 }
 
 impl GnapService {
@@ -56,27 +52,22 @@ impl GnapService {
 impl GateKeeperTrait for GnapService {
     fn start(
         &self,
-        payload: GrantRequest,
-    ) -> anyhow::Result<(vc_request::NewModel, recv_interaction::NewModel)> {
+        payload: &GrantRequest
+    ) -> Outcome<(vc_request::NewModel, recv_interaction::NewModel)> {
         info!("Managing vc request");
 
         let interact = self.validate_acc_req(&payload)?;
         let id = uuid::Uuid::new_v4().to_string();
-        let client = payload.client;
+        let client = payload.client.clone();
         let cert = client.key.cert;
         let participant_slug = client.class_id.unwrap_or("Unknown".to_string());
 
         let vc_type = payload.access_token.access.datatypes.as_ref().ok_or_else(|| {
-            let error =
-                Errors::format_new(BadFormat::Received, "No field datatypes in the request");
-            error!("{}", error.log());
-            error
+            Errors::format(BadFormat::Received, "No field datatypes in the request", None)
         })?;
-        let vc_type = vc_type.first().ok_or_else(|| {
-            let error = Errors::format_new(BadFormat::Received, "Datatypes are empty");
-            error!("{}", error.log());
-            error
-        })?;
+        let vc_type = vc_type
+            .first()
+            .ok_or_else(|| Errors::format(BadFormat::Received, "Datatypes are empty", None))?;
 
         let vc_type = VcType::from_str(vc_type)?;
         self.validate_vc_to_issue(&vc_type)?;
@@ -86,7 +77,7 @@ impl GateKeeperTrait for GnapService {
             participant_slug,
             cert,
             vc_type: vc_type.to_string(),
-            interact_method: interact.start.clone(),
+            interact_method: interact.start.clone()
         };
 
         let host_url = format!(
@@ -102,114 +93,104 @@ impl GateKeeperTrait for GnapService {
             id: id.clone(),
             start: interact.start,
             method: interact.finish.method,
-            uri: interact.finish.uri.unwrap(), // EXPECTED ALWAYS (Checked in validate_acc_req)
+            uri: interact.finish.uri.ok_or_else(|| {
+                Errors::format(BadFormat::Received, "Interact finish URI is missing", None)
+            })?,
             client_nonce: interact.finish.nonce,
             hash_method: interact.finish.hash_method,
             hints: interact.hints,
             grant_endpoint,
             continue_endpoint,
-            continue_token,
+            continue_token
         };
 
         Ok((new_request_model, new_recv_interaction_model))
     }
 
-    fn validate_acc_req(&self, payload: &GrantRequest) -> anyhow::Result<Interact4GR> {
+    fn validate_acc_req(&self, payload: &GrantRequest) -> Outcome<Interact4GR> {
         info!("Validating vc access request");
 
         let interact = payload.interact.as_ref().ok_or_else(|| {
-            let cause = "Only petitions with an 'interact field' are supported right now";
-            let error = Errors::not_impl_new(cause, cause);
-            error!("{}", error.log());
-            error
+            Errors::not_impl(
+                "Only petitions with an 'interact field' are supported right now",
+                None
+            )
         })?;
 
         let start = &interact.start;
         if !&start.contains(&"cross-user".to_string()) && !&start.contains(&"oidc4vp".to_string()) {
-            let cause = "Interact method not supported yet";
-            let error = Errors::not_impl_new(cause, cause);
-            error!("{}", error.log());
-            bail!(error);
+            return Err(Errors::not_impl("Interact method not supported yet", None));
         }
 
         interact.finish.uri.as_ref().ok_or_else(|| {
-            let error =
-                Errors::format_new(BadFormat::Received, "Interact method does not have an uri");
-            error!("{}", error.log());
-            error
+            Errors::format(BadFormat::Received, "Interact method does not have an uri", None)
         })?;
 
         Ok(interact.clone())
     }
 
-    fn validate_vc_to_issue(&self, vc_type: &VcType) -> anyhow::Result<()> {
+    fn validate_vc_to_issue(&self, vc_type: &VcType) -> Outcome<()> {
         info!("Validating that the requested vc can be issued");
 
         match self.config.get_role() {
-            AuthorityRole::LegalAuthority => match vc_type {
-                VcType::LegalRegistrationNumber(_) => {}
-                _ => {
-                    let error = Errors::unauthorized_new(
+            AuthorityRole::LegalAuthority => {
+                if matches!(vc_type, VcType::LegalRegistrationNumber(_)) {
+                    Ok(())
+                } else {
+                    Err(Errors::unauthorized(
                         "As a legal authority we can only issue LegalRegistration numbers vcs",
-                    );
-                    error!("{}", error.log());
-                    bail!(error)
+                        None
+                    ))
                 }
-            },
-            AuthorityRole::ClearingHouse => {
-                // TODO
             }
-            AuthorityRole::ClearingHouseProxy => {
-                // TODO
-            }
-            AuthorityRole::DataSpaceAuthority => match vc_type {
-                VcType::DataspaceParticipant => {}
-                _ => {
-                    let error = Errors::unauthorized_new(
-                        "As a legal authority we can only issue LegalRegistration numbers vcs",
-                    );
-                    error!("{}", error.log());
-                    bail!(error)
+
+            AuthorityRole::DataSpaceAuthority => {
+                if matches!(vc_type, VcType::DataspaceParticipant) {
+                    Ok(())
+                } else {
+                    Err(Errors::unauthorized(
+                        "As a dataspace authority we can only issue DataspaceParticipant vcs",
+                        None
+                    ))
                 }
-            },
-            AuthorityRole::EcoAuthority => {
-                // THIS ROLE CAN ISSUE EVERYTHING
+            }
+
+            AuthorityRole::EcoAuthority => Ok(()),
+
+            AuthorityRole::ClearingHouse | AuthorityRole::ClearingHouseProxy => {
+                // TODO
+                Ok(())
             }
         }
-        Ok(())
     }
 
     fn validate_cont_req(
         &self,
         int_model: &recv_interaction::Model,
-        int_ref: String,
-        token: String,
-    ) -> anyhow::Result<()> {
+        int_ref: &str,
+        token: &str
+    ) -> Outcome<()> {
         info!("Validating continue request");
 
         if int_ref != int_model.interact_ref {
-            let error = Errors::security_new(&format!(
-                "Interact reference '{}' does not match '{}'",
-                int_ref, int_model.interact_ref
+            return Err(Errors::security(
+                format!(
+                    "Interact reference '{}' does not match '{}'",
+                    int_ref, int_model.interact_ref
+                ),
+                None
             ));
-            error!("{}", error.log());
-            bail!(error);
         }
 
         if token != int_model.continue_token {
-            let error = Errors::security_new(&format!(
-                "Token '{}' does not match '{}'",
-                token, int_model.continue_token
+            return Err(Errors::security(
+                format!("Token '{}' does not match '{}'", token, int_model.continue_token),
+                None
             ));
-            error!("{}", error.log());
-            bail!(error);
         }
         Ok(())
     }
-    async fn end_verification(
-        &self,
-        model: recv_interaction::Model,
-    ) -> anyhow::Result<Option<String>> {
+    async fn end_verification(&self, model: &recv_interaction::Model) -> Outcome<Option<String>> {
         info!("Ending verification");
 
         if model.method == "redirect" {
@@ -219,24 +200,20 @@ impl GateKeeperTrait for GnapService {
             );
             Ok(Some(redirect_uri))
         } else if model.method == "push" {
-            let url = model.uri;
+            let url = &model.uri;
 
-            let mut headers = HeaderMap::new();
-            headers.insert(CONTENT_TYPE, "application/json".parse()?);
-            headers.insert(ACCEPT, "application/json".parse()?);
-
-            let body = ApprovedCallbackBody { interact_ref: model.interact_ref, hash: model.hash };
-            let body = serde_json::to_value(body)?;
-            self.client.post(&url, Some(headers), Body::Json(body)).await?;
+            let body = ApprovedCallbackBody {
+                interact_ref: model.interact_ref.clone(),
+                hash: model.hash.clone()
+            };
+            self.client.post(&url, Some(json_headers()), Body::json(&body)?).await?;
 
             Ok(None)
         } else {
-            let error = Errors::not_impl_new(
-                "Interact method not supported",
-                &format!("Interact method {} not supported", model.method),
-            );
-            error!("{}", error.log());
-            bail!(error);
+            Err(Errors::not_impl(
+                format!("Interact method {} not supported", model.method),
+                None
+            ))
         }
     }
 
@@ -244,64 +221,53 @@ impl GateKeeperTrait for GnapService {
         &self,
         approve: bool,
         req_model: &mut vc_request::Model,
-        int_model: &recv_interaction::Model,
-    ) -> anyhow::Result<Value> {
-        let body = match approve {
+        int_model: &recv_interaction::Model
+    ) -> Outcome<Value> {
+        match approve {
             true => {
                 info!("Approving petition to obtain a VC");
                 req_model.status = "Approved".to_string();
                 let body = ApprovedCallbackBody {
                     interact_ref: int_model.interact_ref.clone(),
-                    hash: int_model.hash.clone(),
+                    hash: int_model.hash.clone()
                 };
-                serde_json::to_value(body)?
+                parse_to_value(&body)
             }
             false => {
                 info!("Rejecting petition to obtain a VC");
                 req_model.status = "Finalized".to_string();
                 let body = RejectedCallbackBody { rejected: "Petition was rejected".to_string() };
-                serde_json::to_value(body)?
-            }
-        };
-
-        Ok(body)
-    }
-
-    async fn notify_minion(
-        &self,
-        int_model: &recv_interaction::Model,
-        body: Value,
-    ) -> anyhow::Result<()> {
-        let mut headers = HeaderMap::new();
-        headers.insert(CONTENT_TYPE, "application/json".parse().unwrap());
-        headers.insert(ACCEPT, "application/json".parse().unwrap());
-
-        let res = self.client.post(&int_model.uri, Some(headers), Body::Json(body)).await?;
-
-        match res.status().as_u16() {
-            200 => info!("Minion received callback successfully"),
-            status => {
-                let error = Errors::consumer_new(
-                    &int_model.uri,
-                    "POST",
-                    Some(status),
-                    "Minion did not receive callback successfully",
-                );
-                error!("{}", error.log());
+                parse_to_value(&body)
             }
         }
-        Ok(())
     }
 
-    fn manage_cross_user(&self, model: recv_interaction::Model) -> anyhow::Result<GrantResponse> {
+    async fn notify_minion(&self, int_model: &recv_interaction::Model, body: Value) -> Outcome<()> {
+        let res = self.client.post(&int_model.uri, Some(json_headers()), Body::Json(body)).await?;
+
+        if res.status().is_success() {
+            info!("Minion received callback successfully");
+            Ok(())
+        } else {
+            Err(Errors::consumer(
+                &int_model.uri,
+                "POST",
+                Some(res.status()),
+                "Minion did not receive callback successfully",
+                None
+            ))
+        }
+    }
+
+    fn manage_cross_user(&self, model: &recv_interaction::Model) -> Outcome<GrantResponse> {
         info!("Managing cross-user request");
         if self.config.is_cert_allowed() {
-            let response = GrantResponse::new(InteractStart::CrossUser, &model, None);
-            Ok(response)
+            Ok(GrantResponse::new(&InteractStart::CrossUser, model, None))
         } else {
-            let error = Errors::unauthorized_new("Not able to allow authorization using a cert");
-            error!("{}", error.log());
-            bail!(error)
+            Err(Errors::unauthorized(
+                "Not able to allow certification using a cert",
+                None
+            ))
         }
     }
 }

@@ -15,22 +15,24 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
+use std::env;
 use std::path::PathBuf;
-use std::{env, fs};
 
 use serde::{Deserialize, Serialize};
-use tracing::{debug, error};
+use tracing::debug;
 use ymir::config::traits::{
-    ApiConfigTrait, ConnectionConfigTrait, DatabaseConfigTrait, HostsConfigTrait,
+    ApiConfigTrait, ConnectionConfigTrait, DatabaseConfigTrait, DidConfigTrait, HostsConfigTrait,
+    IssueConfigTrait, VcConfigTrait, VerifyReqConfigTrait, WalletConfigTrait
 };
 use ymir::config::types::{
     ApiConfig, CommonHostsConfig, ConnectionConfig, DatabaseConfig, DidConfig, IssueConfig,
-    VcConfig, VerifyReqConfig, WalletConfig,
+    VcConfig, VerifyReqConfig, WalletConfig
 };
-use ymir::errors::{ErrorLogTrait, Errors};
+use ymir::errors::{Errors, Outcome};
+use ymir::utils::read;
 
 use super::CoreConfigTrait;
-use crate::types::role::AuthorityRole;
+use crate::config::role::{AuthorityRole, RoleConfigTrait};
 
 #[derive(Deserialize, Serialize, Clone, Debug)]
 pub struct CoreApplicationConfig {
@@ -44,79 +46,64 @@ pub struct CoreApplicationConfig {
     vc_config: VcConfig,
     verify_req_config: VerifyReqConfig,
     role: AuthorityRole,
-    is_react: bool,
+    is_react: bool
 }
 
 impl CoreApplicationConfig {
-    pub fn load(env_file: String) -> Self {
+    pub fn load(env_file: String) -> Outcome<Self> {
         let path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join(env_file);
         debug!("Config file path: {}", path.display());
 
-        let data = fs::read_to_string(&path).expect("Unable to read config file");
-        serde_norway::from_str(&data).expect("Unable to parse config file")
+        let data = read(path)?;
+        serde_norway::from_str(&data)
+            .map_err(|e| Errors::parse("Unable to parse config file", Some(Box::new(e))))
     }
 }
 
 impl DatabaseConfigTrait for CoreApplicationConfig {
-    fn db(&self) -> &DatabaseConfig {
-        &self.db_config
-    }
+    fn db(&self) -> &DatabaseConfig { &self.db_config }
 }
 
 impl ApiConfigTrait for CoreApplicationConfig {
-    fn api(&self) -> &ApiConfig {
-        &self.api_config
-    }
+    fn api(&self) -> &ApiConfig { &self.api_config }
 }
 
 impl ConnectionConfigTrait for CoreApplicationConfig {
-    fn connection(&self) -> &ConnectionConfig {
-        &self.connection_config
-    }
+    fn connection(&self) -> &ConnectionConfig { &self.connection_config }
 }
 
 impl HostsConfigTrait for CoreApplicationConfig {
-    fn hosts(&self) -> &CommonHostsConfig {
-        &self.hosts_config
+    fn hosts(&self) -> &CommonHostsConfig { &self.hosts_config }
+}
+
+impl DidConfigTrait for CoreApplicationConfig {
+    fn did_config(&self) -> &DidConfig { &self.did_config }
+}
+
+impl IssueConfigTrait for CoreApplicationConfig {
+    fn issue_config(&self) -> &IssueConfig { &self.issue_config }
+}
+
+impl VerifyReqConfigTrait for CoreApplicationConfig {
+    fn verify_req_config(&self) -> &VerifyReqConfig { &self.verify_req_config }
+}
+
+impl VcConfigTrait for CoreApplicationConfig {
+    fn vc_config(&self) -> &VcConfig { &self.vc_config }
+}
+
+impl WalletConfigTrait for CoreApplicationConfig {
+    fn wallet_config(&self) -> &WalletConfig {
+        self.wallet_config.as_ref().expect("Module wallet is not active")
     }
 }
 
+impl RoleConfigTrait for CoreApplicationConfig {
+    fn get_role(&self) -> &AuthorityRole { &self.role }
+}
+
 impl CoreConfigTrait for CoreApplicationConfig {
-    fn get_role(&self) -> AuthorityRole {
-        self.role.clone()
-    }
+    fn is_wallet_active(&self) -> bool { self.wallet_config.is_some() }
 
-    fn is_wallet_active(&self) -> bool {
-        self.wallet_config.is_some()
-    }
-
-    fn get_wallet_config(&self) -> &WalletConfig {
-        let wallet = match self.wallet_config.as_ref() {
-            Some(data) => Some(data),
-            None => {
-                let error = Errors::module_new("wallet");
-                error!("{}", error.log());
-                None
-            }
-        };
-        wallet.expect("Module wallet is no active")
-    }
-
-    fn get_did_config(&self) -> &DidConfig {
-        &self.did_config
-    }
-
-    fn get_issue_config(&self) -> &IssueConfig {
-        &self.issue_config
-    }
-
-    fn get_verify_req_config(&self) -> &VerifyReqConfig {
-        &self.verify_req_config
-    }
-    fn get_vc_config(&self) -> &VcConfig {
-        &self.vc_config
-    }
-    fn is_react(&self) -> bool {
-        self.is_react
-    }
+    fn is_react(&self) -> bool { self.is_react }
 }

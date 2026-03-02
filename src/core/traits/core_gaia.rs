@@ -18,6 +18,7 @@
 use std::sync::Arc;
 
 use async_trait::async_trait;
+use ymir::errors::Outcome;
 use ymir::services::issuer::IssuerTrait;
 use ymir::services::verifier::VerifierTrait;
 
@@ -28,16 +29,15 @@ pub trait GaiaCoreTrait: Send + Sync + 'static {
     fn verifier(&self) -> Arc<dyn VerifierTrait>;
     fn repo(&self) -> Arc<dyn RepoTrait>;
     fn issuer(&self) -> Arc<dyn IssuerTrait>;
-    async fn manage_req(&self) -> anyhow::Result<String> {
+    async fn manage_req(&self) -> Outcome<String> {
         let id = uuid::Uuid::new_v4().to_string();
         let model = self.verifier().start_vp(&id)?;
         let model = self.repo().verification().create(model).await?;
-        let uri = self.verifier().generate_verification_uri(model);
-        Ok(uri)
+        Ok(self.verifier().generate_verification_uri(&model))
     }
-    async fn verify(&self, state: String, vp_token: String) -> anyhow::Result<String> {
+    async fn verify(&self, state: String, vp_token: String) -> Outcome<String> {
         let mut ver_model = self.repo().verification().get_by_state(&state).await?;
-        let result = self.verifier().verify_all(&mut ver_model, vp_token).await;
+        let result = self.verifier().verify_all(&mut ver_model, &vp_token).await;
         let _int_model = self.repo().interaction().get_by_id(&ver_model.id).await?;
         result?;
         self.repo().verification().update(ver_model).await?;

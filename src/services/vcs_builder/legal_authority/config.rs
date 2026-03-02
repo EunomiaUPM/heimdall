@@ -17,38 +17,28 @@
 
 use ymir::config::traits::VcConfigTrait;
 use ymir::config::types::VcConfig;
-use ymir::types::vcs::{VcModel, W3cDataModelVersion};
 
-use crate::config::{CoreApplicationConfig, CoreConfigTrait};
+use crate::config::role::{AuthorityRole, RoleConfigTrait};
+use crate::config::CoreApplicationConfig;
 use crate::services::vcs_builder::BuilderConfigDefaultTrait;
-use crate::types::role::AuthorityRole;
 
 pub struct LegalAuthorityConfig {
     vc_config: VcConfig,
-    role: AuthorityRole,
+    role: AuthorityRole
 }
 
-impl BuilderConfigDefaultTrait for LegalAuthorityConfig {
-    fn get_vc_model(&self) -> &VcModel {
-        self.vc_config.get_vc_model()
-    }
-
-    fn get_w3c_data_model(&self) -> Option<&W3cDataModelVersion> {
-        self.vc_config.get_w3c_data_model()
-    }
-    fn get_role(&self) -> &AuthorityRole {
-        &self.role
-    }
+impl VcConfigTrait for LegalAuthorityConfig {
+    fn vc_config(&self) -> &VcConfig { &self.vc_config }
 }
+
+impl RoleConfigTrait for LegalAuthorityConfig {
+    fn get_role(&self) -> &AuthorityRole { &self.role }
+}
+
+impl BuilderConfigDefaultTrait for LegalAuthorityConfig {}
 
 impl From<CoreApplicationConfig> for LegalAuthorityConfig {
     fn from(value: CoreApplicationConfig) -> Self {
-        Self {
-            vc_config: VcConfig {
-                vc_model: value.get_vc_config().get_vc_model().clone(),
-                w3c_data_model: value.get_vc_config().get_w3c_data_model().cloned(),
-            },
-            role: value.get_role().clone(),
-        }
+        Self { vc_config: value.vc_config().clone(), role: value.get_role().clone() }
     }
 }

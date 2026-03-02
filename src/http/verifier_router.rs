@@ -19,12 +19,13 @@ use std::sync::Arc;
 
 use axum::extract::rejection::FormRejection;
 use axum::extract::{Path, State};
-use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::routing::{get, post};
 use axum::{Form, Json, Router};
-use ymir::errors::CustomToResponse;
+use ymir::errors::AppResult;
+use ymir::types::vcs::VPDef;
 use ymir::types::verifying::VerifyPayload;
+use ymir::utils::extract_form_payload;
 
 use crate::core::traits::CoreVerifierTrait;
 
@@ -43,27 +44,20 @@ impl VerifierRouter {
     async fn vp_definition(
         State(verifier): State<Arc<dyn CoreVerifierTrait>>,
         Path(state): Path<String>
-    ) -> impl IntoResponse {
-        match verifier.get_vp_def(state).await {
-            Ok(data) => (StatusCode::OK, Json(data)).into_response(),
-            Err(e) => e.to_response()
-        }
+    ) -> AppResult<Json<VPDef>> {
+        Ok(Json(verifier.get_vp_def(state).await?))
     }
 
     async fn verify(
         State(verifier): State<Arc<dyn CoreVerifierTrait>>,
         Path(state): Path<String>,
         payload: Result<Form<VerifyPayload>, FormRejection>
-    ) -> impl IntoResponse {
-        let payload = match payload {
-            Ok(Form(data)) => data,
-            Err(e) => return e.into_response()
-        };
-
-        match verifier.verify(state, payload.vp_token).await {
-            Ok(Some(uri)) => (StatusCode::OK, uri).into_response(),
-            Ok(None) => StatusCode::OK.into_response(),
-            Err(e) => e.to_response()
-        }
+    ) -> AppResult {
+        let payload = extract_form_payload(payload)?;
+        Ok(match verifier.verify(state, payload.vp_token).await {
+            Ok(Some(uri)) => uri.into_response(),
+            Ok(None) => ().into_response(),
+            Err(e) => e.into_response()
+        })
     }
 }

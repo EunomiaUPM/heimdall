@@ -17,134 +17,117 @@
 
 use std::str::FromStr;
 
-use anyhow::bail;
 use base64::engine::general_purpose::STANDARD;
 use base64::Engine;
 use serde_json::Value;
-use tracing::{error, info};
+use tracing::info;
 use x509_parser::parse_x509_certificate;
 use ymir::data::entities::{issuing, vc_request};
-use ymir::errors::{ErrorLogTrait, Errors};
-use ymir::types::errors::BadFormat;
+use ymir::errors::{BadFormat, Errors, Outcome};
 use ymir::types::vcs::vc_specs::legal_authority::{
-    LegalRegistrationNumberCredSubj, LegalRegistrationNumberTypes, VCData,
+    LegalRegistrationNumberCredSubj, LegalRegistrationNumberTypes, VCData
 };
 use ymir::types::vcs::VcType;
-use ymir::utils::get_from_opt;
-use crate::services::vcs_builder::BuilderConfigDefaultTrait;
+use ymir::utils::{get_from_opt, parse_from_str, parse_to_string, parse_to_value};
+
 use super::super::VcBuilderTrait;
+use crate::config::role::{AuthorityRole, RoleConfigTrait};
 use crate::services::vcs_builder::legal_authority::config::LegalAuthorityConfig;
-use crate::types::role::AuthorityRole;
 
 pub struct LegalAuthorityVcBuilder {
-    config: LegalAuthorityConfig,
+    config: LegalAuthorityConfig
 }
 
 impl LegalAuthorityVcBuilder {
-    pub fn new(config: LegalAuthorityConfig) -> Self {
-        Self { config }
-    }
+    pub fn new(config: LegalAuthorityConfig) -> Self { Self { config } }
+}
+
+impl RoleConfigTrait for LegalAuthorityVcBuilder {
+    fn get_role(&self) -> &AuthorityRole { &self.config.get_role() }
 }
 
 impl VcBuilderTrait for LegalAuthorityVcBuilder {
-    fn build_vc(&self, model: &issuing::Model) -> anyhow::Result<Value> {
+    fn build_vc(&self, model: &issuing::Model) -> Outcome<Value> {
         let vc_type = VcType::from_str(&model.vc_type)?;
-        info!("Building {} credential", vc_type.to_string());
+        info!("Building {} credential", vc_type);
 
         let vc_data: VCData =
-            serde_json::from_str(&get_from_opt(&model.credential_data, "credential data")?)?;
-        let holder_did = get_from_opt(&model.holder_did, "holder did")?;
+            parse_from_str(&get_from_opt(model.credential_data.as_ref(), "credential data")?)?;
+        let holder_did = get_from_opt(model.holder_did.as_ref(), "holder did")?;
 
-        let cred_subj = match vc_type {
-            VcType::LegalRegistrationNumber(data) => {
-                LegalRegistrationNumberCredSubj::new(data, &holder_did, &vc_data.shitty_code)
-            }
-            _ => {
-                let error = Errors::unauthorized_new(&format!(
-                    "Cannot issue vc_type: {}",
-                    vc_type.to_string()
-                ));
-                error!("{}", error.log());
-                bail!(error)
-            }
+        let VcType::LegalRegistrationNumber(data) = vc_type else {
+            return Err(Errors::unauthorized(
+                format!("Cannot issue vc type: {}", vc_type),
+                None
+            ));
         };
 
-        let credential_subject = serde_json::to_value(&cred_subj)?;
+        let cred_subj =
+            LegalRegistrationNumberCredSubj::new(data, &holder_did, &vc_data.shitty_code);
+
+        let credential_subject = parse_to_value(&cred_subj)?;
 
         self.just_build(&model, credential_subject, &self.config)
     }
 
-    fn gather_data(&self, req_model: &vc_request::Model) -> anyhow::Result<String> {
+    fn gather_data(&self, req_model: &vc_request::Model) -> Outcome<String> {
         info!("Gathering data to issue vc");
 
         let base_cert = req_model.cert.as_ref().ok_or_else(|| {
-            let error =
-                Errors::format_new(BadFormat::Received, "There was no cert in the Grant Request");
-            error!("{}", error.log());
-            error
+            Errors::format(BadFormat::Received, "There was no cert in the Grant Request", None)
         })?;
 
-        let cert_bytes = STANDARD.decode(base_cert)?;
-        let (_, cert) = parse_x509_certificate(&cert_bytes)?;
+        let cert_bytes = STANDARD.decode(base_cert).map_err(|e| {
+            Errors::format(BadFormat::Received, "Unable to decode certificate", Some(Box::new(e)))
+        })?;
+        let (_, cert) = parse_x509_certificate(&cert_bytes)
+            .map_err(|e| Errors::parse("Unable to parse x509 cert", Some(Box::new(e))))?;
 
-        let vc_type = VcType::from_str(req_model.vc_type.as_str())?;
+        let vc_type = VcType::from_str(&req_model.vc_type)?;
 
-        let shitty_code = match vc_type {
-            VcType::LegalRegistrationNumber(data) => {
-                let oid_attr = match cert
-                    .subject
-                    .iter_attributes()
-                    .find(|attr| attr.attr_type().to_id_string() == "2.5.4.97")
-                {
-                    Some(data) => data,
-                    None => {
-                        let error = Errors::format_new(
-                            BadFormat::Received,
-                            "No organizational identifier found in certificate",
-                        );
-                        error!("{}", error.log());
-                        bail!(error)
-                    }
-                };
-
-                let org_id_str = oid_attr.attr_value().as_str()?;
-
-                let code = org_id_str
-                    .split('+')
-                    .find(|part| match data {
-                        LegalRegistrationNumberTypes::TaxId => part.starts_with("TAX"),
-                        LegalRegistrationNumberTypes::Euid => part.starts_with("EUID"),
-                        LegalRegistrationNumberTypes::Eori => part.starts_with("EORI"),
-                        LegalRegistrationNumberTypes::VatId => part.starts_with("VAT"),
-                        LegalRegistrationNumberTypes::LeiCode => part.starts_with("LEI"),
-                    })
-                    .ok_or_else(|| {
-                        let error = Errors::format_new(
-                            BadFormat::Received,
-                            &format!("No matching code found in cert for {:?}", data),
-                        );
-                        error!("{}", error.log());
-                        error
-                    })?;
-
-                code.to_string()
-            }
-            _ => {
-                let error = Errors::unauthorized_new(&format!(
-                    "Unable to issue the vc credential: {}",
-                    vc_type.to_string()
-                ));
-                error!("{}", error.log());
-                bail!(error);
-            }
+        let VcType::LegalRegistrationNumber(data) = vc_type else {
+            return Err(Errors::unauthorized(
+                format!("Cannot issue vc type: {}", vc_type),
+                None
+            ));
         };
 
-        let data = serde_json::to_string(&VCData { shitty_code })?;
+        let oid_attr = cert
+            .subject
+            .iter_attributes()
+            .find(|attr| attr.attr_type().to_id_string() == "2.5.4.97")
+            .ok_or_else(|| {
+                Errors::format(
+                    BadFormat::Received,
+                    "No organizational identifier found in certificate",
+                    None
+                )
+            })?;
 
-        Ok(data)
-    }
+        let org_id_str = oid_attr.attr_value().as_str().map_err(|_| {
+            Errors::format(BadFormat::Received, "Unable to parse organization identifier", None)
+        })?;
 
-    fn get_role(&self) -> &AuthorityRole {
-        self.config.get_role()
+        let prefix = match data {
+            LegalRegistrationNumberTypes::TaxId => "TAX",
+            LegalRegistrationNumberTypes::Euid => "EUID",
+            LegalRegistrationNumberTypes::Eori => "EORI",
+            LegalRegistrationNumberTypes::VatId => "VAT",
+            LegalRegistrationNumberTypes::LeiCode => "LEI"
+        };
+
+        let shitty_code = org_id_str
+            .split('+')
+            .find(|part| part.starts_with(prefix))
+            .ok_or_else(|| {
+                Errors::format(
+                    BadFormat::Received,
+                    format!("No matching code found in cert for {:?}", data),
+                    None
+                )
+            })?
+            .to_string();
+
+        parse_to_string(&VCData { shitty_code })
     }
 }

@@ -15,13 +15,8 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-use async_trait::async_trait;
+use crate::config::role::role::AuthorityRole;
 
-use super::BasicRepoTrait;
-use crate::data::entities::minions::{Entity, Model, NewModel};
-
-#[async_trait]
-pub trait MinionsRepoTrait: BasicRepoTrait<Entity, NewModel> + Send + Sync {
-    async fn get_me(&self) -> anyhow::Result<Model>;
-    async fn force_create(&self, mate: NewModel) -> anyhow::Result<Model>;
+pub trait RoleConfigTrait {
+    fn get_role(&self) -> &AuthorityRole;
 }

@@ -20,15 +20,17 @@ use std::sync::Arc;
 
 use axum::extract::rejection::{FormRejection, JsonRejection};
 use axum::extract::{Query, State};
-use axum::http::{HeaderMap, StatusCode};
-use axum::response::IntoResponse;
+use axum::http::HeaderMap;
 use axum::routing::{get, post};
 use axum::{Form, Json, Router};
-use tracing::error;
-use ymir::errors::{CustomToResponse, ErrorLogTrait, Errors};
-use ymir::types::errors::BadFormat;
-use ymir::types::issuing::{CredentialRequest, TokenRequest};
-use ymir::utils::extract_bearer_token;
+use ymir::errors::AppResult;
+use ymir::types::issuing::{
+    AuthServerMetadata, CredentialRequest, GiveVC, IssuerMetadata, IssuingToken, TokenRequest,
+    VCCredOffer, WellKnownJwks
+};
+use ymir::utils::{
+    extract_bearer_token, extract_form_payload, extract_payload, extract_query_param
+};
 
 use crate::core::traits::CoreIssuerTrait;
 
@@ -50,83 +52,54 @@ impl IssuerRouter {
             .with_state(self.issuer)
     }
 
+    pub fn well_known(&self) -> Router {
+        Router::new()
+            .route("/.well-known/openid-credential-issuer", get(Self::get_issuer))
+            .route("/.well-known/oauth-authorization-server", get(Self::get_oauth_server))
+            .with_state(self.issuer.clone())
+    }
+
     async fn cred_offer(
         State(issuer): State<Arc<dyn CoreIssuerTrait>>,
         Query(params): Query<HashMap<String, String>>
-    ) -> impl IntoResponse {
-        let id = match params.get("id") {
-            Some(hash) => hash.clone(),
-            None => {
-                let error = Errors::format_new(
-                    BadFormat::Received,
-                    "Unable to retrieve hash from callback"
-                );
-                error!("{}", error.log());
-                return error.into_response();
-            }
-        };
-
-        match issuer.get_cred_offer_data(id).await {
-            Ok(data) => (StatusCode::OK, Json(data)).into_response(),
-            Err(e) => e.to_response()
-        }
+    ) -> AppResult<Json<VCCredOffer>> {
+        let id = extract_query_param(&params, "id")?;
+        Ok(Json(issuer.get_cred_offer_data(&id).await?))
     }
 
-    async fn get_issuer(State(issuer): State<Arc<dyn CoreIssuerTrait>>) -> impl IntoResponse {
-        (StatusCode::OK, Json(issuer.issuer_metadata())).into_response()
+    async fn get_issuer(
+        State(issuer): State<Arc<dyn CoreIssuerTrait>>
+    ) -> AppResult<Json<IssuerMetadata>> {
+        Ok(Json(issuer.issuer_metadata()))
     }
 
-    async fn get_oauth_server(State(issuer): State<Arc<dyn CoreIssuerTrait>>) -> impl IntoResponse {
-        (StatusCode::OK, Json(issuer.oauth_server_metadata())).into_response()
+    async fn get_oauth_server(
+        State(issuer): State<Arc<dyn CoreIssuerTrait>>
+    ) -> AppResult<Json<AuthServerMetadata>> {
+        Ok(Json(issuer.oauth_server_metadata()))
     }
 
-    async fn get_jwks(State(issuer): State<Arc<dyn CoreIssuerTrait>>) -> impl IntoResponse {
-        match issuer.jwks().await {
-            Ok(jwk) => (StatusCode::OK, Json(jwk)).into_response(),
-            Err(e) => e.to_response()
-        }
+    async fn get_jwks(
+        State(issuer): State<Arc<dyn CoreIssuerTrait>>
+    ) -> AppResult<Json<WellKnownJwks>> {
+        Ok(Json(issuer.jwks().await?))
     }
 
     async fn get_token(
         State(issuer): State<Arc<dyn CoreIssuerTrait>>,
         payload: Result<Form<TokenRequest>, FormRejection>
-    ) -> impl IntoResponse {
-        let payload = match payload {
-            Ok(Form(data)) => data,
-            Err(e) => {
-                error!("{}", e.to_string());
-                return e.into_response();
-            }
-        };
-
-        match issuer.get_token(payload).await {
-            Ok(data) => (StatusCode::OK, Json(data)).into_response(),
-            Err(e) => e.to_response()
-        }
+    ) -> AppResult<Json<IssuingToken>> {
+        let payload = extract_form_payload(payload)?;
+        Ok(Json(issuer.get_token(payload).await?))
     }
 
     async fn post_credential(
         State(authority): State<Arc<dyn CoreIssuerTrait>>,
         headers: HeaderMap,
         payload: Result<Json<CredentialRequest>, JsonRejection>
-    ) -> impl IntoResponse {
-        let payload = match payload {
-            Ok(Json(data)) => data,
-            Err(e) => return e.to_response()
-        };
-
-        let token = match extract_bearer_token(headers) {
-            Some(token) => token,
-            None => {
-                let error = Errors::unauthorized_new("Missing token");
-                error!("{}", error.log());
-                return error.into_response();
-            }
-        };
-
-        match authority.get_credential(payload, token).await {
-            Ok(data) => (StatusCode::OK, Json(data)).into_response(),
-            Err(e) => e.to_response()
-        }
+    ) -> AppResult<Json<GiveVC>> {
+        let payload = extract_payload(payload)?;
+        let token = extract_bearer_token(headers)?;
+        Ok(Json(authority.get_credential(payload, token).await?))
     }
 }

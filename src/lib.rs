@@ -21,4 +21,3 @@ pub mod data;
 pub mod http;
 pub mod services;
 pub mod setup;
-pub mod types;

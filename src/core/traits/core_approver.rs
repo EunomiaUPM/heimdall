@@ -19,6 +19,7 @@ use std::sync::Arc;
 
 use async_trait::async_trait;
 use ymir::data::entities::vc_request;
+use ymir::errors::Outcome;
 use ymir::types::vcs::vc_decision_approval::VcDecisionApproval;
 
 use crate::services::gatekeeper::GateKeeperTrait;
@@ -28,19 +29,18 @@ use crate::services::repo::RepoTrait;
 pub trait CoreApproverTrait: Send + Sync + 'static {
     fn gatekeeper(&self) -> Arc<dyn GateKeeperTrait>;
     fn repo(&self) -> Arc<dyn RepoTrait>;
-    async fn get_all(&self) -> anyhow::Result<Vec<vc_request::Model>> {
+    async fn get_all(&self) -> Outcome<Vec<vc_request::Model>> {
         self.repo().request().get_all(None, None).await
     }
-    async fn get_by_id(&self, id: String) -> anyhow::Result<vc_request::Model> {
+    async fn get_by_id(&self, id: String) -> Outcome<vc_request::Model> {
         self.repo().request().get_by_id(&id).await
     }
-    async fn manage_req(&self, id: String, payload: VcDecisionApproval) -> anyhow::Result<()> {
+    async fn manage_req(&self, id: String, payload: VcDecisionApproval) -> Outcome<()> {
         let mut req_model = self.repo().request().get_by_id(&id).await?;
         let int_model = self.repo().interaction().get_by_id(&id).await?;
         let body =
             self.gatekeeper().apprv_dny_req(payload.approve, &mut req_model, &int_model).await?;
         self.repo().request().update(req_model).await?;
-        self.gatekeeper().notify_minion(&int_model, body).await?;
-        Ok(())
+        self.gatekeeper().notify_minion(&int_model, body).await
     }
 }

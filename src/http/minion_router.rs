@@ -17,22 +17,20 @@
 
 use std::sync::Arc;
 
-use crate::core::traits::CoreMinionTrait;
 use axum::extract::{Path, State};
-use axum::http::StatusCode;
-use axum::response::IntoResponse;
 use axum::routing::get;
 use axum::{Json, Router};
-use ymir::errors::CustomToResponse;
+use ymir::data::entities::minions::Model;
+use ymir::errors::AppResult;
+
+use crate::core::traits::CoreMinionTrait;
 
 pub struct MinionRouter {
-    gru: Arc<dyn CoreMinionTrait>,
+    gru: Arc<dyn CoreMinionTrait>
 }
 
 impl MinionRouter {
-    pub fn new(gru: Arc<dyn CoreMinionTrait>) -> MinionRouter {
-        MinionRouter { gru }
-    }
+    pub fn new(gru: Arc<dyn CoreMinionTrait>) -> MinionRouter { MinionRouter { gru } }
 
     pub fn router(self) -> Router {
         Router::new()
@@ -42,26 +40,18 @@ impl MinionRouter {
             .with_state(self.gru)
     }
 
-    async fn get_all(State(gru): State<Arc<dyn CoreMinionTrait>>) -> impl IntoResponse {
-        match gru.get_all().await {
-            Ok(data) => (StatusCode::OK, Json(data)).into_response(),
-            Err(e) => e.to_response(),
-        }
-    }
-    async fn get_by_id(
-        State(gru): State<Arc<dyn CoreMinionTrait>>,
-        Path(id): Path<String>,
-    ) -> impl IntoResponse {
-        match gru.get_by_id(id).await {
-            Ok(data) => (StatusCode::OK, Json(data)).into_response(),
-            Err(e) => e.to_response(),
-        }
+    async fn get_all(State(gru): State<Arc<dyn CoreMinionTrait>>) -> AppResult<Json<Vec<Model>>> {
+        Ok(Json(gru.get_all().await?))
     }
 
-    async fn get_me(State(gru): State<Arc<dyn CoreMinionTrait>>) -> impl IntoResponse {
-        match gru.get_me().await {
-            Ok(data) => (StatusCode::OK, Json(data)).into_response(),
-            Err(e) => e.to_response(),
-        }
+    async fn get_by_id(
+        State(gru): State<Arc<dyn CoreMinionTrait>>,
+        Path(id): Path<String>
+    ) -> AppResult<Json<Model>> {
+        Ok(Json(gru.get_by_id(id).await?))
+    }
+
+    async fn get_me(State(gru): State<Arc<dyn CoreMinionTrait>>) -> AppResult<Json<Model>> {
+        Ok(Json(gru.get_me().await?))
     }
 }

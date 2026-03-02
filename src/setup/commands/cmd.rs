@@ -18,56 +18,56 @@
 use std::cmp::PartialEq;
 use std::sync::Arc;
 
-use super::env_extraction::extract_env_config;
-use crate::setup::application::AuthorityApplication;
-use crate::setup::db_migrations::AuthorityMigration;
 use clap::{Parser, Subcommand};
-use tracing::debug;
+use tracing::{debug, info};
 use ymir::config::traits::ConnectionConfigTrait;
-use ymir::services::vault::vault_rs::VaultService;
-use ymir::services::vault::VaultTrait;
+use ymir::errors::{Errors, Outcome};
+use ymir::services::vault::fake_vault::FakeVaultService;
+use ymir::services::vault::vault_rs::RealVaultService;
+use ymir::services::vault::{VaultService, VaultTrait};
+
+use super::env_extraction::extract_env_config;
+use crate::config::CoreApplicationConfig;
+use crate::setup::app::AuthorityApp;
+use crate::setup::db_migrations::AuthorityMigration;
 
 #[derive(Parser, Debug)]
 #[command(name = "Rainbow Dataspace Authority Server")]
 #[command(version = "0.1")]
 struct AuthorityCli {
     #[command(subcommand)]
-    command: AuthorityCliCommands,
+    command: AuthorityCliCommands
 }
 
 #[derive(Parser, Debug, PartialEq)]
 pub struct AuthCliArgs {
     #[arg(short, long)]
-    env_file: String,
+    env_file: String
 }
 
 #[derive(Subcommand, Debug, PartialEq)]
 pub enum AuthorityCliCommands {
     Start(AuthCliArgs),
-    Setup(AuthCliArgs),
+    Setup(AuthCliArgs)
 }
 
 pub struct AuthorityCommands;
 
 impl AuthorityCommands {
-    pub async fn init_command_line() -> anyhow::Result<()> {
-        // parse command line
+    pub async fn init_command_line() -> Outcome<()> {
         debug!("Init the command line application");
         let cli = AuthorityCli::parse();
-        let vault = Arc::new(VaultService::new());
 
-        // run scripts
         match cli.command {
             AuthorityCliCommands::Start(args) => {
-                let config = extract_env_config(args.env_file)?;
-                AuthorityApplication::run(config, vault).await?
+                let (config, vault) = Self::bootstrap(args)?;
+                AuthorityApp::run(config, Arc::new(vault)).await?
             }
             AuthorityCliCommands::Setup(args) => {
-                let config = extract_env_config(args.env_file)?;
-                if config.is_tls_enabled() {
-                    vault.write_all_secrets(None).await?;
-                } else {
-                    vault.write_local_secrets(None).await?;
+                let (config, vault) = Self::bootstrap(args)?;
+                match config.is_tls_enabled() {
+                    true => vault.write_all_secrets(None).await?,
+                    false => vault.write_local_secrets(None).await?
                 }
                 let db_connection = vault.get_db_connection(&config).await;
                 AuthorityMigration::run(&db_connection).await?;
@@ -75,5 +75,22 @@ impl AuthorityCommands {
         }
 
         Ok(())
+    }
+
+    fn bootstrap(args: AuthCliArgs) -> Outcome<(CoreApplicationConfig, VaultService)> {
+        let config = extract_env_config(args.env_file)?;
+        let vault = if config.is_vault_real() {
+            VaultService::Real(RealVaultService::new())
+        } else {
+            VaultService::Fake(FakeVaultService::new())
+        };
+        let table = json_to_table::json_to_table(
+            &serde_json::to_value(&config)
+                .map_err(|e| Errors::parse("Error with config table", Some(Box::new(e))))?
+        )
+        .collapse()
+        .to_string();
+        info!("Current Heimdall Config Config:\n{}", table);
+        Ok((config, vault))
     }
 }
