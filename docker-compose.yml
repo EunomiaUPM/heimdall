@@ -1,3 +1,5 @@
+name: mini-heimdall
+
 services:
   heimdall-db:
     container_name: "heimdall-db"
