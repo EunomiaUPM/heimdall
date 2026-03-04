@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { VITE_API_SERVER_URL as apiUrl } from '@/lib/api';
 import { useNavigate } from 'react-router-dom';
 import {
   Table,
@@ -57,8 +58,6 @@ const Requests = () => {
   });
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
   const navigate = useNavigate();
-
-  const apiUrl = import.meta.env.VITE_API_SERVER_URL;
 
   useEffect(() => {
     const fetchRequests = async () => {

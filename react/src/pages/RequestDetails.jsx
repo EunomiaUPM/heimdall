@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { VITE_API_SERVER_URL as apiUrl } from '@/lib/api';
 import { useParams, useNavigate } from 'react-router-dom';
 import { X509 } from 'jsrsasign';
 import BooleanBadge from '../components/BooleanBadge';
@@ -15,8 +16,6 @@ const RequestDetails = () => {
   const [error, setError] = useState(null);
   const [parsedCert, setParsedCert] = useState(null);
   const navigate = useNavigate();
-
-  const apiUrl = import.meta.env.VITE_API_SERVER_URL;
 
   useEffect(() => {
     const fetchRequest = async () => {

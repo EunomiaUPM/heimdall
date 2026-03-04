@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { VITE_API_SERVER_URL as apiUrl } from '@/lib/api';
 import BooleanBadge from '../components/BooleanBadge';
 import {
   Table,
@@ -13,8 +14,6 @@ const WalletInfo = () => {
   const [walletInfo, setWalletInfo] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-
-  const apiUrl = import.meta.env.VITE_API_SERVER_URL;
 
   useEffect(() => {
     const fetchWalletInfo = async () => {

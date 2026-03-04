@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { VITE_API_SERVER_URL as apiUrl } from '@/lib/api';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import BooleanBadge from '../components/BooleanBadge';
@@ -20,8 +21,8 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 const TruncatedId = ({ id }) => {
   const [copied, setCopied] = useState(false);
 
-  const shouldTruncate = id.length > 20;
-  const displayId = shouldTruncate ? `${id.substring(0, 17)}...` : id;
+  const shouldTruncate = id.length > 40;
+  const displayId = shouldTruncate ? `${id.substring(0, 37)}...` : id;
 
   const handleCopy = (e) => {
     e.stopPropagation(); // Prevent row click
@@ -78,8 +79,6 @@ const Minions = () => {
   });
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
   const navigate = useNavigate();
-
-  const apiUrl = import.meta.env.VITE_API_SERVER_URL;
 
   const fetchMinions = async () => {
     setLoading(true);

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { VITE_API_SERVER_URL as apiUrl } from '@/lib/api';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -27,8 +28,6 @@ const Wallet = () => {
     if (error) return 'RETRY LINK';
     return 'LINK';
   };
-
-  const apiUrl = import.meta.env.VITE_API_SERVER_URL;
 
   useEffect(() => {
     // Check if wallet is already onboarded
