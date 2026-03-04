@@ -15,20 +15,15 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-mod builder;
-mod core_router;
-mod gatekeeper_router;
-mod issuer_router;
-mod minion_router;
-pub mod react_router;
-mod vcs_router;
-mod verifier_router;
+use std::sync::Arc;
+use tokio::sync::broadcast::Sender;
 
-pub use builder::RouterBuilder;
-pub use core_router::RainbowAuthorityRouter;
-pub use gatekeeper_router::GateKeeperRouter;
-pub use issuer_router::IssuerRouter;
-pub use minion_router::MinionRouter;
-pub use react_router::{NotificationEvent, ReactRouter};
-pub use vcs_router::ApproverRouter;
-pub use verifier_router::VerifierRouter;
+use crate::http::react_router::NotificationEvent;
+
+pub trait CoreReactTrait: Send + Sync + 'static {
+    fn notification_sender(&self) -> Arc<Sender<NotificationEvent>>;
+
+    fn notify(&self, event: NotificationEvent) {
+        let _ = self.notification_sender().send(event);
+    }
+}

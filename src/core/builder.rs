@@ -34,15 +34,16 @@ use crate::services::gatekeeper::gnap::{config::GnapConfig, GnapService};
 use crate::services::repo::RepoForSql;
 use crate::services::repo::RepoTrait;
 use crate::services::vcs_builder::dataspace_authority::{
-    config::DataSpaceAuthorityConfig, DataSpaceAuthorityVcBuilder
+    config::DataSpaceAuthorityConfig, DataSpaceAuthorityVcBuilder,
 };
 use crate::services::vcs_builder::legal_authority::{
-    LegalAuthorityConfig, LegalAuthorityVcBuilder
+    LegalAuthorityConfig, LegalAuthorityVcBuilder,
 };
 use crate::services::vcs_builder::{EcoAuthorityBuilder, VcBuilderTrait};
+use tokio::sync::broadcast;
 
 pub struct CoreBuilder {
-    core: Core
+    core: Core,
 }
 
 impl CoreBuilder {
@@ -105,10 +106,25 @@ impl CoreBuilder {
             None
         };
 
-        let core = Core::new(wallet, gatekeeper, issuer, verifier, vc_builder, repo, core_config);
+        // Notification channel setup
+        let (tx, _rx) = broadcast::channel(100);
+        let notification_sender = Arc::new(tx);
+
+        let core = Core::new(
+            wallet,
+            gatekeeper,
+            issuer,
+            verifier,
+            vc_builder,
+            repo,
+            core_config,
+            notification_sender,
+        );
 
         Self { core }
     }
 
-    pub fn build(self) -> Core { self.core }
+    pub fn build(self) -> Core {
+        self.core
+    }
 }

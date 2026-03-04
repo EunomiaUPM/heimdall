@@ -21,6 +21,7 @@ mod core_gatekeeper;
 mod core_issuer;
 mod core_minion;
 mod core_mod;
+mod core_react;
 mod core_verifier;
 
 pub use core_approver::CoreApproverTrait;
@@ -28,4 +29,5 @@ pub use core_gatekeeper::CoreGatekeeperTrait;
 pub use core_issuer::CoreIssuerTrait;
 pub use core_minion::CoreMinionTrait;
 pub use core_mod::CoreTrait;
+pub use core_react::CoreReactTrait;
 pub use core_verifier::CoreVerifierTrait;

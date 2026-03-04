@@ -12,7 +12,7 @@ WORKDIR /app
 
 COPY Cargo.toml Cargo.lock ./
 COPY src src
-RUN cargo build --release
+RUN cargo build
 
 # Stage 3: Final Runtime Image
 FROM debian:bookworm-slim
@@ -22,7 +22,7 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y libssl3 ca-certificates && rm -rf /var/lib/apt/lists/*
 
 # Copy backend binary
-COPY --from=backend-builder /app/target/release/heimdall /app/heimdall
+COPY --from=backend-builder /app/target/debug/heimdall /app/heimdall
 
 # Copy frontend build output
 COPY --from=frontend-builder /app/react/dist /app/react/dist

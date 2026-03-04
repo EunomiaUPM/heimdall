@@ -58,22 +58,6 @@ module.exports = {
           300: '#2E3356',
           200: '#2E3356',
         },
-
-        foreground: {
-          // LIGHT BASE color palette
-          DEFAULT: '#d3d2e0',
-          950: '#353243',
-          900: '#524d65',
-          800: '#645d7a',
-          700: '#786f92',
-          600: '#867ea3', // default
-          500: '#9e9ab8',
-          400: '#b9b7ce',
-          300: '#d3d2e0',
-          200: '#d3d2e0',
-          100: '#f1f1f6',
-          50: '#f8f8fa',
-        },
         primary: {
           // blue-ish
           DEFAULT: '#2D3B98',
@@ -107,6 +91,18 @@ module.exports = {
         },
         accent: {
           DEFAULT: '#62388E',
+        },
+        popover: {
+          DEFAULT: '#1D1C3D',
+          foreground: '#f1f1f6',
+        },
+        card: {
+          DEFAULT: '#09091B',
+          foreground: '#f1f1f6',
+        },
+        muted: {
+          DEFAULT: '#2E3356',
+          foreground: '#9d99a7',
         },
 
         danger: {
@@ -191,12 +187,6 @@ module.exports = {
         ring: {
           DEFAULT: '#9DD5F2',
         },
-        // shadow: {
-        //   DEFAULT: "#cbd5e1",
-        // },
-        // title: {
-        //   DEFAULT: "#323232",
-        // },
       },
     },
     screens: {
@@ -212,89 +202,3 @@ module.exports = {
     },
   },
 };
-// export const content = [
-//   "index.css",
-//   "./src/**/*.{ts,tsx,js,jsx,css,sass,scss}",
-//   "./../shared/src/**/*.{ts,tsx,js,jsx,css,sass,scss}",
-//   "./../shared/index.css"
-// ];
-
-// TAILWIND CONFIG POR DEFECTO - Quiza se pueda rescatar algo de esto.
-
-// import { fontFamily } from "tailwindcss/defaultTheme"
-
-// /** @type {import('tailwindcss').Config} */
-// export const content = [
-//   "index.css",
-//   "./src/**/*.{ts,tsx,js,jsx,css,sass,scss}"
-// ]
-// export const theme = {
-//   container: {
-//     center: true,
-//     padding: "2rem",
-//     screens: {
-//       "2xl": "1400px",
-//     },
-//   },
-//   extend: {
-//     colors: {
-//       border: "hsl(var(--border))",
-//       input: "hsl(var(--input))",
-//       ring: "hsl(var(--ring))",
-//       background: "hsl(var(--background))",
-//       foreground: "hsl(var(--foreground))",
-//       primary: {
-//         DEFAULT: "hsl(var(--primary))",
-//         foreground: "hsl(var(--primary-foreground))",
-//       },
-//       secondary: {
-//         DEFAULT: "hsl(var(--secondary))",
-//         foreground: "hsl(var(--secondary-foreground))",
-//       },
-//       destructive: {
-//         DEFAULT: "hsl(var(--destructive))",
-//         foreground: "hsl(var(--destructive-foreground))",
-//       },
-//       muted: {
-//         DEFAULT: "hsl(var(--muted))",
-//         foreground: "hsl(var(--muted-foreground))",
-//       },
-//       accent: {
-//         DEFAULT: "hsl(var(--accent))",
-//         foreground: "hsl(var(--accent-foreground))",
-//       },
-//       popover: {
-//         DEFAULT: "hsl(var(--popover))",
-//         foreground: "hsl(var(--popover-foreground))",
-//       },
-//       card: {
-//         DEFAULT: "hsl(var(--card))",
-//         foreground: "hsl(var(--card-foreground))",
-//       },
-//     },
-//     borderRadius: {
-//       lg: `var(--radius)`,
-//       md: `calc(var(--radius) - 2px)`,
-//       sm: "calc(var(--radius) - 4px)",
-//     },
-//     fontFamily: {
-//       sans: ["var(--font-sans)", ...fontFamily.sans],
-//     },
-//     keyframes: {
-//       "accordion-down": {
-//         from: { height: "0" },
-//         to: { height: "var(--radix-accordion-content-height)" },
-//       },
-//       "accordion-up": {
-//         from: { height: "var(--radix-accordion-content-height)" },
-//         to: { height: "0" },
-//       },
-//     },
-//     animation: {
-//       "accordion-down": "accordion-down 0.2s ease-out",
-//       "accordion-up": "accordion-up 0.2s ease-out",
-//     },
-//   },
-// }
-// // eslint-disable-next-line no-undef
-// export const plugins = [require("tailwindcss-animate")]

@@ -1,0 +1,60 @@
+
+> react@0.0.0 lint
+> eslint .
+
+
+C:\Users\rodme\Uni\EUNOMIA\heimdall\react\src\components\Header.jsx
+  3:10  error  'cn' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+C:\Users\rodme\Uni\EUNOMIA\heimdall\react\src\components\ui\button.jsx
+  39:18  error  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+C:\Users\rodme\Uni\EUNOMIA\heimdall\react\src\components\ui\sidebar.jsx
+  550:26  error  Error: Cannot call impure function during render
+
+`Math.random` is an impure function. Calling an impure function can produce unstable results that update unpredictably when the component happens to re-render. (https://react.dev/reference/rules/components-and-hooks-must-be-pure#components-and-hooks-must-be-idempotent).
+
+  548 | const SidebarMenuSkeleton = React.forwardRef(({ className, showIcon = false, ...props }, ref) => {
+  549 |   const width = React.useMemo(() => {
+> 550 |     return `${Math.floor(Math.random() * 40) + 50}%`;
+      |                          ^^^^^^^^^^^^^ Cannot call impure function
+  551 |   }, []);
+  552 |
+  553 |   return (  react-hooks/purity
+  639:3   error  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    react-refresh/only-export-components
+
+C:\Users\rodme\Uni\EUNOMIA\heimdall\react\src\contexts\NotificationContext.jsx
+  6:14  error  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+C:\Users\rodme\Uni\EUNOMIA\heimdall\react\src\pages\Home.jsx
+  55:32  error  'Icon' is defined but never used  no-unused-vars
+
+C:\Users\rodme\Uni\EUNOMIA\heimdall\react\src\pages\MinionDetails.jsx
+   6:10  error    'cn' is defined but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                                                                         no-unused-vars
+  34:6   warning  React Hook useEffect has an unnecessary dependency: 'apiUrl'. Either exclude it or remove the dependency array. Outer scope values like 'apiUrl' aren't valid dependencies because mutating them doesn't re-render the component  react-hooks/exhaustive-deps
+
+C:\Users\rodme\Uni\EUNOMIA\heimdall\react\src\pages\Minions.jsx
+    1:31  error    'useRef' is defined but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                                                                     no-unused-vars
+    3:10  error    'createPortal' is defined but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                                                               no-unused-vars
+  103:6   warning  React Hook useEffect has an unnecessary dependency: 'apiUrl'. Either exclude it or remove the dependency array. Outer scope values like 'apiUrl' aren't valid dependencies because mutating them doesn't re-render the component  react-hooks/exhaustive-deps
+
+C:\Users\rodme\Uni\EUNOMIA\heimdall\react\src\pages\RequestDetails.jsx
+  58:6  warning  React Hook useEffect has an unnecessary dependency: 'apiUrl'. Either exclude it or remove the dependency array. Outer scope values like 'apiUrl' aren't valid dependencies because mutating them doesn't re-render the component  react-hooks/exhaustive-deps
+
+C:\Users\rodme\Uni\EUNOMIA\heimdall\react\src\pages\Requests.jsx
+  80:6  warning  React Hook useEffect has an unnecessary dependency: 'apiUrl'. Either exclude it or remove the dependency array. Outer scope values like 'apiUrl' aren't valid dependencies because mutating them doesn't re-render the component  react-hooks/exhaustive-deps
+
+C:\Users\rodme\Uni\EUNOMIA\heimdall\react\src\pages\Wallet.jsx
+  19:9  error  'getButtonVariant' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+C:\Users\rodme\Uni\EUNOMIA\heimdall\react\src\pages\WalletCredentials.jsx
+  27:6  warning  React Hook useEffect has an unnecessary dependency: 'apiUrl'. Either exclude it or remove the dependency array. Outer scope values like 'apiUrl' aren't valid dependencies because mutating them doesn't re-render the component  react-hooks/exhaustive-deps
+
+C:\Users\rodme\Uni\EUNOMIA\heimdall\react\src\pages\WalletDID.jsx
+  27:6  warning  React Hook useEffect has an unnecessary dependency: 'apiUrl'. Either exclude it or remove the dependency array. Outer scope values like 'apiUrl' aren't valid dependencies because mutating them doesn't re-render the component  react-hooks/exhaustive-deps
+
+C:\Users\rodme\Uni\EUNOMIA\heimdall\react\src\pages\WalletInfo.jsx
+  36:6  warning  React Hook useEffect has an unnecessary dependency: 'apiUrl'. Either exclude it or remove the dependency array. Outer scope values like 'apiUrl' aren't valid dependencies because mutating them doesn't re-render the component  react-hooks/exhaustive-deps
+
+✖ 17 problems (10 errors, 7 warnings)
+

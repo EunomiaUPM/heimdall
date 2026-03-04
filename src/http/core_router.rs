@@ -29,11 +29,13 @@ use ymir::http::{HealthRouter, OpenapiRouter, WalletRouter};
 
 use crate::core::traits::CoreTrait;
 use crate::http::builder::RouterBuilder;
-use crate::http::{ApproverRouter, GateKeeperRouter, IssuerRouter, MinionRouter, VerifierRouter};
+use crate::http::{
+    ApproverRouter, GateKeeperRouter, IssuerRouter, MinionRouter, ReactRouter, VerifierRouter,
+};
 
 pub struct RainbowAuthorityRouter {
     core: Arc<dyn CoreTrait>,
-    openapi: String
+    openapi: String,
 }
 
 impl RainbowAuthorityRouter {
@@ -45,10 +47,10 @@ impl RainbowAuthorityRouter {
     pub fn router(self) -> Router {
         let wallet = match self.core.config().is_wallet_active() {
             true => Some(WalletRouter::new(self.core.clone())),
-            false => None
+            false => None,
         };
 
-        let router = RouterBuilder::new()
+        let mut router = RouterBuilder::new()
             .gatekeeper(GateKeeperRouter::new(self.core.clone()))
             .issuer(IssuerRouter::new(self.core.clone()))
             .verifier(VerifierRouter::new(self.core.clone()))
@@ -61,17 +63,24 @@ impl RainbowAuthorityRouter {
             .api_path(self.core.config().get_api_version())
             .build();
 
+        // Manual override for react_router merging without changing builder struct
+        if self.core.config().is_react() {
+            let sse_router = ReactRouter::new(self.core.clone()).router();
+            let mount_path = format!("{}/react", self.core.config().get_api_version());
+            router = router.nest(&mount_path, sse_router);
+        }
+
         router
             .fallback(Self::fallback)
             .layer(
                 TraceLayer::new_for_http()
                     .make_span_with(
-                        |_req: &Request<_>| tracing::info_span!("request", id = %Uuid::new_v4())
+                        |_req: &Request<_>| tracing::info_span!("request", id = %Uuid::new_v4()),
                     )
                     .on_request(|req: &Request<_>, _span: &tracing::Span| {
                         info!("{} {}", req.method(), req.uri().path());
                     })
-                    .on_response(DefaultOnResponse::new().level(Level::TRACE))
+                    .on_response(DefaultOnResponse::new().level(Level::TRACE)),
             )
             .layer(CorsLayer::permissive())
     }
