@@ -40,7 +40,7 @@ services:
 
   heimdall: 
     container_name: heimdall
-    image: rmenendez8/heimdall:v1.2.0
+    image: rmenendez8/heimdall:v1.2.3
     # build: 
     #   context: .
     #   dockerfile: Dockerfile
@@ -56,5 +56,5 @@ services:
       - ./static/environment/envs/heimdall.env
     environment:
       CONFIG_PATH: /app/static/environment/config/prod/basic_dataspace_authority.yaml
-      RUST_BACKTRACE: full
+      RUST_BACKTRACE: 1
     

@@ -69,7 +69,7 @@ impl GateKeeperTrait for GnapService {
             .first()
             .ok_or_else(|| Errors::format(BadFormat::Received, "Datatypes are empty", None))?;
 
-        let vc_type = VcType::from_str(vc_type)?;
+        let vc_type = VcType::from_conf(vc_type)?;
         self.validate_vc_to_issue(&vc_type)?;
 
         let new_request_model = vc_request::NewModel {
