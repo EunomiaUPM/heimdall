@@ -19,7 +19,6 @@ use std::str::FromStr;
 use std::sync::Arc;
 
 use async_trait::async_trait;
-use chrono;
 use tracing::info;
 use ymir::errors::{BadFormat, Errors, Outcome};
 use ymir::services::issuer::IssuerTrait;
@@ -29,19 +28,19 @@ use ymir::types::gnap::grant_response::GrantResponse;
 use ymir::types::gnap::RefBody;
 use ymir::types::vcs::VcType;
 
-use crate::core::traits::{CoreReactTrait, CoreTrait};
-use crate::http::react_router::NotificationEvent;
 use crate::services::gatekeeper::GateKeeperTrait;
+use crate::services::notifications::NotificationsTrait;
 use crate::services::repo::RepoTrait;
 use crate::services::vcs_builder::VcBuilderTrait;
 
 #[async_trait]
-pub trait CoreGatekeeperTrait: CoreReactTrait + Send + Sync + 'static {
+pub trait CoreGatekeeperTrait: Send + Sync + 'static {
     fn gatekeeper(&self) -> Arc<dyn GateKeeperTrait>;
     fn verifier(&self) -> Arc<dyn VerifierTrait>;
     fn issuer(&self) -> Arc<dyn IssuerTrait>;
     fn repo(&self) -> Arc<dyn RepoTrait>;
     fn vc_builder(&self) -> Arc<dyn VcBuilderTrait>;
+    fn notifier(&self) -> Option<Arc<dyn NotificationsTrait>>;
     async fn manage_req(&self, payload: GrantRequest) -> Result<GrantResponse, GrantResponse> {
         self.manage_ok_req(&payload).await.map_err(|e| {
             e.log();
@@ -53,18 +52,9 @@ pub trait CoreGatekeeperTrait: CoreReactTrait + Send + Sync + 'static {
 
         let req_model = self.repo().request().create(n_req_mod).await?;
 
-        // Trigger notification
-        self.notify(NotificationEvent {
-            id: req_model.id.clone(),
-            title: "New Petition".to_string(),
-            message: format!(
-                "{} request a {} credential",
-                req_model.participant_slug, req_model.vc_type
-            ),
-            level: "info".to_string(),
-            created_at: chrono::Utc::now().to_rfc3339(),
-            link: Some(format!("/requests/{}", req_model.id)),
-        });
+        if let Some(notifier) = self.notifier() {
+            notifier.notify(&req_model);
+        }
 
         let int_model = self.repo().interaction().create(n_int_model).await?;
 

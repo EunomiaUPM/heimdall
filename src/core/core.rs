@@ -17,7 +17,6 @@
 
 use std::sync::Arc;
 
-use tokio::sync::broadcast::Sender;
 use ymir::core_traits::CoreWalletTrait;
 use ymir::services::issuer::IssuerTrait;
 use ymir::services::repo::subtraits::{MatesTrait, MinionsTrait};
@@ -29,34 +28,34 @@ use crate::core::traits::{
     CoreApproverTrait, CoreGatekeeperTrait, CoreIssuerTrait, CoreMinionTrait, CoreReactTrait,
     CoreTrait, CoreVerifierTrait,
 };
-use crate::http::react_router::NotificationEvent;
 use crate::services::gatekeeper::GateKeeperTrait;
+use crate::services::notifications::NotificationsTrait;
 use crate::services::repo::RepoTrait;
 use crate::services::vcs_builder::VcBuilderTrait;
 
 pub struct Core {
     wallet: Option<Arc<dyn WalletTrait>>,
+    notifier: Option<Arc<dyn NotificationsTrait>>,
     gatekeeper: Arc<dyn GateKeeperTrait>,
     issuer: Arc<dyn IssuerTrait>,
     verifier: Arc<dyn VerifierTrait>,
     vc_builder: Arc<dyn VcBuilderTrait>,
     repo: Arc<dyn RepoTrait>,
     config: Arc<dyn CoreConfigTrait>,
-    notification_sender: Arc<Sender<NotificationEvent>>,
 }
 
 impl Core {
     pub fn new(
         wallet: Option<Arc<dyn WalletTrait>>,
+        notifier: Option<Arc<dyn NotificationsTrait>>,
         gatekeeper: Arc<dyn GateKeeperTrait>,
         issuer: Arc<dyn IssuerTrait>,
         verifier: Arc<dyn VerifierTrait>,
         vc_builder: Arc<dyn VcBuilderTrait>,
         repo: Arc<dyn RepoTrait>,
         config: Arc<dyn CoreConfigTrait>,
-        notification_sender: Arc<Sender<NotificationEvent>>,
     ) -> Self {
-        Self { wallet, gatekeeper, issuer, verifier, vc_builder, repo, config, notification_sender }
+        Self { wallet, gatekeeper, issuer, verifier, vc_builder, repo, config, notifier }
     }
 }
 
@@ -67,8 +66,8 @@ impl CoreTrait for Core {
 }
 
 impl CoreReactTrait for Core {
-    fn notification_sender(&self) -> Arc<Sender<NotificationEvent>> {
-        self.notification_sender.clone()
+    fn notifier(&self) -> Arc<dyn NotificationsTrait> {
+        self.notifier.as_ref().cloned().expect("Notifier module is required for this operation but is not active in the current configuration")
     }
 }
 
@@ -134,13 +133,17 @@ impl CoreGatekeeperTrait for Core {
     fn vc_builder(&self) -> Arc<dyn VcBuilderTrait> {
         self.vc_builder.clone()
     }
+
+    fn notifier(&self) -> Option<Arc<dyn NotificationsTrait>> {
+        self.notifier.as_ref().cloned()
+    }
 }
 
 impl CoreWalletTrait for Core {
     fn wallet(&self) -> Arc<dyn WalletTrait> {
         self.wallet
             .as_ref()
-            .map(Clone::clone)
+            .cloned()
             .expect("Wallet module is required for this operation but is not active in the current configuration")
     }
 

@@ -31,6 +31,7 @@ use crate::config::role::{AuthorityRole, RoleConfigTrait};
 use crate::config::{CoreApplicationConfig, CoreConfigTrait};
 use crate::core::Core;
 use crate::services::gatekeeper::gnap::{config::GnapConfig, GnapService};
+use crate::services::notifications::{NotificationService, NotificationsTrait};
 use crate::services::repo::RepoForSql;
 use crate::services::repo::RepoTrait;
 use crate::services::vcs_builder::dataspace_authority::{
@@ -40,7 +41,6 @@ use crate::services::vcs_builder::legal_authority::{
     LegalAuthorityConfig, LegalAuthorityVcBuilder,
 };
 use crate::services::vcs_builder::{EcoAuthorityBuilder, VcBuilderTrait};
-use tokio::sync::broadcast;
 
 pub struct CoreBuilder {
     core: Core,
@@ -106,19 +106,18 @@ impl CoreBuilder {
             None
         };
 
-        // Notification channel setup
-        let (tx, _rx) = broadcast::channel(100);
-        let notification_sender = Arc::new(tx);
+        let notifier: Option<Arc<dyn NotificationsTrait>> =
+            if config.is_react() { Some(Arc::new(NotificationService::new())) } else { None };
 
         let core = Core::new(
             wallet,
+            notifier,
             gatekeeper,
             issuer,
             verifier,
             vc_builder,
             repo,
             core_config,
-            notification_sender,
         );
 
         Self { core }

@@ -63,7 +63,6 @@ impl RainbowAuthorityRouter {
             .api_path(self.core.config().get_api_version())
             .build();
 
-        // Manual override for react_router merging without changing builder struct
         if self.core.config().is_react() {
             let sse_router = ReactRouter::new(self.core.clone()).router();
             let mount_path = format!("{}/react", self.core.config().get_api_version());

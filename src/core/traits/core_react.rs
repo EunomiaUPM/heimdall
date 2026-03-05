@@ -15,15 +15,17 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
+use crate::services::notifications::NotificationsTrait;
+use axum::response::sse::Event;
+use futures_util::Stream;
+use std::convert::Infallible;
+use std::pin::Pin;
 use std::sync::Arc;
-use tokio::sync::broadcast::Sender;
-
-use crate::http::react_router::NotificationEvent;
 
 pub trait CoreReactTrait: Send + Sync + 'static {
-    fn notification_sender(&self) -> Arc<Sender<NotificationEvent>>;
+    fn notifier(&self) -> Arc<dyn NotificationsTrait>;
 
-    fn notify(&self, event: NotificationEvent) {
-        let _ = self.notification_sender().send(event);
+    fn handle(&self) -> Pin<Box<dyn Stream<Item = Result<Event, Infallible>> + Send>> {
+        self.notifier().handle()
     }
 }

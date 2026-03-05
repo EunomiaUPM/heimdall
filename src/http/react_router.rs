@@ -18,57 +18,32 @@
 use std::convert::Infallible;
 use std::sync::Arc;
 
+use crate::core::traits::CoreReactTrait;
 use axum::extract::State;
 use axum::response::sse::{Event, Sse};
 use axum::routing::get;
 use axum::Router;
 use futures_util::stream::Stream;
-use serde::Serialize;
-use tokio_stream::wrappers::BroadcastStream;
-use tokio_stream::StreamExt;
-
-use crate::core::traits::{CoreReactTrait, CoreTrait};
-
-#[derive(Clone, Debug, Serialize)]
-pub struct NotificationEvent {
-    pub id: String,
-    pub title: String,
-    pub message: String,
-    pub level: String,
-    pub created_at: String,
-    pub link: Option<String>,
-}
 
 pub struct ReactRouter {
-    core: Arc<dyn CoreTrait>,
+    notificator: Arc<dyn CoreReactTrait>,
 }
 
 impl ReactRouter {
-    pub fn new(core: Arc<dyn CoreTrait>) -> Self {
-        Self { core }
+    pub fn new(notificator: Arc<dyn CoreReactTrait>) -> Self {
+        Self { notificator }
     }
 
     pub fn router(self) -> Router {
-        if !self.core.config().is_react() {
-            return Router::new();
-        }
-
         Router::new()
             .route("/notifications/stream", get(Self::sse_handler))
-            .with_state(self.core.clone())
+            .with_state(self.notificator.clone())
     }
 
     async fn sse_handler(
-        State(core): State<Arc<dyn CoreTrait>>,
+        State(notificator): State<Arc<dyn CoreReactTrait>>,
     ) -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
-        let rx = core.notification_sender().subscribe();
-        let stream = BroadcastStream::new(rx).filter_map(|msg| match msg {
-            Ok(notification) => {
-                let data = serde_json::to_string(&notification).unwrap_or_default();
-                Some(Ok(Event::default().data(data)))
-            }
-            Err(_) => None,
-        });
+        let stream = notificator.handle();
 
         Sse::new(stream).keep_alive(
             axum::response::sse::KeepAlive::new().interval(std::time::Duration::from_secs(15)),

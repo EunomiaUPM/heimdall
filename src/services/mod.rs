@@ -15,10 +15,7 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-// pub mod client;
 pub mod gatekeeper;
-// pub mod issuer;
 pub mod repo;
-// pub mod vault;
 pub mod vcs_builder;
-// pub mod verifier;
+pub mod notifications;
