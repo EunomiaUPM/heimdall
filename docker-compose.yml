@@ -12,7 +12,6 @@ services:
 
   heimdall: 
     container_name: heimdall
-    image: rmenendez8/heimdall:v1.3.0
     # build:
     #   context: .
     #   dockerfile: Dockerfile

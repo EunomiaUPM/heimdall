@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { VITE_API_SERVER_URL as apiUrl } from '@/lib/api';
 import { useParams, useNavigate } from 'react-router-dom';
 import BooleanBadge from '../components/BooleanBadge';
 import { Button } from '@/components/ui/button';
@@ -11,8 +12,6 @@ const MinionDetails = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const navigate = useNavigate();
-
-  const apiUrl = import.meta.env.VITE_API_SERVER_URL;
 
   useEffect(() => {
     const fetchMinion = async () => {

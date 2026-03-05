@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { VITE_API_SERVER_URL as apiUrl } from '@/lib/api';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -8,8 +9,6 @@ const WalletOidc4vp = () => {
   const [loading, setLoading] = useState(false);
   const [response, setResponse] = useState(null);
   const [error, setError] = useState(null);
-
-  const apiUrl = import.meta.env.VITE_API_SERVER_URL;
 
   const handleProcess = async (e) => {
     e.preventDefault();

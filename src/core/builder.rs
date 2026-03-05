@@ -31,6 +31,7 @@ use crate::config::role::{AuthorityRole, RoleConfigTrait};
 use crate::config::{CoreApplicationConfig, CoreConfigTrait};
 use crate::core::Core;
 use crate::services::gatekeeper::gnap::{config::GnapConfig, GnapService};
+use crate::services::notifications::{NotificationService, NotificationsTrait};
 use crate::services::repo::RepoForSql;
 use crate::services::repo::RepoTrait;
 use crate::services::vcs_builder::dataspace_authority::{
@@ -105,7 +106,19 @@ impl CoreBuilder {
             None
         };
 
-        let core = Core::new(wallet, gatekeeper, issuer, verifier, vc_builder, repo, core_config);
+        let notifier: Option<Arc<dyn NotificationsTrait>> =
+            if config.is_react() { Some(Arc::new(NotificationService::new())) } else { None };
+
+        let core = Core::new(
+            wallet,
+            notifier,
+            gatekeeper,
+            issuer,
+            verifier,
+            vc_builder,
+            repo,
+            core_config
+        );
 
         Self { core }
     }

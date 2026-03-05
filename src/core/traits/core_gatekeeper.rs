@@ -29,6 +29,7 @@ use ymir::types::gnap::RefBody;
 use ymir::types::vcs::VcType;
 
 use crate::services::gatekeeper::GateKeeperTrait;
+use crate::services::notifications::NotificationsTrait;
 use crate::services::repo::RepoTrait;
 use crate::services::vcs_builder::VcBuilderTrait;
 
@@ -39,6 +40,7 @@ pub trait CoreGatekeeperTrait: Send + Sync + 'static {
     fn issuer(&self) -> Arc<dyn IssuerTrait>;
     fn repo(&self) -> Arc<dyn RepoTrait>;
     fn vc_builder(&self) -> Arc<dyn VcBuilderTrait>;
+    fn notifier(&self) -> Option<Arc<dyn NotificationsTrait>>;
     async fn manage_req(&self, payload: GrantRequest) -> Result<GrantResponse, GrantResponse> {
         self.manage_ok_req(&payload).await.map_err(|e| {
             e.log();
@@ -49,6 +51,11 @@ pub trait CoreGatekeeperTrait: Send + Sync + 'static {
         let (n_req_mod, n_int_model) = self.gatekeeper().start(payload)?;
 
         let req_model = self.repo().request().create(n_req_mod).await?;
+
+        if let Some(notifier) = self.notifier() {
+            notifier.notify(&req_model);
+        }
+
         let int_model = self.repo().interaction().create(n_int_model).await?;
 
         let iss_model = self.issuer().start_vci(&req_model);

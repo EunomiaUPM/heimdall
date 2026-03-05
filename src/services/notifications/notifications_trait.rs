@@ -15,20 +15,14 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-mod builder;
-mod core_router;
-mod gatekeeper_router;
-mod issuer_router;
-mod minion_router;
-pub mod react_router;
-mod vcs_router;
-mod verifier_router;
+use std::convert::Infallible;
+use std::pin::Pin;
 
-pub use builder::RouterBuilder;
-pub use core_router::RainbowAuthorityRouter;
-pub use gatekeeper_router::GateKeeperRouter;
-pub use issuer_router::IssuerRouter;
-pub use minion_router::MinionRouter;
-pub use react_router::ReactRouter;
-pub use vcs_router::ApproverRouter;
-pub use verifier_router::VerifierRouter;
+use axum::response::sse::Event;
+use futures_util::Stream;
+use ymir::data::entities::vc_request::Model;
+
+pub trait NotificationsTrait: Send + Sync + 'static {
+    fn notify(&self, model: &Model);
+    fn handle(&self) -> Pin<Box<dyn Stream<Item = Result<Event, Infallible>> + Send>>;
+}

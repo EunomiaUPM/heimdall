@@ -25,15 +25,17 @@ use ymir::services::wallet::WalletTrait;
 
 use crate::config::CoreConfigTrait;
 use crate::core::traits::{
-    CoreApproverTrait, CoreGatekeeperTrait, CoreIssuerTrait, CoreMinionTrait, CoreTrait,
-    CoreVerifierTrait
+    CoreApproverTrait, CoreGatekeeperTrait, CoreIssuerTrait, CoreMinionTrait, CoreReactTrait,
+    CoreTrait, CoreVerifierTrait
 };
 use crate::services::gatekeeper::GateKeeperTrait;
+use crate::services::notifications::NotificationsTrait;
 use crate::services::repo::RepoTrait;
 use crate::services::vcs_builder::VcBuilderTrait;
 
 pub struct Core {
     wallet: Option<Arc<dyn WalletTrait>>,
+    notifier: Option<Arc<dyn NotificationsTrait>>,
     gatekeeper: Arc<dyn GateKeeperTrait>,
     issuer: Arc<dyn IssuerTrait>,
     verifier: Arc<dyn VerifierTrait>,
@@ -45,6 +47,7 @@ pub struct Core {
 impl Core {
     pub fn new(
         wallet: Option<Arc<dyn WalletTrait>>,
+        notifier: Option<Arc<dyn NotificationsTrait>>,
         gatekeeper: Arc<dyn GateKeeperTrait>,
         issuer: Arc<dyn IssuerTrait>,
         verifier: Arc<dyn VerifierTrait>,
@@ -52,12 +55,18 @@ impl Core {
         repo: Arc<dyn RepoTrait>,
         config: Arc<dyn CoreConfigTrait>
     ) -> Self {
-        Self { wallet, gatekeeper, issuer, verifier, vc_builder, repo, config }
+        Self { wallet, gatekeeper, issuer, verifier, vc_builder, repo, config, notifier }
     }
 }
 
 impl CoreTrait for Core {
     fn config(&self) -> Arc<dyn CoreConfigTrait> { self.config.clone() }
+}
+
+impl CoreReactTrait for Core {
+    fn notifier(&self) -> Arc<dyn NotificationsTrait> {
+        self.notifier.as_ref().cloned().expect("Notifier module is required for this operation but is not active in the current configuration")
+    }
 }
 
 impl CoreMinionTrait for Core {
@@ -94,13 +103,15 @@ impl CoreGatekeeperTrait for Core {
     fn repo(&self) -> Arc<dyn RepoTrait> { self.repo.clone() }
 
     fn vc_builder(&self) -> Arc<dyn VcBuilderTrait> { self.vc_builder.clone() }
+
+    fn notifier(&self) -> Option<Arc<dyn NotificationsTrait>> { self.notifier.as_ref().cloned() }
 }
 
 impl CoreWalletTrait for Core {
     fn wallet(&self) -> Arc<dyn WalletTrait> {
         self.wallet
             .as_ref()
-            .map(Clone::clone)
+            .cloned()
             .expect("Wallet module is required for this operation but is not active in the current configuration")
     }
 

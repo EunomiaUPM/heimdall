@@ -29,7 +29,9 @@ use ymir::http::{HealthRouter, OpenapiRouter, WalletRouter};
 
 use crate::core::traits::CoreTrait;
 use crate::http::builder::RouterBuilder;
-use crate::http::{ApproverRouter, GateKeeperRouter, IssuerRouter, MinionRouter, VerifierRouter};
+use crate::http::{
+    ApproverRouter, GateKeeperRouter, IssuerRouter, MinionRouter, ReactRouter, VerifierRouter
+};
 
 pub struct RainbowAuthorityRouter {
     core: Arc<dyn CoreTrait>,
@@ -48,7 +50,7 @@ impl RainbowAuthorityRouter {
             false => None
         };
 
-        let router = RouterBuilder::new()
+        let mut router = RouterBuilder::new()
             .gatekeeper(GateKeeperRouter::new(self.core.clone()))
             .issuer(IssuerRouter::new(self.core.clone()))
             .verifier(VerifierRouter::new(self.core.clone()))
@@ -60,6 +62,12 @@ impl RainbowAuthorityRouter {
             .health(HealthRouter::new())
             .api_path(self.core.config().get_api_version())
             .build();
+
+        if self.core.config().is_react() {
+            let sse_router = ReactRouter::new(self.core.clone()).router();
+            let mount_path = format!("{}/react", self.core.config().get_api_version());
+            router = router.nest(&mount_path, sse_router);
+        }
 
         router
             .fallback(Self::fallback)
