@@ -15,12 +15,14 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-use crate::services::notifications::NotificationsTrait;
-use axum::response::sse::Event;
-use futures_util::Stream;
 use std::convert::Infallible;
 use std::pin::Pin;
 use std::sync::Arc;
+
+use axum::response::sse::Event;
+use futures_util::Stream;
+
+use crate::services::notifications::NotificationsTrait;
 
 pub trait CoreReactTrait: Send + Sync + 'static {
     fn notifier(&self) -> Arc<dyn NotificationsTrait>;

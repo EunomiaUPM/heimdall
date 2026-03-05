@@ -24,5 +24,5 @@ pub struct NotificationEvent {
     pub message: String,
     pub level: String,
     pub created_at: String,
-    pub link: Option<String>,
+    pub link: Option<String>
 }

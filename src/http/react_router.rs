@@ -18,21 +18,20 @@
 use std::convert::Infallible;
 use std::sync::Arc;
 
-use crate::core::traits::CoreReactTrait;
 use axum::extract::State;
 use axum::response::sse::{Event, Sse};
 use axum::routing::get;
 use axum::Router;
 use futures_util::stream::Stream;
 
+use crate::core::traits::CoreReactTrait;
+
 pub struct ReactRouter {
-    notificator: Arc<dyn CoreReactTrait>,
+    notificator: Arc<dyn CoreReactTrait>
 }
 
 impl ReactRouter {
-    pub fn new(notificator: Arc<dyn CoreReactTrait>) -> Self {
-        Self { notificator }
-    }
+    pub fn new(notificator: Arc<dyn CoreReactTrait>) -> Self { Self { notificator } }
 
     pub fn router(self) -> Router {
         Router::new()
@@ -41,12 +40,12 @@ impl ReactRouter {
     }
 
     async fn sse_handler(
-        State(notificator): State<Arc<dyn CoreReactTrait>>,
+        State(notificator): State<Arc<dyn CoreReactTrait>>
     ) -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
         let stream = notificator.handle();
 
         Sse::new(stream).keep_alive(
-            axum::response::sse::KeepAlive::new().interval(std::time::Duration::from_secs(15)),
+            axum::response::sse::KeepAlive::new().interval(std::time::Duration::from_secs(15))
         )
     }
 }

@@ -30,12 +30,12 @@ use ymir::http::{HealthRouter, OpenapiRouter, WalletRouter};
 use crate::core::traits::CoreTrait;
 use crate::http::builder::RouterBuilder;
 use crate::http::{
-    ApproverRouter, GateKeeperRouter, IssuerRouter, MinionRouter, ReactRouter, VerifierRouter,
+    ApproverRouter, GateKeeperRouter, IssuerRouter, MinionRouter, ReactRouter, VerifierRouter
 };
 
 pub struct RainbowAuthorityRouter {
     core: Arc<dyn CoreTrait>,
-    openapi: String,
+    openapi: String
 }
 
 impl RainbowAuthorityRouter {
@@ -47,7 +47,7 @@ impl RainbowAuthorityRouter {
     pub fn router(self) -> Router {
         let wallet = match self.core.config().is_wallet_active() {
             true => Some(WalletRouter::new(self.core.clone())),
-            false => None,
+            false => None
         };
 
         let mut router = RouterBuilder::new()
@@ -74,12 +74,12 @@ impl RainbowAuthorityRouter {
             .layer(
                 TraceLayer::new_for_http()
                     .make_span_with(
-                        |_req: &Request<_>| tracing::info_span!("request", id = %Uuid::new_v4()),
+                        |_req: &Request<_>| tracing::info_span!("request", id = %Uuid::new_v4())
                     )
                     .on_request(|req: &Request<_>, _span: &tracing::Span| {
                         info!("{} {}", req.method(), req.uri().path());
                     })
-                    .on_response(DefaultOnResponse::new().level(Level::TRACE)),
+                    .on_response(DefaultOnResponse::new().level(Level::TRACE))
             )
             .layer(CorsLayer::permissive())
     }

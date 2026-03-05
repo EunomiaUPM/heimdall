@@ -22,7 +22,7 @@ use ymir::core_traits::CoreWalletTrait;
 
 use super::{
     CoreApproverTrait, CoreGatekeeperTrait, CoreIssuerTrait, CoreMinionTrait, CoreReactTrait,
-    CoreVerifierTrait,
+    CoreVerifierTrait
 };
 use crate::config::CoreConfigTrait;
 

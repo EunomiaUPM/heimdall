@@ -15,10 +15,11 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-use axum::response::sse::Event;
-use futures_util::Stream;
 use std::convert::Infallible;
 use std::pin::Pin;
+
+use axum::response::sse::Event;
+use futures_util::Stream;
 use ymir::data::entities::vc_request::Model;
 
 pub trait NotificationsTrait: Send + Sync + 'static {

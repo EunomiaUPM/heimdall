@@ -35,15 +35,15 @@ use crate::services::notifications::{NotificationService, NotificationsTrait};
 use crate::services::repo::RepoForSql;
 use crate::services::repo::RepoTrait;
 use crate::services::vcs_builder::dataspace_authority::{
-    config::DataSpaceAuthorityConfig, DataSpaceAuthorityVcBuilder,
+    config::DataSpaceAuthorityConfig, DataSpaceAuthorityVcBuilder
 };
 use crate::services::vcs_builder::legal_authority::{
-    LegalAuthorityConfig, LegalAuthorityVcBuilder,
+    LegalAuthorityConfig, LegalAuthorityVcBuilder
 };
 use crate::services::vcs_builder::{EcoAuthorityBuilder, VcBuilderTrait};
 
 pub struct CoreBuilder {
-    core: Core,
+    core: Core
 }
 
 impl CoreBuilder {
@@ -117,13 +117,11 @@ impl CoreBuilder {
             verifier,
             vc_builder,
             repo,
-            core_config,
+            core_config
         );
 
         Self { core }
     }
 
-    pub fn build(self) -> Core {
-        self.core
-    }
+    pub fn build(self) -> Core { self.core }
 }
