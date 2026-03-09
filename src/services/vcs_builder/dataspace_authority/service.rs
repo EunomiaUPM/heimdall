@@ -68,4 +68,16 @@ impl VcBuilderTrait for DataSpaceAuthorityVcBuilder {
     fn gather_data(&self, _req_model: &vc_request::Model) -> Outcome<String> {
         Ok("WE DONT NEED DATA".to_string())
     }
+
+    fn validate(&self, vc_type: &str) -> Outcome<VcType> {
+        let vc_type = VcType::from_str(vc_type)?;
+
+        match &vc_type {
+            VcType::DataspaceParticipant => Ok(vc_type),
+            vc_type => Err(Errors::unauthorized(
+                format!("Unauthorized to issue vc_type {}", vc_type.to_string()),
+                None
+            ))
+        }
+    }
 }

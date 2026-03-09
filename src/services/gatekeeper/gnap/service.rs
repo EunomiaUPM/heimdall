@@ -38,7 +38,7 @@ use crate::services::gatekeeper::GateKeeperTrait;
 
 pub struct GnapService {
     config: GnapConfig,
-    client: Arc<dyn ClientTrait>
+    client: Arc<dyn ClientTrait>,
 }
 
 impl GnapService {
@@ -51,7 +51,7 @@ impl GnapService {
 impl GateKeeperTrait for GnapService {
     fn start(
         &self,
-        payload: &GrantRequest
+        payload: &GrantRequest,
     ) -> Outcome<(vc_request::NewModel, recv_interaction::NewModel)> {
         info!("Managing vc request");
 
@@ -76,7 +76,7 @@ impl GateKeeperTrait for GnapService {
             participant_slug,
             cert,
             vc_type: vc_type.to_string(),
-            interact_method: interact.start.clone()
+            interact_method: interact.start.clone(),
         };
 
         let host_url = format!(
@@ -100,7 +100,7 @@ impl GateKeeperTrait for GnapService {
             hints: interact.hints,
             grant_endpoint,
             continue_endpoint,
-            continue_token
+            continue_token,
         };
 
         Ok((new_request_model, new_recv_interaction_model))
@@ -112,7 +112,7 @@ impl GateKeeperTrait for GnapService {
         let interact = payload.interact.as_ref().ok_or_else(|| {
             Errors::not_impl(
                 "Only petitions with an 'interact field' are supported right now",
-                None
+                None,
             )
         })?;
 
@@ -131,35 +131,18 @@ impl GateKeeperTrait for GnapService {
     fn validate_vc_to_issue(&self, vc_type: &VcType) -> Outcome<()> {
         info!("Validating that the requested vc can be issued");
 
-        match self.config.get_role() {
-            AuthorityRole::LegalAuthority => {
-                if matches!(vc_type, VcType::LegalRegistrationNumber(_)) {
-                    Ok(())
-                } else {
-                    Err(Errors::unauthorized(
-                        "As a legal authority we can only issue LegalRegistration numbers vcs",
-                        None
-                    ))
-                }
-            }
+        let role = self.config.get_role();
+        let available_vcs = role.credentials();
+        if available_vcs.contains(vc_type) {
+            Ok(())
+        } else {
+            let available =
+                available_vcs.iter().map(|v| v.to_string()).collect::<Vec<_>>().join(", ");
 
-            AuthorityRole::DataSpaceAuthority => {
-                if matches!(vc_type, VcType::DataspaceParticipant) {
-                    Ok(())
-                } else {
-                    Err(Errors::unauthorized(
-                        "As a dataspace authority we can only issue DataspaceParticipant vcs",
-                        None
-                    ))
-                }
-            }
-
-            AuthorityRole::EcoAuthority => Ok(()),
-
-            AuthorityRole::ClearingHouse | AuthorityRole::ClearingHouseProxy => {
-                // TODO
-                Ok(())
-            }
+            Err(Errors::unauthorized(
+                format!("As a {} we can only issue {}", role, available),
+                None,
+            ))
         }
     }
 
@@ -167,7 +150,7 @@ impl GateKeeperTrait for GnapService {
         &self,
         int_model: &recv_interaction::Model,
         int_ref: &str,
-        token: &str
+        token: &str,
     ) -> Outcome<()> {
         info!("Validating continue request");
 
@@ -177,14 +160,14 @@ impl GateKeeperTrait for GnapService {
                     "Interact reference '{}' does not match '{}'",
                     int_ref, int_model.interact_ref
                 ),
-                None
+                None,
             ));
         }
 
         if token != int_model.continue_token {
             return Err(Errors::security(
                 format!("Token '{}' does not match '{}'", token, int_model.continue_token),
-                None
+                None,
             ));
         }
         Ok(())
@@ -203,7 +186,7 @@ impl GateKeeperTrait for GnapService {
 
             let body = ApprovedCallbackBody {
                 interact_ref: model.interact_ref.clone(),
-                hash: model.hash.clone()
+                hash: model.hash.clone(),
             };
             self.client.post(&url, Some(json_headers()), Body::json(&body)?).await?;
 
@@ -211,7 +194,7 @@ impl GateKeeperTrait for GnapService {
         } else {
             Err(Errors::not_impl(
                 format!("Interact method {} not supported", model.method),
-                None
+                None,
             ))
         }
     }
@@ -220,7 +203,7 @@ impl GateKeeperTrait for GnapService {
         &self,
         approve: bool,
         req_model: &mut vc_request::Model,
-        int_model: &recv_interaction::Model
+        int_model: &recv_interaction::Model,
     ) -> Outcome<Value> {
         match approve {
             true => {
@@ -228,7 +211,7 @@ impl GateKeeperTrait for GnapService {
                 req_model.status = "Approved".to_string();
                 let body = ApprovedCallbackBody {
                     interact_ref: int_model.interact_ref.clone(),
-                    hash: int_model.hash.clone()
+                    hash: int_model.hash.clone(),
                 };
                 parse_to_value(&body)
             }
@@ -253,7 +236,7 @@ impl GateKeeperTrait for GnapService {
                 "POST",
                 Some(res.status()),
                 "Minion did not receive callback successfully",
-                None
+                None,
             ))
         }
     }
@@ -265,7 +248,7 @@ impl GateKeeperTrait for GnapService {
         } else {
             Err(Errors::unauthorized(
                 "Not able to allow certification using a cert",
-                None
+                None,
             ))
         }
     }
