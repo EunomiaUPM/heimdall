@@ -38,7 +38,7 @@ pub trait CoreIssuerTrait: Send + Sync + 'static {
     async fn get_cred_offer_data(&self, id: &str) -> Outcome<VCCredOffer> {
         let mut model = self.repo().issuing().get_by_id(&id).await?;
 
-        let data = self.issuer().get_cred_offer_data(&model, None)?;
+        let data = self.issuer().get_cred_offer_data(&model)?;
 
         if model.step {
             model.step = false;
