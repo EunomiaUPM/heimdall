@@ -33,7 +33,7 @@ use ymir::types::vcs::VcType;
 use ymir::utils::{create_opaque_token, json_headers, parse_to_value};
 
 use super::config::{GnapConfig, GnapConfigTrait};
-use crate::config::role::{AuthorityRole, RoleConfigTrait};
+use crate::config::role::RoleConfigTrait;
 use crate::services::gatekeeper::GateKeeperTrait;
 
 pub struct GnapService {

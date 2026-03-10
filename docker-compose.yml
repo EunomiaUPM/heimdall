@@ -12,10 +12,10 @@ services:
 
   heimdall: 
     container_name: heimdall
-    image: rmenendez8/heimdall:v1.3.2
-    # build:
-    #   context: .
-    #   dockerfile: Dockerfile
+    # image: rmenendez8/heimdall:v1.3.2
+    build:
+      context: .
+      dockerfile: Dockerfile
     ports:
       - "1500:1500"
     volumes:
@@ -26,5 +26,5 @@ services:
     env_file:
       - ./static/environment/envs/heimdall.env.example
     environment:
-      CONFIG_PATH: /app/static/environment/config/dev/mini_basic_dataspace_authority.yaml
+      CONFIG_PATH: /app/static/environment/config/mini_basic_dataspace_authority.yaml
       RUST_BACKTRACE: 1
