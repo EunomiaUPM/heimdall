@@ -40,4 +40,4 @@ rustls = { version = "0.23", features = ["ring"] }
 futures-util = "0.3.32"
 tokio-stream = { version = "0.1.18", features = ["sync"] }
 #ymir = { path = "./../ymir" }
-ymir = {git = "https://github.com/EunomiaUPM/ymir.git", tag = "test1"}
+ymir = {git = "https://github.com/EunomiaUPM/ymir.git", tag = "test"}

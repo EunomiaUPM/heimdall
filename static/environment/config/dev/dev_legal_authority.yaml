@@ -28,7 +28,7 @@ db_config:
 wallet_config:
   api:
     protocol: "http"
-    url: "host.docker.internal"
+    url: "127.0.0.1"
     port: "7001"
   id: null
 
