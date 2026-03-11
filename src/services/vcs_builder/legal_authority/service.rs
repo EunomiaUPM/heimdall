@@ -24,8 +24,9 @@ use tracing::info;
 use x509_parser::parse_x509_certificate;
 use ymir::data::entities::{issuing, vc_request};
 use ymir::errors::{BadFormat, Errors, Outcome};
+use ymir::types::present::Missing;
 use ymir::types::vcs::vc_specs::legal_reg_number::{
-    LeiCode, LocalRegistrationNumber, TaxId, VatId,
+    LeiCodeBuilder, LocalRegistrationNumberBuilder, TaxIdBuilder, VatIdBuilder
 };
 use ymir::types::vcs::VcType;
 use ymir::utils::{get_from_opt, parse_from_str, parse_to_string, parse_to_value};
@@ -35,19 +36,15 @@ use crate::config::role::{AuthorityRole, RoleConfigTrait};
 use crate::services::vcs_builder::legal_authority::config::LegalAuthorityConfig;
 
 pub struct LegalAuthorityVcBuilder {
-    config: LegalAuthorityConfig,
+    config: LegalAuthorityConfig
 }
 
 impl LegalAuthorityVcBuilder {
-    pub fn new(config: LegalAuthorityConfig) -> Self {
-        Self { config }
-    }
+    pub fn new(config: LegalAuthorityConfig) -> Self { Self { config } }
 }
 
 impl RoleConfigTrait for LegalAuthorityVcBuilder {
-    fn get_role(&self) -> &AuthorityRole {
-        &self.config.get_role()
-    }
+    fn get_role(&self) -> &AuthorityRole { &self.config.get_role() }
 }
 
 impl VcBuilderTrait for LegalAuthorityVcBuilder {
@@ -60,26 +57,26 @@ impl VcBuilderTrait for LegalAuthorityVcBuilder {
 
         let credential_subject = match vc_type {
             VcType::LeiCode => {
-                let mut data = parse_from_str::<LeiCode>(vc_data)?;
-                data.id = holder_did;
-                parse_to_value(&data)?
+                let data = parse_from_str::<LeiCodeBuilder<Missing>>(vc_data)?;
+                let cred_subj = data.id(holder_did).build();
+                parse_to_value(&cred_subj)?
             }
             VcType::LocalRegistrationNumber => {
-                let mut data = parse_from_str::<LocalRegistrationNumber>(vc_data)?;
-                data.id = holder_did;
-                parse_to_value(&data)?
+                let data = parse_from_str::<LocalRegistrationNumberBuilder<Missing>>(vc_data)?;
+                let cred_subj = data.id(holder_did).build();
+                parse_to_value(&cred_subj)?
             }
             VcType::TaxId => {
-                let mut data = parse_from_str::<TaxId>(vc_data)?;
-                data.id = holder_did;
-                parse_to_value(&data)?
+                let data = parse_from_str::<TaxIdBuilder<Missing>>(vc_data)?;
+                let cred_subj = data.id(holder_did).build();
+                parse_to_value(&cred_subj)?
             }
             VcType::VatId => {
-                let mut data = parse_from_str::<VatId>(vc_data)?;
-                data.id = holder_did;
-                parse_to_value(&data)?
+                let data = parse_from_str::<VatIdBuilder<Missing>>(vc_data)?;
+                let cred_subj = data.id(holder_did).build();
+                parse_to_value(&cred_subj)?
             }
-            _ => unreachable!(),
+            _ => unreachable!()
         };
 
         self.just_build(&model, credential_subject, &self.config)
@@ -115,7 +112,7 @@ impl VcBuilderTrait for LegalAuthorityVcBuilder {
                 Errors::format(
                     BadFormat::Received,
                     "No organizational identifier found in certificate",
-                    None,
+                    None
                 )
             })?;
 
@@ -127,7 +124,7 @@ impl VcBuilderTrait for LegalAuthorityVcBuilder {
             VcType::LeiCode => "LEI",
             VcType::LocalRegistrationNumber | VcType::TaxId => "NTR",
             VcType::VatId => "VAT",
-            _ => unreachable!(),
+            _ => unreachable!()
         };
 
         let shitty_code = org_id_str
@@ -137,39 +134,38 @@ impl VcBuilderTrait for LegalAuthorityVcBuilder {
                 Errors::format(
                     BadFormat::Received,
                     format!("No matching code found in cert for {:?}", prefix),
-                    None,
+                    None
                 )
             })?
             .to_string();
 
         match vc_type {
             VcType::LeiCode => {
-                let data = LeiCode {
-                    id: "".to_string(),
-                    lei_code: shitty_code,
-                    subdivision_country_code: None,
-                    country_code: cert_country.ok_or_else(|| {
+                let data = LeiCodeBuilder::new(
+                    shitty_code,
+                    cert_country.ok_or_else(|| {
                         Errors::format(BadFormat::Received, "No country code", None)
-                    })?,
-                };
+                    })?
+                );
+
                 parse_to_string(&data)
             }
-
             VcType::LocalRegistrationNumber => {
-                let data = LocalRegistrationNumber { id: "".to_string(), local: shitty_code };
+                let data = LocalRegistrationNumberBuilder::new(shitty_code);
                 parse_to_string(&data)
             }
-
             VcType::TaxId => {
-                let data = TaxId { id: "".to_string(), tax_id: shitty_code };
+                let data = TaxIdBuilder::new(shitty_code);
                 parse_to_string(&data)
             }
             VcType::VatId => {
-                let data =
-                    VatId { id: "".to_string(), vat_id: shitty_code, country_code: cert_country };
+                let mut data = VatIdBuilder::new(shitty_code);
+                if let Some(country) = cert_country {
+                    data = data.country_code(country);
+                }
                 parse_to_string(&data)
             }
-            _ => unreachable!(),
+            _ => unreachable!()
         }
     }
 
@@ -184,8 +180,8 @@ impl VcBuilderTrait for LegalAuthorityVcBuilder {
             }
             vc_type => Err(Errors::unauthorized(
                 format!("Unauthorized to issue vc_type {}", vc_type.to_string()),
-                None,
-            )),
+                None
+            ))
         }
     }
 }

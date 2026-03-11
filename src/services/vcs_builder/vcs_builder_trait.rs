@@ -72,7 +72,7 @@ pub trait VcBuilderTrait: RoleConfigTrait + Send + Sync + 'static {
                             credential_subject,
                             issuer: VCIssuer {
                                 id: issuer_did,
-                                name: Some("RainbowAuthority".to_string())
+                                name: Some("HeimdallAuthority".to_string())
                             },
                             valid_from: Some(now),
                             valid_until: Some(now + Duration::days(365))
@@ -90,7 +90,7 @@ pub trait VcBuilderTrait: RoleConfigTrait + Send + Sync + 'static {
                         credential_subject,
                         issuer: VCIssuer {
                             id: issuer_did,
-                            name: Some("RainbowAuthority".to_string())
+                            name: Some("HeimdallAuthority".to_string())
                         },
                         valid_from: Some(now),
                         valid_until: Some(now + Duration::days(365))
