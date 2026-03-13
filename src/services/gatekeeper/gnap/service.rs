@@ -22,6 +22,7 @@ use axum::body::Bytes;
 use axum::http::HeaderMap;
 use serde_json::Value;
 use tracing::info;
+use ymir::capabilities::HttpSig;
 use ymir::config::traits::HostsConfigTrait;
 use ymir::config::types::HostType;
 use ymir::data::entities::{recv_interaction, vc_request};
@@ -30,7 +31,7 @@ use ymir::services::client::ClientTrait;
 use ymir::types::gnap::grant_request::{GrantRequest, Interact4GR, InteractStart, KeyProof};
 use ymir::types::gnap::grant_response::GrantResponse;
 use ymir::types::gnap::{ApprovedCallbackBody, RefBody, RejectedCallbackBody};
-use ymir::types::http::{Body, HttpSig};
+use ymir::types::http::Body;
 use ymir::types::vcs::VcType;
 use ymir::utils::{
     create_opaque_token, extract_gnap_token, json_headers, parse_from_slice, parse_to_value
