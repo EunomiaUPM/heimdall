@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
-
+use std::str::FromStr;
 use std::sync::Arc;
 
 use async_trait::async_trait;
@@ -27,13 +27,13 @@ use ymir::config::types::HostType;
 use ymir::data::entities::{recv_interaction, vc_request};
 use ymir::errors::{BadFormat, Errors, Outcome};
 use ymir::services::client::ClientTrait;
-use ymir::types::gnap::grant_request::{GrantRequest, Interact4GR, InteractStart};
+use ymir::types::gnap::grant_request::{GrantRequest, Interact4GR, InteractStart, KeyProof};
 use ymir::types::gnap::grant_response::GrantResponse;
 use ymir::types::gnap::{ApprovedCallbackBody, RefBody, RejectedCallbackBody};
 use ymir::types::http::{Body, HttpSig};
 use ymir::types::vcs::VcType;
 use ymir::utils::{
-    create_opaque_token, extract_gnap_token, json_headers, parse_from_slice, parse_to_value
+    create_opaque_token, extract_gnap_token, json_headers, parse_from_slice, parse_to_value,
 };
 
 use super::config::{GnapConfig, GnapConfigTrait};
@@ -42,7 +42,7 @@ use crate::services::gatekeeper::GateKeeperTrait;
 
 pub struct GnapService {
     config: GnapConfig,
-    client: Arc<dyn ClientTrait>
+    client: Arc<dyn ClientTrait>,
 }
 
 impl GnapService {
@@ -56,7 +56,7 @@ impl GateKeeperTrait for GnapService {
     fn start(
         &self,
         payload: &Bytes,
-        headers: &HeaderMap
+        headers: &HeaderMap,
     ) -> Outcome<(vc_request::NewModel, recv_interaction::NewModel)> {
         info!("Managing vc request");
 
@@ -67,7 +67,7 @@ impl GateKeeperTrait for GnapService {
             Errors::format(
                 BadFormat::Received,
                 "Right now only petitions including a cert are accepted",
-                None
+                None,
             )
         })?;
         let participant_slug = payload.client.class_id.as_deref().ok_or_else(|| {
@@ -89,7 +89,7 @@ impl GateKeeperTrait for GnapService {
             participant_slug: participant_slug.to_string(),
             cert: cert.to_string(),
             vc_type: vc_type.to_string(),
-            interact_method: interact.start.clone()
+            interact_method: interact.start.clone(),
         };
 
         let host_url = format!(
@@ -114,7 +114,7 @@ impl GateKeeperTrait for GnapService {
             hints: interact.hints,
             grant_endpoint,
             continue_endpoint,
-            continue_token
+            continue_token,
         };
 
         Ok((new_request_model, new_recv_interaction_model))
@@ -123,7 +123,7 @@ impl GateKeeperTrait for GnapService {
     fn validate_acc_req(
         &self,
         payload: &Bytes,
-        headers: &HeaderMap
+        headers: &HeaderMap,
     ) -> Outcome<(GrantRequest, Interact4GR)> {
         info!("Validating vc access request");
 
@@ -131,6 +131,17 @@ impl GateKeeperTrait for GnapService {
 
         match grant_request.client.key.cert.as_deref() {
             Some(cert) => {
+                let proof = KeyProof::from_str(&grant_request.client.key.proof)?;
+                match proof {
+                    KeyProof::HttpSig => {}
+                    method => {
+                        return Err(Errors::not_impl(
+                            format!("Right now we only accept httpsig, not {}", method),
+                            None,
+                        ))
+                    }
+                }
+
                 let grant_endpoint = format!(
                     "{}{}/gate/access",
                     self.config.get_host(HostType::Http),
@@ -144,13 +155,13 @@ impl GateKeeperTrait for GnapService {
                 if let Some(_) = grant_request.client.key.jwk.as_ref() {
                     return Err(Errors::not_impl(
                         "Cannot make this flow with jwk yet, try with cert",
-                        None
+                        None,
                     ));
                 }
                 return Err(Errors::format(
                     BadFormat::Received,
                     "Client certificate has not arrived",
-                    None
+                    None,
                 ));
             }
         }
@@ -158,7 +169,7 @@ impl GateKeeperTrait for GnapService {
         let interact = grant_request.interact.as_ref().ok_or_else(|| {
             Errors::not_impl(
                 "Only petitions with an 'interact field' are supported right now",
-                None
+                None,
             )
         })?;
 
@@ -187,7 +198,7 @@ impl GateKeeperTrait for GnapService {
 
             Err(Errors::unauthorized(
                 format!("As a {} we can only issue {}", role, available),
-                None
+                None,
             ))
         }
     }
@@ -196,7 +207,7 @@ impl GateKeeperTrait for GnapService {
         &self,
         int_model: &recv_interaction::Model,
         payload: &Bytes,
-        headers: &HeaderMap
+        headers: &HeaderMap,
     ) -> Outcome<()> {
         info!("Validating continue request");
 
@@ -214,7 +225,7 @@ impl GateKeeperTrait for GnapService {
                 int_model.id,
             ),
             payload,
-            &int_model.cert
+            &int_model.cert,
         )?;
 
         HttpSig::check_cert(&int_model.cert)?;
@@ -225,14 +236,14 @@ impl GateKeeperTrait for GnapService {
                     "Interact reference '{}' does not match '{}'",
                     ref_body.interact_ref, int_model.interact_ref
                 ),
-                None
+                None,
             ));
         }
 
         if token != int_model.continue_token {
             return Err(Errors::security(
                 format!("Token '{}' does not match '{}'", token, int_model.continue_token),
-                None
+                None,
             ));
         }
 
@@ -252,7 +263,7 @@ impl GateKeeperTrait for GnapService {
 
             let body = ApprovedCallbackBody {
                 interact_ref: model.interact_ref.clone(),
-                hash: model.hash.clone()
+                hash: model.hash.clone(),
             };
             self.client.post(&url, Some(json_headers()), Body::json(&body)?).await?;
 
@@ -260,7 +271,7 @@ impl GateKeeperTrait for GnapService {
         } else {
             Err(Errors::not_impl(
                 format!("Interact method {} not supported", model.method),
-                None
+                None,
             ))
         }
     }
@@ -269,7 +280,7 @@ impl GateKeeperTrait for GnapService {
         &self,
         approve: bool,
         req_model: &mut vc_request::Model,
-        int_model: &recv_interaction::Model
+        int_model: &recv_interaction::Model,
     ) -> Outcome<Value> {
         match approve {
             true => {
@@ -277,7 +288,7 @@ impl GateKeeperTrait for GnapService {
                 req_model.status = "Approved".to_string();
                 let body = ApprovedCallbackBody {
                     interact_ref: int_model.interact_ref.clone(),
-                    hash: int_model.hash.clone()
+                    hash: int_model.hash.clone(),
                 };
                 parse_to_value(&body)
             }
@@ -302,7 +313,7 @@ impl GateKeeperTrait for GnapService {
                 "POST",
                 Some(res.status()),
                 "Minion did not receive callback successfully",
-                None
+                None,
             ))
         }
     }
@@ -314,7 +325,7 @@ impl GateKeeperTrait for GnapService {
         } else {
             Err(Errors::unauthorized(
                 "Not able to allow certification using a cert",
-                None
+                None,
             ))
         }
     }
