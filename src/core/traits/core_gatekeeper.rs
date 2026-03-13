@@ -19,13 +19,14 @@ use std::str::FromStr;
 use std::sync::Arc;
 
 use async_trait::async_trait;
+use axum::body::Bytes;
+use axum::http::HeaderMap;
 use tracing::info;
 use ymir::errors::{BadFormat, Errors, Outcome};
 use ymir::services::issuer::IssuerTrait;
 use ymir::services::verifier::VerifierTrait;
-use ymir::types::gnap::grant_request::{GrantRequest, InteractStart};
+use ymir::types::gnap::grant_request::InteractStart;
 use ymir::types::gnap::grant_response::GrantResponse;
-use ymir::types::gnap::RefBody;
 use ymir::types::vcs::VcType;
 
 use crate::services::gatekeeper::GateKeeperTrait;
@@ -41,14 +42,18 @@ pub trait CoreGatekeeperTrait: Send + Sync + 'static {
     fn repo(&self) -> Arc<dyn RepoTrait>;
     fn vc_builder(&self) -> Arc<dyn VcBuilderTrait>;
     fn notifier(&self) -> Option<Arc<dyn NotificationsTrait>>;
-    async fn manage_req(&self, payload: GrantRequest) -> Result<GrantResponse, GrantResponse> {
-        self.manage_ok_req(&payload).await.map_err(|e| {
+    async fn manage_req(
+        &self,
+        payload: Bytes,
+        headers: HeaderMap
+    ) -> Result<GrantResponse, GrantResponse> {
+        self.manage_ok_req(&payload, &headers).await.map_err(|e| {
             e.log();
             GrantResponse::error(e.to_string())
         })
     }
-    async fn manage_ok_req(&self, payload: &GrantRequest) -> Outcome<GrantResponse> {
-        let (n_req_mod, n_int_model) = self.gatekeeper().start(payload)?;
+    async fn manage_ok_req(&self, payload: &Bytes, headers: &HeaderMap) -> Outcome<GrantResponse> {
+        let (n_req_mod, n_int_model) = self.gatekeeper().start(payload, headers)?;
 
         let req_model = self.repo().request().create(n_req_mod).await?;
 
@@ -88,16 +93,18 @@ pub trait CoreGatekeeperTrait: Send + Sync + 'static {
     async fn manage_cont_req(
         &self,
         cont_id: String,
-        payload: RefBody,
-        token: String
+        payload: Bytes,
+        headers: HeaderMap
     ) -> Outcome<String> {
         let int_model = self.repo().interaction().get_by_cont_id(&cont_id).await?;
+
+        self.gatekeeper().validate_cont_req(&int_model, &payload, &headers)?;
+
         let mut iss_model = self.repo().issuing().get_by_id(&int_model.id).await?;
         let mut req_model = self.repo().request().get_by_id(&int_model.id).await?;
 
         let vc_type = VcType::from_str(&req_model.vc_type)?;
 
-        self.gatekeeper().validate_cont_req(&int_model, &payload.interact_ref, &token)?;
         self.gatekeeper().validate_vc_to_issue(&vc_type)?;
 
         let credential_data = self.vc_builder().gather_data(&req_model)?;

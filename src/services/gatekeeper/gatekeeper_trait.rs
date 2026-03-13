@@ -16,6 +16,8 @@
  */
 
 use async_trait::async_trait;
+use axum::body::Bytes;
+use axum::http::HeaderMap;
 use serde_json::Value;
 use ymir::data::entities::{recv_interaction, vc_request};
 use ymir::errors::Outcome;
@@ -27,15 +29,20 @@ use ymir::types::vcs::VcType;
 pub trait GateKeeperTrait: Send + Sync + 'static {
     fn start(
         &self,
-        grant_request: &GrantRequest
+        grant_request: &Bytes,
+        headers: &HeaderMap
     ) -> Outcome<(vc_request::NewModel, recv_interaction::NewModel)>;
-    fn validate_acc_req(&self, payload: &GrantRequest) -> Outcome<Interact4GR>;
+    fn validate_acc_req(
+        &self,
+        payload: &Bytes,
+        headers: &HeaderMap
+    ) -> Outcome<(GrantRequest, Interact4GR)>;
     fn validate_vc_to_issue(&self, vc_type: &VcType) -> Outcome<()>;
     fn validate_cont_req(
         &self,
         int_model: &recv_interaction::Model,
-        int_ref: &str,
-        token: &str
+        payload: &Bytes,
+        headers: &HeaderMap
     ) -> Outcome<()>;
     async fn end_verification(&self, model: &recv_interaction::Model) -> Outcome<Option<String>>;
     async fn apprv_dny_req(

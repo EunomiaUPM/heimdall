@@ -18,6 +18,8 @@
 use std::sync::Arc;
 
 use async_trait::async_trait;
+use axum::body::Bytes;
+use axum::http::HeaderMap;
 use serde_json::Value;
 use tracing::info;
 use ymir::config::traits::HostsConfigTrait;
@@ -27,10 +29,12 @@ use ymir::errors::{BadFormat, Errors, Outcome};
 use ymir::services::client::ClientTrait;
 use ymir::types::gnap::grant_request::{GrantRequest, Interact4GR, InteractStart};
 use ymir::types::gnap::grant_response::GrantResponse;
-use ymir::types::gnap::{ApprovedCallbackBody, RejectedCallbackBody};
-use ymir::types::http::Body;
+use ymir::types::gnap::{ApprovedCallbackBody, RefBody, RejectedCallbackBody};
+use ymir::types::http::{Body, HttpSig};
 use ymir::types::vcs::VcType;
-use ymir::utils::{create_opaque_token, json_headers, parse_to_value};
+use ymir::utils::{
+    create_opaque_token, extract_gnap_token, json_headers, parse_from_slice, parse_to_value
+};
 
 use super::config::{GnapConfig, GnapConfigTrait};
 use crate::config::role::RoleConfigTrait;
@@ -51,15 +55,24 @@ impl GnapService {
 impl GateKeeperTrait for GnapService {
     fn start(
         &self,
-        payload: &GrantRequest
+        payload: &Bytes,
+        headers: &HeaderMap
     ) -> Outcome<(vc_request::NewModel, recv_interaction::NewModel)> {
         info!("Managing vc request");
 
-        let interact = self.validate_acc_req(&payload)?;
+        let (payload, interact) = self.validate_acc_req(&payload, headers)?;
         let id = uuid::Uuid::new_v4().to_string();
-        let client = payload.client.clone();
-        let cert = client.key.cert;
-        let participant_slug = client.class_id.unwrap_or("Unknown".to_string());
+        let client = &payload.client;
+        let cert = client.key.cert.as_deref().ok_or_else(|| {
+            Errors::format(
+                BadFormat::Received,
+                "Right now only petitions including a cert are accepted",
+                None
+            )
+        })?;
+        let participant_slug = payload.client.class_id.as_deref().ok_or_else(|| {
+            Errors::format(BadFormat::Received, "Missing field class_id in the petition", None)
+        })?;
 
         let vc_type = payload.access_token.access.datatypes.as_ref().ok_or_else(|| {
             Errors::format(BadFormat::Received, "No field datatypes in the request", None)
@@ -73,8 +86,8 @@ impl GateKeeperTrait for GnapService {
 
         let new_request_model = vc_request::NewModel {
             id: id.clone(),
-            participant_slug,
-            cert,
+            participant_slug: participant_slug.to_string(),
+            cert: cert.to_string(),
             vc_type: vc_type.to_string(),
             interact_method: interact.start.clone()
         };
@@ -95,6 +108,7 @@ impl GateKeeperTrait for GnapService {
             uri: interact.finish.uri.ok_or_else(|| {
                 Errors::format(BadFormat::Received, "Interact finish URI is missing", None)
             })?,
+            cert: cert.to_string(),
             client_nonce: interact.finish.nonce,
             hash_method: interact.finish.hash_method,
             hints: interact.hints,
@@ -106,10 +120,42 @@ impl GateKeeperTrait for GnapService {
         Ok((new_request_model, new_recv_interaction_model))
     }
 
-    fn validate_acc_req(&self, payload: &GrantRequest) -> Outcome<Interact4GR> {
+    fn validate_acc_req(
+        &self,
+        payload: &Bytes,
+        headers: &HeaderMap
+    ) -> Outcome<(GrantRequest, Interact4GR)> {
         info!("Validating vc access request");
 
-        let interact = payload.interact.as_ref().ok_or_else(|| {
+        let grant_request: GrantRequest = parse_from_slice(payload)?;
+
+        match grant_request.client.key.cert.as_deref() {
+            Some(cert) => {
+                let grant_endpoint = format!(
+                    "{}{}/gate/access",
+                    self.config.get_host(HostType::Http),
+                    self.config.get_api_path()
+                );
+                HttpSig::verify(headers, "POST", &grant_endpoint, payload, &cert)?;
+
+                HttpSig::check_cert(&cert)?;
+            }
+            None => {
+                if let Some(_) = grant_request.client.key.jwk.as_ref() {
+                    return Err(Errors::not_impl(
+                        "Cannot make this flow with jwk yet, try with cert",
+                        None
+                    ));
+                }
+                return Err(Errors::format(
+                    BadFormat::Received,
+                    "Client certificate has not arrived",
+                    None
+                ));
+            }
+        }
+
+        let interact = grant_request.interact.as_ref().ok_or_else(|| {
             Errors::not_impl(
                 "Only petitions with an 'interact field' are supported right now",
                 None
@@ -117,7 +163,7 @@ impl GateKeeperTrait for GnapService {
         })?;
 
         let start = &interact.start;
-        if !&start.contains(&"cross-user".to_string()) && !&start.contains(&"oidc4vp".to_string()) {
+        if !start.contains(&"cross-user".to_string()) && !start.contains(&"oidc4vp".to_string()) {
             return Err(Errors::not_impl("Interact method not supported yet", None));
         }
 
@@ -125,7 +171,7 @@ impl GateKeeperTrait for GnapService {
             Errors::format(BadFormat::Received, "Interact method does not have an uri", None)
         })?;
 
-        Ok(interact.clone())
+        Ok((grant_request.clone(), interact.clone()))
     }
 
     fn validate_vc_to_issue(&self, vc_type: &VcType) -> Outcome<()> {
@@ -149,16 +195,35 @@ impl GateKeeperTrait for GnapService {
     fn validate_cont_req(
         &self,
         int_model: &recv_interaction::Model,
-        int_ref: &str,
-        token: &str
+        payload: &Bytes,
+        headers: &HeaderMap
     ) -> Outcome<()> {
         info!("Validating continue request");
 
-        if int_ref != int_model.interact_ref {
+        let ref_body: RefBody = parse_from_slice(payload)?;
+
+        let token = extract_gnap_token(headers)?;
+
+        HttpSig::verify(
+            headers,
+            "POST",
+            &format!(
+                "{}{}/gate/continue/{}",
+                self.config.get_host(HostType::Http),
+                self.config.get_api_path(),
+                int_model.id,
+            ),
+            payload,
+            &int_model.cert
+        )?;
+
+        HttpSig::check_cert(&int_model.cert)?;
+
+        if ref_body.interact_ref != int_model.interact_ref {
             return Err(Errors::security(
                 format!(
                     "Interact reference '{}' does not match '{}'",
-                    int_ref, int_model.interact_ref
+                    ref_body.interact_ref, int_model.interact_ref
                 ),
                 None
             ));
@@ -170,6 +235,7 @@ impl GateKeeperTrait for GnapService {
                 None
             ));
         }
+
         Ok(())
     }
     async fn end_verification(&self, model: &recv_interaction::Model) -> Outcome<Option<String>> {

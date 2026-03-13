@@ -17,16 +17,13 @@
 
 use std::sync::Arc;
 
-use axum::extract::rejection::JsonRejection;
+use axum::body::Bytes;
 use axum::extract::{Path, State};
 use axum::http::{HeaderMap, StatusCode};
 use axum::response::IntoResponse;
 use axum::routing::post;
 use axum::{Json, Router};
 use ymir::errors::AppResult;
-use ymir::types::gnap::grant_request::GrantRequest;
-use ymir::types::gnap::RefBody;
-use ymir::utils::{extract_gnap_token, extract_payload};
 
 use crate::core::traits::CoreGatekeeperTrait;
 
@@ -46,11 +43,11 @@ impl GateKeeperRouter {
 
     async fn access_req(
         State(gatekeeper): State<Arc<dyn CoreGatekeeperTrait>>,
-        payload: Result<Json<GrantRequest>, JsonRejection>
+        headers: HeaderMap,
+        payload: Bytes
     ) -> AppResult {
-        let payload = extract_payload(payload)?;
         Ok(gatekeeper
-            .manage_req(payload)
+            .manage_req(payload, headers)
             .await
             .map(Json)
             .map_err(|e| (StatusCode::BAD_REQUEST, Json(e)))
@@ -61,10 +58,8 @@ impl GateKeeperRouter {
         State(authority): State<Arc<dyn CoreGatekeeperTrait>>,
         headers: HeaderMap,
         Path(id): Path<String>,
-        payload: Result<Json<RefBody>, JsonRejection>
+        payload: Bytes
     ) -> AppResult<String> {
-        let token = extract_gnap_token(headers)?;
-        let payload = extract_payload(payload)?;
-        authority.manage_cont_req(id, payload, token).await
+        authority.manage_cont_req(id, payload, headers).await
     }
 }

@@ -65,7 +65,7 @@ impl AuthorityCommands {
             }
             AuthorityCliCommands::Setup(args) => {
                 let (config, vault) = Self::bootstrap(args)?;
-                match config.is_tls_enabled() {
+                match config.is_prod() {
                     true => vault.write_all_secrets(None).await?,
                     false => vault.write_local_secrets(None).await?
                 }

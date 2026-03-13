@@ -85,11 +85,7 @@ impl VcBuilderTrait for LegalAuthorityVcBuilder {
     fn gather_data(&self, req_model: &vc_request::Model) -> Outcome<String> {
         info!("Gathering data to issue vc");
 
-        let base_cert = req_model.cert.as_ref().ok_or_else(|| {
-            Errors::format(BadFormat::Received, "There was no cert in the Grant Request", None)
-        })?;
-
-        let cert_bytes = STANDARD.decode(base_cert).map_err(|e| {
+        let cert_bytes = STANDARD.decode(&req_model.cert).map_err(|e| {
             Errors::format(BadFormat::Received, "Unable to decode certificate", Some(Box::new(e)))
         })?;
         let (_, cert) = parse_x509_certificate(&cert_bytes)
