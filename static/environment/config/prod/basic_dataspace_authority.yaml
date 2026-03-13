@@ -17,7 +17,7 @@ hosts_config:
 
 connection_config:
   is_local: false
-  is_tls_enabled: true
+  is_prod: true
   is_vault_real: true
 
 db_config:
