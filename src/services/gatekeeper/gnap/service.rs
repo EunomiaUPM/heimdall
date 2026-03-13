@@ -75,9 +75,18 @@ impl GateKeeperTrait for GnapService {
             Errors::format(BadFormat::Received, "Missing field class_id in the petition", None)
         })?;
 
-        let vc_type = payload.access_token.access.datatypes.as_ref().ok_or_else(|| {
+        let vc_req = payload.credential_request.as_ref().ok_or_else(|| {
+            Errors::format(
+                BadFormat::Received,
+                "Missing field credential_request in the grant_request",
+                None
+            )
+        })?;
+
+        let vc_type = vc_req.access.datatypes.as_ref().ok_or_else(|| {
             Errors::format(BadFormat::Received, "No field datatypes in the request", None)
         })?;
+
         let vc_type = vc_type
             .first()
             .ok_or_else(|| Errors::format(BadFormat::Received, "Datatypes are empty", None))?;
@@ -85,12 +94,17 @@ impl GateKeeperTrait for GnapService {
         let vc_type = VcType::from_conf(vc_type)?;
         self.validate_vc_to_issue(&vc_type)?;
 
+        let mut start = interact.start;
+        if !start.contains(&"".to_string()) && !start.contains(&"oidc4vp".to_string()) {
+            start = vec!["".to_string()];
+        }
+
         let new_request_model = vc_request::NewModel {
             id: id.clone(),
             participant_slug: participant_slug.to_string(),
             cert: cert.to_string(),
             vc_type: vc_type.to_string(),
-            interact_method: interact.start.clone()
+            interact_method: start.clone()
         };
 
         let host_url = format!(
@@ -104,7 +118,7 @@ impl GateKeeperTrait for GnapService {
 
         let new_recv_interaction_model = recv_interaction::NewModel {
             id: id.clone(),
-            start: interact.start,
+            start,
             method: interact.finish.method,
             uri: interact.finish.uri.ok_or_else(|| {
                 Errors::format(BadFormat::Received, "Interact finish URI is missing", None)
@@ -173,11 +187,6 @@ impl GateKeeperTrait for GnapService {
                 None
             )
         })?;
-
-        let start = &interact.start;
-        if !start.contains(&"cross-user".to_string()) && !start.contains(&"oidc4vp".to_string()) {
-            return Err(Errors::not_impl("Interact method not supported yet", None));
-        }
 
         interact.finish.uri.as_ref().ok_or_else(|| {
             Errors::format(BadFormat::Received, "Interact method does not have an uri", None)
@@ -313,10 +322,10 @@ impl GateKeeperTrait for GnapService {
         }
     }
 
-    fn manage_cross_user(&self, model: &recv_interaction::Model) -> Outcome<GrantResponse> {
+    fn manage_cert(&self, model: &recv_interaction::Model) -> Outcome<GrantResponse> {
         info!("Managing cross-user request");
         if self.config.is_cert_allowed() {
-            Ok(GrantResponse::new(&InteractStart::CrossUser, model, None))
+            Ok(GrantResponse::pending(&InteractStart::Cert, model, None))
         } else {
             Err(Errors::unauthorized(
                 "Not able to allow certification using a cert",

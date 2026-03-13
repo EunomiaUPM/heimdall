@@ -24,6 +24,7 @@ use axum::response::IntoResponse;
 use axum::routing::post;
 use axum::{Json, Router};
 use ymir::errors::AppResult;
+use ymir::types::gnap::CredentialResponse;
 
 use crate::core::traits::CoreGatekeeperTrait;
 
@@ -59,7 +60,7 @@ impl GateKeeperRouter {
         headers: HeaderMap,
         Path(id): Path<String>,
         payload: Bytes
-    ) -> AppResult<String> {
-        authority.manage_cont_req(id, payload, headers).await
+    ) -> AppResult<Json<CredentialResponse>> {
+        Ok(Json(authority.manage_cont_req(id, payload, headers).await?))
     }
 }

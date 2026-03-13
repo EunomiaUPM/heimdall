@@ -27,6 +27,7 @@ use ymir::services::issuer::IssuerTrait;
 use ymir::services::verifier::VerifierTrait;
 use ymir::types::gnap::grant_request::InteractStart;
 use ymir::types::gnap::grant_response::GrantResponse;
+use ymir::types::gnap::CredentialResponse;
 use ymir::types::vcs::VcType;
 
 use crate::services::gatekeeper::GateKeeperTrait;
@@ -74,28 +75,19 @@ pub trait CoreGatekeeperTrait: Send + Sync + 'static {
 
             let uri = self.verifier().generate_verification_uri(&ver_model);
 
-            let response = GrantResponse::new(&InteractStart::Oidc4VP, &int_model, Some(&uri));
+            let response = GrantResponse::pending(&InteractStart::Oidc4VP, &int_model, Some(&uri));
 
-            return Ok(response);
+            Ok(response)
+        } else {
+            self.gatekeeper().manage_cert(&int_model)
         }
-        if int_model.start.contains(&InteractStart::CrossUser.to_string()) {
-            return self.gatekeeper().manage_cross_user(&int_model);
-        }
-        let method = int_model.start.first().ok_or_else(|| {
-            Errors::format(BadFormat::Received, "Missing field interact method", None)
-        })?;
-        Err(Errors::format(
-            BadFormat::Received,
-            format!("Interact method '{}' not supported", method),
-            None
-        ))
     }
     async fn manage_cont_req(
         &self,
         cont_id: String,
         payload: Bytes,
         headers: HeaderMap
-    ) -> Outcome<String> {
+    ) -> Outcome<CredentialResponse> {
         let int_model = self.repo().interaction().get_by_cont_id(&cont_id).await?;
 
         self.gatekeeper().validate_cont_req(&int_model, &payload, &headers)?;
@@ -117,7 +109,6 @@ pub trait CoreGatekeeperTrait: Send + Sync + 'static {
 
         let _req_model = self.repo().request().update(req_model).await?;
         let _iss_model = self.repo().issuing().update(iss_model).await?;
-
-        Ok(vc_uri)
+        Ok(CredentialResponse { credential_uri: vc_uri, credential_type: vc_type.to_conf() })
     }
 }
