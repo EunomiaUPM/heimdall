@@ -14,13 +14,15 @@ import WalletOidc4vp from './pages/WalletOidc4vp';
 import WalletOidc4vci from './pages/WalletOidc4vci';
 
 import NotificationProvider from '@/contexts/NotificationContext';
+import { AuthProvider } from '@/contexts/AuthContext';
 
 function App() {
   const walletActive = import.meta.env.VITE_WALLET_ACTIVE === 'true';
 
   return (
     <BrowserRouter basename={import.meta.env.BASE_URL}>
-      <NotificationProvider>
+      <AuthProvider>
+        <NotificationProvider>
         <Routes>
           <Route path="/" element={<Layout />}>
             {/* Redirect root to /home */}
@@ -42,7 +44,8 @@ function App() {
             )}
           </Route>
         </Routes>
-      </NotificationProvider>
+        </NotificationProvider>
+      </AuthProvider>
     </BrowserRouter>
   );
 }

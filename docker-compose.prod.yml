@@ -92,6 +92,7 @@ services:
       - --client-id=heimdall-client
       - --client-secret=SI2ALmsIekckGyhcWz94tOtJAxkfTOaP
       - --oidc-issuer-url=https://dev-dataspaces.dit.upm.es:8443/realms/heimdall
+      - --backend-logout-url=https://dev-dataspaces.dit.upm.es:8443/realms/heimdall/protocol/openid-connect/logout?id_token_hint={id_token}
       - --redirect-url=https://dev-dataspaces.dit.upm.es/oauth2/callback
       - --upstream=http://heimdall2:1500
       - --email-domain=*

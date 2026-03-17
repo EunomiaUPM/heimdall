@@ -10,7 +10,7 @@ import {
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb';
 import { Button } from '@/components/ui/button';
-import { Bell, User, Trash2 } from 'lucide-react';
+import { Bell, User, Trash2, LogOut } from 'lucide-react';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { Separator } from '@/components/ui/separator';
 import {
@@ -22,11 +22,13 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useNotifications } from '@/contexts/NotificationContext';
+import { useAuth } from '@/hooks/useAuth';
 
 export const Header = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { notifications, unreadCount, markAllAsRead, clearNotifications } = useNotifications();
+  const { user, logout } = useAuth();
 
   const generateBreadcrumbs = () => {
     const segments = location.pathname.split('/').filter(Boolean);
@@ -136,9 +138,37 @@ export const Header = () => {
             )}
           </DropdownMenuContent>
         </DropdownMenu>
-        <Button variant="ghost" size="icon" className="h-9 w-9">
-          <User className="h-5 w-5 text-muted-foreground" />
-        </Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon" className="h-9 w-9">
+              <User className="h-5 w-5 text-muted-foreground" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-56">
+            {user ? (
+              <>
+                <DropdownMenuLabel className="flex flex-col gap-0.5">
+                  <span className="text-sm font-semibold truncate">{user.user ?? user.preferred_username ?? '—'}</span>
+                  {user.email && (
+                    <span className="text-xs font-normal text-muted-foreground truncate">{user.email}</span>
+                  )}
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={logout}
+                  className="text-danger focus:text-danger cursor-pointer"
+                >
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Logout
+                </DropdownMenuItem>
+              </>
+            ) : (
+              <DropdownMenuItem disabled className="text-muted-foreground text-sm">
+                Not logged in
+              </DropdownMenuItem>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </div>
   );
