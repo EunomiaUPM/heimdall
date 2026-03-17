@@ -12,6 +12,26 @@ export default function NotificationProvider({ children }) {
   const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {
+    // Inject a local notification if the wallet is not yet linked
+    if (localStorage.getItem('walletOnboarded') !== 'true') {
+      setNotifications((prev) => {
+        if (!prev.some((n) => n.id === 'wallet-unlink-warning')) {
+          setUnreadCount((c) => c + 1);
+          return [
+            {
+              id: 'wallet-unlink-warning',
+              title: 'Action Required: Link Wallet',
+              message: 'Your wallet is not linked yet. Click here to initialize it and enable full Heimdall functionality.',
+              created_at: new Date().toISOString(),
+              link: '/wallet?autolink=true',
+            },
+            ...prev,
+          ];
+        }
+        return prev;
+      });
+    }
+
     const sseUrl = `${apiUrl}/react/notifications/stream`;
     console.log('Connecting to SSE at', sseUrl);
 
