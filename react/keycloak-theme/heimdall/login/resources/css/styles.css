@@ -1,10 +1,10 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
 :root {
-  --background: hsl(240 10% 4%);
-  --foreground: hsl(0 0% 98%);
-  --brand-sky: #0ea5e9;
-  --brand-purple: #8b5cf6;
+  --background: #09091B;
+  --foreground: #f8f8fa;
+  --brand-sky: #9DD5F2;
+  --brand-purple: #B592DB;
   --border-color: rgba(255, 255, 255, 0.1);
 }
 
@@ -34,7 +34,7 @@ body {
   border-radius: 0.5rem !important;
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5) !important;
   padding: 2.5rem 2rem !important;
-  max-width: 420px !important;
+  max-width: 360px !important;
   width: 100% !important;
   margin: 0 auto !important;
 }

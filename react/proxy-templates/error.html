@@ -8,11 +8,11 @@
   
   <style>
     :root {
-      --background: 0 0% 3.9%;
-      --foreground: 0 0% 98%;
-      --card: 0 0% 3.9%;
-      --brand-sky: #0ea5e9;
-      --brand-purple: #8b5cf6;
+      --background: #09091B;
+      --foreground: #f8f8fa;
+      --card: #09091B;
+      --brand-sky: #9DD5F2;
+      --brand-purple: #B592DB;
       --radius: 0.5rem;
     }
 
@@ -20,8 +20,8 @@
 
     body {
       font-family: 'Inter', sans-serif;
-      background-color: hsl(var(--background));
-      color: hsl(var(--foreground));
+      background-color: var(--background);
+      color: var(--foreground);
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -63,7 +63,7 @@
 
     .logo-text {
       font-size: 2rem; font-weight: 800; letter-spacing: 0.2em;
-      color: hsl(var(--foreground)); margin-bottom: 0.5rem;
+      color: var(--foreground); margin-bottom: 0.5rem;
     }
 
     h1 {
