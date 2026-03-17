@@ -29,6 +29,8 @@ export const Header = () => {
   const navigate = useNavigate();
   const { notifications, unreadCount, markAllAsRead, clearNotifications } = useNotifications();
   const { user, logout } = useAuth();
+  
+  const displayName = user ? (user.name || user.preferred_username || (user.email ? user.email.split('@')[0] : 'User')) : 'User';
 
   const generateBreadcrumbs = () => {
     const segments = location.pathname.split('/').filter(Boolean);
@@ -148,7 +150,9 @@ export const Header = () => {
             {user ? (
               <>
                 <DropdownMenuLabel className="flex flex-col gap-0.5">
-                  <span className="text-sm font-semibold truncate">{user.user ?? user.preferred_username ?? '—'}</span>
+                  <span className="text-sm font-semibold truncate">
+                    {displayName}
+                  </span>
                   {user.email && (
                     <span className="text-xs font-normal text-muted-foreground truncate">{user.email}</span>
                   )}

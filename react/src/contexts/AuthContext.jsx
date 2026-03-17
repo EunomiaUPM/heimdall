@@ -21,7 +21,8 @@ export function AuthProvider({ children }) {
   const logout = () => {
     if (!authEnabled) return;
     setUser(null); // clear cache immediately
-    window.location.href = '/oauth2/sign_out';
+    // oauth2/sign_out clears the session, then redirects us back to the proxy sign_in page
+    window.location.href = '/oauth2/sign_out?rd=/oauth2/sign_in';
   };
 
   return (

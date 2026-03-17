@@ -64,6 +64,7 @@ services:
       - "8443:8443"
     volumes:
       - "./vault2/config/:/etc/x509/https:ro"
+      - "./react/keycloak-theme/heimdall:/opt/keycloak/themes/heimdall"
     env_file:
       - ./static/environment/envs/keycloak.env
     depends_on:
@@ -87,7 +88,9 @@ services:
       - "443:4180"
     volumes:
       - ./vault2/config:/certs:ro
+      - ./react/proxy-templates:/templates:ro
     command:
+      - --custom-templates-dir=/templates
       - --provider=keycloak-oidc
       - --client-id=heimdall-client
       - --client-secret=SI2ALmsIekckGyhcWz94tOtJAxkfTOaP
