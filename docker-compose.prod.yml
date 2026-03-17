@@ -40,12 +40,10 @@ services:
 
   heimdall: 
     container_name: heimdall
-    image: rmenendez8/heimdall:v1.3.0
+    image: rmenendez8/heimdall:v1.3.4.prod
     # build: 
     #   context: .
     #   dockerfile: Dockerfile
-    ports:
-      - "1500:1500"
     volumes:
       - ./static/environment/config:/app/static/environment/config
       - ./vault:/app/vault
@@ -57,4 +55,59 @@ services:
     environment:
       CONFIG_PATH: /app/static/environment/config/prod/basic_dataspace_authority.yaml
       RUST_BACKTRACE: 1
-    
+
+  keycloak:
+    container_name: keycloak
+    image: quay.io/keycloak/keycloak:19.0.3
+    restart: always
+    ports:
+      - "8443:8443"
+    volumes:
+      - "./vault2/config/:/etc/x509/https:ro"
+    env_file:
+      - ./static/environment/envs/keycloak.env
+    depends_on:
+      - keycloak_postgres
+    command:
+      - start
+
+  keycloak_postgres:
+    container_name: keycloak_postgres
+    image: postgres:15
+    restart: always
+    env_file:
+      - ./static/environment/envs/keycloak.db.env
+    volumes:
+      - ./keycloak:/var/lib/postgresql/data
+
+  oauth2-proxy:
+    image: quay.io/oauth2-proxy/oauth2-proxy:v7.6.0
+    container_name: oauth2-proxy
+    ports:
+      - "443:4180"
+    volumes:
+      - ./vault2/config:/certs:ro
+    command:
+      - --provider=keycloak-oidc
+      - --client-id=heimdall-client
+      - --client-secret=SI2ALmsIekckGyhcWz94tOtJAxkfTOaP
+      - --oidc-issuer-url=https://dev-dataspaces.dit.upm.es:8443/realms/heimdall
+      - --redirect-url=https://dev-dataspaces.dit.upm.es/oauth2/callback
+      - --upstream=http://heimdall2:1500
+      - --email-domain=*
+      - --cookie-secret=e2vKuM8uNaEg1knWLd5qvdB1aFCus5PxePo8gKd07pw=
+      - --cookie-secure=true
+      - --cookie-domain=dev-dataspaces.dit.upm.es
+      - --https-address=0.0.0.0:4180
+      - --tls-cert-file=/certs/vault-cert.pem
+      - --tls-key-file=/certs/vault-key-pkcs8.pem
+      - --ssl-insecure-skip-verify=true
+      - --skip-auth-route=^/\.well-known.*
+      - --skip-auth-route=^/api/v1/issuer.*
+      - --skip-auth-route=^/api/v1/verifier.*
+      - --skip-auth-route=^/api/v1/gate.*
+      - --skip-auth-route=^/assets/.*
+      - --skip-auth-route=^/$
+    depends_on:
+      - heimdall2
+      - keycloak

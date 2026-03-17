@@ -11,3 +11,7 @@ vault/**
 # ENVIROMENT
 static/environment/envs/**
 !static/environment/envs/**/*.example
+
+# VAULT
+keycloak/**
+!keycloak/.gitkeep

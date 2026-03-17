@@ -10,6 +10,12 @@ RUN npm run build
 FROM rust:alpine3.23 AS backend-builder
 WORKDIR /app
 
+RUN apk add --no-cache \
+    musl-dev \
+    openssl-dev \
+    openssl-libs-static \
+    pkgconfig
+
 COPY Cargo.toml Cargo.lock ./
 COPY src src
 RUN cargo build --release

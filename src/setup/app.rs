@@ -45,16 +45,13 @@ impl AuthorityApp {
     pub async fn run_basic(config: CoreApplicationConfig, vault: Arc<VaultService>) -> Outcome<()> {
         let router = Self::create_router(&config, vault).await;
 
-        let server_message = format!(
-            "Starting Authority server in {}",
-            config.hosts().get_host(HostType::Http)
-        );
+        let port = config.get_internal_port(HostType::Http);
+        let server_message = format!("Starting Authority server in {}", port);
         info!("{}", server_message);
 
-        let listener =
-            TcpListener::bind(format!("0.0.0.0:{}", config.hosts().get_tls_port(HostType::Http)))
-                .await
-                .map_err(|e| Errors::crazy("Error with tcp listener", Some(Box::new(e))))?;
+        let listener = TcpListener::bind(format!("0.0.0.0:{}", port))
+            .await
+            .map_err(|e| Errors::crazy("Error with tcp listener", Some(Box::new(e))))?;
 
         serve(listener, router)
             .await
@@ -79,7 +76,7 @@ impl AuthorityApp {
 
         let router = Self::create_router(config, vault).await;
 
-        let port = config.hosts().get_tls_port(HostType::Http);
+        let port = config.get_internal_port(HostType::Http);
         let addr_str = format!("0.0.0.0:{}", port);
         let addr: SocketAddr = addr_str
             .parse()
@@ -93,7 +90,7 @@ impl AuthorityApp {
         Ok(())
     }
     pub async fn run(config: CoreApplicationConfig, vault: Arc<VaultService>) -> Outcome<()> {
-        if config.is_prod() {
+        if config.is_prod() && !config.has_tls_proxy() {
             Self::run_tls(&config, vault.clone()).await
         } else {
             Self::run_basic(config, vault).await

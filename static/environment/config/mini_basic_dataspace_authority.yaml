@@ -5,6 +5,7 @@ http_host: &http_host
   protocol: 'http'
   url: '127.0.0.1'
   port: '1500'
+  internal_port: null
 
 # ==========================
 # CONFIG
@@ -19,6 +20,7 @@ connection_config:
   is_local: true
   is_prod: false
   is_vault_real: false
+  has_tls_proxy: false
 
 db_config:
   db_type: Postgres
