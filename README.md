@@ -40,9 +40,8 @@ Validates proofs provided by holders.
 
 ### 💼 4. Wallet & Web Interface
 
-Manages cryptographic keys (EdDSA, RSA) and DIDs (`did:web`, `did:key`).
+Manages cryptographic keys (EdDSA, RSA) and DIDs (`did:web`, `did:jwk`).
 
-- **Web UI**: Access the management dashboard at `/api/v1/react/`.
 - **Features**: Wallet onboarding, Credential implementation, Minion management.
 
 ---

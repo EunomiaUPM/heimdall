@@ -35,17 +35,15 @@ services:
     restart: always
     env_file:
       - ./static/environment/envs/db.env
-    ports:
-      - "1450:5432"
 
   heimdall: 
     container_name: heimdall
-    image: rmenendez8/heimdall:v1.3.4.prod
+    image: rmenendez8/heimdall:v1.3.4
     # build: 
     #   context: .
     #   dockerfile: Dockerfile
     volumes:
-      - ./static/environment/config:/app/static/environment/config
+      - ./static:/app/static
       - ./vault:/app/vault
     depends_on:
       - heimdall-db
@@ -89,23 +87,9 @@ services:
     volumes:
       - ./vault2/config:/certs:ro
       - ./react/proxy-templates:/templates:ro
+    env_file:
+      - ./static/environment/envs/proxy.env
     command:
-      - --custom-templates-dir=/templates
-      - --provider=keycloak-oidc
-      - --client-id=heimdall-client
-      - --client-secret=SI2ALmsIekckGyhcWz94tOtJAxkfTOaP
-      - --oidc-issuer-url=https://dev-dataspaces.dit.upm.es:8443/realms/heimdall
-      - --backend-logout-url=https://dev-dataspaces.dit.upm.es:8443/realms/heimdall/protocol/openid-connect/logout?id_token_hint={id_token}
-      - --redirect-url=https://dev-dataspaces.dit.upm.es/oauth2/callback
-      - --upstream=http://heimdall2:1500
-      - --email-domain=*
-      - --cookie-secret=e2vKuM8uNaEg1knWLd5qvdB1aFCus5PxePo8gKd07pw=
-      - --cookie-secure=true
-      - --cookie-domain=dev-dataspaces.dit.upm.es
-      - --https-address=0.0.0.0:4180
-      - --tls-cert-file=/certs/vault-cert.pem
-      - --tls-key-file=/certs/vault-key-pkcs8.pem
-      - --ssl-insecure-skip-verify=true
       - --skip-auth-route=^/\.well-known.*
       - --skip-auth-route=^/api/v1/issuer.*
       - --skip-auth-route=^/api/v1/verifier.*
@@ -113,5 +97,5 @@ services:
       - --skip-auth-route=^/assets/.*
       - --skip-auth-route=^/$
     depends_on:
-      - heimdall2
+      - heimdall
       - keycloak

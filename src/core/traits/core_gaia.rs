@@ -25,7 +25,7 @@ use ymir::services::verifier::VerifierTrait;
 use crate::services::repo::RepoTrait;
 
 #[async_trait]
-pub trait GaiaCoreTrait: Send + Sync + 'static {
+pub trait _GaiaCoreTrait: Send + Sync + 'static {
     fn verifier(&self) -> Arc<dyn VerifierTrait>;
     fn repo(&self) -> Arc<dyn RepoTrait>;
     fn issuer(&self) -> Arc<dyn IssuerTrait>;

@@ -26,7 +26,6 @@ use ymir::services::vault::fake_vault::FakeVaultService;
 use ymir::services::vault::vault_rs::RealVaultService;
 use ymir::services::vault::{VaultService, VaultTrait};
 
-use super::env_extraction::extract_env_config;
 use crate::config::CoreApplicationConfig;
 use crate::setup::app::AuthorityApp;
 use crate::setup::db_migrations::AuthorityMigration;
@@ -78,7 +77,7 @@ impl AuthorityCommands {
     }
 
     fn bootstrap(args: AuthCliArgs) -> Outcome<(CoreApplicationConfig, VaultService)> {
-        let config = extract_env_config(args.env_file)?;
+        let config = CoreApplicationConfig::load(args.env_file)?;
         let vault = if config.is_vault_real() {
             VaultService::Real(RealVaultService::new())
         } else {
@@ -88,8 +87,8 @@ impl AuthorityCommands {
             &serde_json::to_value(&config)
                 .map_err(|e| Errors::parse("Error with config table", Some(Box::new(e))))?
         )
-        .collapse()
-        .to_string();
+            .collapse()
+            .to_string();
         info!("Current Heimdall Config Config:\n{}", table);
         Ok((config, vault))
     }

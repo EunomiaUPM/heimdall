@@ -15,7 +15,7 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-use heimdall::setup::commands::cmd::AuthorityCommands;
+use heimdall::setup::cmd::AuthorityCommands;
 use tracing::info;
 use tracing_subscriber::filter::LevelFilter;
 use tracing_subscriber::EnvFilter;

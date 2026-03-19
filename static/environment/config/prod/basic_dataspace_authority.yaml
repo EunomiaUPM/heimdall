@@ -3,7 +3,7 @@
 # ==========================
 http_host: &http_host
   protocol: "https"
-  url: "dev-dataspaces.dit.upm.es"
+  url: "change_me"
   port: null
   internal_port: "1500"
 
@@ -45,7 +45,7 @@ role: DataSpaceAuthority
 
 api_config:
   version: "v1"
-  openapi_path: "./static/specs/openapi/openapi.json"
+  openapi_path: "/app/static/specs/openapi/openapi.json"
 
 vc_config:
   vc_model: JwtVc

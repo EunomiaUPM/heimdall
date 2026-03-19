@@ -33,9 +33,6 @@ COPY --from=backend-builder /app/target/release/heimdall /app/heimdall
 # Copy frontend build output
 COPY --from=frontend-builder /app/react/dist /app/react/dist
 
-# Copy static configuration
-COPY static /app/static
-
 EXPOSE 1500
 
 ENV RUST_LOG=info

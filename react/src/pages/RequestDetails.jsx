@@ -87,10 +87,11 @@ const RequestDetails = () => {
   if (error) return <div className="p-8 text-danger">Error: {error}</div>;
   if (!request) return <div className="p-8 text-muted-foreground">Request not found</div>;
 
-  const showDecisionButtons =
-    request.interact_method &&
-    request.interact_method.length > 0 &&
-    request.interact_method[0] === 'cross-user';
+  // If interact_method is an array with a single empty string, it's a Certificate auth
+  const isCertificateAuth =
+    request.interact_method && request.interact_method.length === 1 && request.interact_method[0] === '';
+
+  const showDecisionButtons = isCertificateAuth;
 
   const getStatusColorClass = (status, isVcIssued) => {
     switch (status?.toLowerCase()) {
@@ -137,7 +138,7 @@ const RequestDetails = () => {
             <span className="text-muted-foreground">{request.id}</span>
           </p>
           <p>
-            <strong className="text-brand-sky">Slug:</strong>{' '}
+            <strong className="text-brand-sky">Alias:</strong>{' '}
             <span className="text-muted-foreground">{request.participant_slug}</span>
           </p>
           <p>
@@ -145,8 +146,14 @@ const RequestDetails = () => {
             <span className="text-brand-purple">{request.vc_type}</span>
           </p>
           <p>
-            <strong className="text-brand-sky">Interact Methods:</strong>{' '}
-            <span className="text-muted-foreground">{request.interact_method.join(', ')}</span>
+            <strong className="text-brand-sky">Identity Proof:</strong>{' '}
+            <span className="text-muted-foreground">
+              {isCertificateAuth
+                ? 'Certificate'
+                : request.interact_method.includes('oidc4vp')
+                ? 'Verifiable Credential'
+                : request.interact_method.join(', ')}
+            </span>
           </p>
           <p>
             <strong className="text-brand-sky">Status:</strong>{' '}

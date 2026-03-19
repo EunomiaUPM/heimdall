@@ -12,14 +12,14 @@ services:
 
   heimdall: 
     container_name: heimdall
-    # image: rmenendez8/heimdall:v1.3.2
+    # image: rmenendez8/heimdall:v1.3.4
     build:
       context: .
       dockerfile: Dockerfile
     ports:
       - "1500:1500"
     volumes:
-      - ./static/environment/config:/app/static/environment/config
+      - ./static:/app/static
       - ./vault:/app/vault
     depends_on:
       - heimdall-db
