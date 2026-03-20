@@ -3,7 +3,7 @@
 # ==========================
 http_host: &http_host
   protocol: 'http'
-  url: '127.0.0.1'
+  url: 'host.docker.internal'
   port: '1500'
   internal_port: null
 
@@ -24,18 +24,18 @@ connection_config:
 
 db_config:
   db_type: Postgres
-  url: '127.0.0.1'
-  port: '1450'
+  url: 'heimdall-db'
+  port: '5432'
 
 wallet_config:
   api:
     protocol: 'http'
-    url: '127.0.0.1'
+    url: 'host.docker.internal'
     port: '7001'
   id: null
 
 did_config:
-  did: "did:jwk:..."
+  did: 'did:jwk:...'
   type: Jwk
   did_web_options: null
   #    domain: "CHANGE_ME"
