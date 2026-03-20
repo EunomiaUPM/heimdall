@@ -29,8 +29,8 @@ function App() {
             <Route index element={<Navigate to="/home" replace />} />
             <Route path="home" element={<Home />} />
             <Route path="about" element={<About />} />
-            <Route path="minions" element={<Minions />} />
-            <Route path="minions/:id" element={<MinionDetails />} />
+            <Route path="participants" element={<Minions />} />
+            <Route path="participants/:id" element={<MinionDetails />} />
             <Route path="requests" element={<Requests />} />
             <Route path="requests/:id" element={<RequestDetails />} />
             {walletActive && (

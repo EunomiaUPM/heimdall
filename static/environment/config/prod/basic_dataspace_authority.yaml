@@ -2,10 +2,10 @@
 # COMMON ANCHORS
 # ==========================
 http_host: &http_host
-  protocol: "https"
-  url: "change_me"
+  protocol: 'https'
+  url: 'your_domain'
   port: null
-  internal_port: "1500"
+  internal_port: '1500'
 
 # ==========================
 # CONFIG
@@ -24,38 +24,39 @@ connection_config:
 
 db_config:
   db_type: Postgres
-  url: "heimdall-db"
-  port: "5432"
+  url: 'heimdall-db'
+  port: '5432'
 
 wallet_config:
   api:
-    protocol: "https"
-    url: "wallet.demo.walt.id"
+    protocol: 'https'
+    url: 'wallet.demo.walt.id'
     port: null
   id: null
 
 did_config:
-  did: "did:jwk:ey..."
-  type: Jwk
-  did_web_options: null
-  #    domain: "CHANGE_ME"
-  #    path: null
+  did: 'did:web:your_domain'
+  type: Web
+  did_web_options:
+    domain: 'your_domain'
+    path: null
 
 role: DataSpaceAuthority
 
 api_config:
-  version: "v1"
-  openapi_path: "/app/static/specs/openapi/openapi.json"
+  version: 'v1'
+  openapi_path: '/app/static/specs/openapi/openapi.json'
 
 vc_config:
   vc_model: JwtVc
   w3c_data_model: V2
 
 issue_config:
-  dataspace_id: "RainbowDataspace"
+  dataspace_id: 'change_me'
+  dataspace_name: 'change_me'
 
 verify_req_config:
   is_cert_allowed: true
-  vcs_requested: [ ]
+  vcs_requested: []
 
 is_react: true

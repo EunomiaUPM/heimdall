@@ -103,7 +103,7 @@ const Minions = () => {
   }, [apiUrl]);
 
   const handleRowClick = (id) => {
-    navigate(`/minions/${id}`);
+    navigate(`/participants/${id}`);
   };
 
   const formatDate = (dateString) => {
@@ -127,13 +127,13 @@ const Minions = () => {
     switch (key) {
       case 'id':
         return minion.participant_id;
-      case 'slug':
+      case 'alias':
         return minion.participant_slug;
-      case 'type':
+      case 'role':
         return minion.participant_type;
-      case 'issuedVC':
-        return minion.is_vc_issued ? 'Yes' : 'No';
-      case 'savedAt':
+      case 'verifiableCredential':
+        return minion.is_vc_issued ? 'Issued' : 'Pending';
+      case 'addedOn':
         return minion.saved_at;
       case 'isMe':
         return minion.is_me ? 'Yes' : 'No';
@@ -143,7 +143,7 @@ const Minions = () => {
   };
 
   const filteredMinions = minions.filter((minion) => {
-    const issuedVCText = minion.is_vc_issued ? 'yes' : 'no';
+    const issuedVCText = minion.is_vc_issued ? 'issued' : 'pending';
     const isMeText = minion.is_me ? 'yes' : 'no';
 
     return (
@@ -183,7 +183,7 @@ const Minions = () => {
 
   return (
     <div className="w-full">
-      <h1 className="text-3xl font-bold text-brand-sky font-ubuntu mb-6">Minions List</h1>
+      <h1 className="text-3xl font-bold text-brand-sky font-ubuntu mb-6">Participants List</h1>
       <div className="rounded-md border border-stroke bg-background/50 shadow-md">
         <Table>
           <TableHeader>
@@ -195,28 +195,28 @@ const Minions = () => {
                 ID{getSortIndicator('id')}
               </TableHead>
               <TableHead
-                onClick={() => handleSort('slug')}
+                onClick={() => handleSort('alias')}
                 className="cursor-pointer text-brand-sky hover:text-brand-sky/80"
               >
-                Slug{getSortIndicator('slug')}
+                Alias{getSortIndicator('alias')}
               </TableHead>
               <TableHead
-                onClick={() => handleSort('type')}
+                onClick={() => handleSort('role')}
                 className="cursor-pointer text-brand-sky hover:text-brand-sky/80"
               >
-                Type{getSortIndicator('type')}
+                Role{getSortIndicator('role')}
               </TableHead>
               <TableHead
-                onClick={() => handleSort('issuedVC')}
+                onClick={() => handleSort('verifiableCredential')}
                 className="cursor-pointer text-brand-sky hover:text-brand-sky/80"
               >
-                Issued VC{getSortIndicator('issuedVC')}
+                Verifiable Credential{getSortIndicator('verifiableCredential')}
               </TableHead>
               <TableHead
-                onClick={() => handleSort('savedAt')}
+                onClick={() => handleSort('addedOn')}
                 className="cursor-pointer text-brand-sky hover:text-brand-sky/80"
               >
-                Saved At{getSortIndicator('savedAt')}
+                Added On{getSortIndicator('addedOn')}
               </TableHead>
               <TableHead
                 onClick={() => handleSort('isMe')}
@@ -295,7 +295,9 @@ const Minions = () => {
                 <TableCell>{minion.participant_slug}</TableCell>
                 <TableCell className="text-brand-purple">{minion.participant_type}</TableCell>
                 <TableCell>
-                  <BooleanBadge value={minion.is_vc_issued} />
+                  <span className={cn('font-medium', minion.is_vc_issued ? 'text-green-500' : 'text-orange-500')}>
+                    {minion.is_vc_issued ? 'Issued' : 'Pending'}
+                  </span>
                 </TableCell>
                 <TableCell className="text-muted-foreground">
                   {formatDate(minion.saved_at)}
@@ -309,7 +311,7 @@ const Minions = () => {
         </Table>
         {sortedMinions.length === 0 && minions.length > 0 && (
           <div className="p-8 text-center text-muted-foreground">
-            No minions match the current filters
+            No participants match the current filters
           </div>
         )}
       </div>

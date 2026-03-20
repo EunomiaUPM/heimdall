@@ -35,19 +35,19 @@ const MinionDetails = () => {
 
   if (loading) return <div className="p-8 text-brand-sky">Loading...</div>;
   if (error) return <div className="p-8 text-danger">Error: {error}</div>;
-  if (!minion) return <div className="p-8 text-danger">Minion not found</div>;
+  if (!minion) return <div className="p-8 text-danger">Participant not found</div>;
 
   return (
     <div className="w-full">
       <div className="relative mb-6 flex items-center justify-center">
         <Button
           variant="outline"
-          onClick={() => navigate('/minions')}
+          onClick={() => navigate('/participants')}
           className="absolute left-0 border-brand-purple text-brand-purple hover:bg-brand-purple/10 hover:text-brand-purple"
         >
           <ArrowLeft className="mr-2 h-4 w-4" /> Back to List
         </Button>
-        <h1 className="text-3xl font-bold text-brand-sky font-ubuntu">Minion Details</h1>
+        <h1 className="text-3xl font-bold text-brand-sky font-ubuntu">Participant Details</h1>
       </div>
 
       <div className="rounded-lg border border-brand-sky bg-background/60 p-6 shadow-lg shadow-brand-sky/20 text-left">
@@ -59,11 +59,11 @@ const MinionDetails = () => {
             </span>
           </p>
           <p>
-            <strong className="text-brand-sky">Slug:</strong>{' '}
+            <strong className="text-brand-sky">Alias:</strong>{' '}
             <span className="text-muted-foreground">{minion.participant_slug}</span>
           </p>
           <p>
-            <strong className="text-brand-sky">Type:</strong>{' '}
+            <strong className="text-brand-sky">Role:</strong>{' '}
             <span className="text-brand-purple">{minion.participant_type}</span>
           </p>
           {minion.base_url && (
@@ -81,15 +81,17 @@ const MinionDetails = () => {
             </p>
           )}
           <p>
-            <strong className="text-brand-sky">VC Issued:</strong>{' '}
-            <BooleanBadge value={minion.is_vc_issued} />
+            <strong className="text-brand-sky">Verifiable Credential:</strong>{' '}
+            <span className={cn('font-medium', minion.is_vc_issued ? 'text-green-500' : 'text-orange-500')}>
+              {minion.is_vc_issued ? 'Issued' : 'Pending'}
+            </span>
           </p>
           <p>
-            <strong className="text-brand-sky">Saved At:</strong>{' '}
+            <strong className="text-brand-sky">Added On:</strong>{' '}
             <span className="text-muted-foreground">{minion.saved_at}</span>
           </p>
           <p>
-            <strong className="text-brand-sky">Last Interaction:</strong>{' '}
+            <strong className="text-brand-sky">Last Activity:</strong>{' '}
             <span className="text-muted-foreground">{minion.last_interaction}</span>
           </p>
           <p>
