@@ -30,16 +30,16 @@ services:
     command: server
 
   heimdall-db:
-    container_name: "heimdall-db"
-    image: "postgres"
+    container_name: heimdall-db
+    image: postgres
     restart: always
     env_file:
       - ./static/environment/envs/db.env
 
-  heimdall: 
-    container_name: heimdall
-    image: rmenendez8/heimdall:v1.3.4
-    # build: 
+  heimdall-setup:
+    container_name: heimdall-setup
+    image: rmenendez8/heimdall:v1.3.5
+    # build:
     #   context: .
     #   dockerfile: Dockerfile
     volumes:
@@ -51,8 +51,33 @@ services:
     env_file:
       - ./static/environment/envs/heimdall.env
     environment:
-      CONFIG_PATH: /app/static/environment/config/prod/basic_dataspace_authority.yaml
       RUST_BACKTRACE: 1
+    command:
+      - setup
+      - --env-file
+      - /app/static/environment/config/prod/basic_dataspace_authority.yaml
+    restart: "no"
+
+  heimdall:
+    container_name: heimdall
+    image: rmenendez8/heimdall:v1.3.5
+    # build:
+    #   context: .
+    #   dockerfile: Dockerfile
+    volumes:
+      - ./static:/app/static
+      - ./vault:/app/vault
+    depends_on:
+      heimdall-setup:
+        condition: service_completed_successfully
+    env_file:
+      - ./static/environment/envs/heimdall.env
+    environment:
+      RUST_BACKTRACE: 1
+    command:
+      - start
+      - --env-file
+      - /app/static/environment/config/prod/basic_dataspace_authority.yaml
 
   keycloak:
     container_name: keycloak

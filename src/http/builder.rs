@@ -22,7 +22,9 @@ use tower_http::services::{ServeDir, ServeFile};
 use ymir::http::{HealthRouter, OpenapiRouter, WalletRouter};
 use ymir::types::present::{Missing, Present};
 
-use crate::http::{ApproverRouter, GateKeeperRouter, IssuerRouter, MinionRouter, VerifierRouter};
+use crate::http::{
+    ApproverRouter, GateKeeperRouter, IssuerRouter, MinionRouter, ReactRouter, VerifierRouter
+};
 
 pub struct RouterBuilder<GT, ISS, VER, APP, MIN, REA, OPN, HEA, API> {
     gatekeeper: Option<GateKeeperRouter>,
@@ -31,7 +33,7 @@ pub struct RouterBuilder<GT, ISS, VER, APP, MIN, REA, OPN, HEA, API> {
     approver: Option<ApproverRouter>,
     minion: Option<MinionRouter>,
     wallet: Option<WalletRouter>,
-    react: Option<bool>,
+    react: Option<ReactRouter>,
     openapi: Option<OpenapiRouter>,
     health: Option<HealthRouter>,
     api_path: Option<String>,
@@ -176,7 +178,7 @@ impl<GT, ISS, VER, APP, MIN, REA, OPN, HEA, API>
 
     pub fn react(
         self,
-        react: bool
+        react: Option<ReactRouter>
     ) -> RouterBuilder<GT, ISS, VER, APP, MIN, Present, OPN, HEA, API> {
         RouterBuilder {
             gatekeeper: self.gatekeeper,
@@ -185,7 +187,7 @@ impl<GT, ISS, VER, APP, MIN, REA, OPN, HEA, API>
             approver: self.approver,
             minion: self.minion,
             wallet: self.wallet,
-            react: Some(react),
+            react,
             openapi: self.openapi,
             health: self.health,
             api_path: self.api_path,
@@ -277,14 +279,16 @@ impl
             (base_router, router)
         };
 
-        let base_router = if self.react.unwrap() {
-            base_router.nest_service(
+        let (base_router, router) = if let Some(react) = self.react {
+            let base_router = base_router.nest_service(
                 "/admin",
                 ServeDir::new("./react/dist")
                     .not_found_service(ServeFile::new("./react/dist/index.html"))
-            )
+            );
+            let router = router.nest("/react", react.router());
+            (base_router, router)
         } else {
-            base_router
+            (base_router, router)
         };
         base_router.nest(&self.api_path.unwrap(), router)
     }

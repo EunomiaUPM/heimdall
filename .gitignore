@@ -8,6 +8,8 @@ vault/**
 !vault/**/*.example
 !vault/**/*.gitkeep
 
+
+
 # ENVIROMENT
 static/environment/envs/**
 !static/environment/envs/**/*.example
@@ -15,3 +17,4 @@ static/environment/envs/**
 # VAULT
 keycloak/**
 !keycloak/.gitkeep
+
