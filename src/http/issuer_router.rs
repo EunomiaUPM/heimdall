@@ -99,7 +99,7 @@ impl IssuerRouter {
         payload: Result<Json<CredentialRequest>, JsonRejection>
     ) -> AppResult<Json<GiveVC>> {
         let payload = extract_payload(payload)?;
-        let token = extract_bearer_token(headers)?;
+        let token = extract_bearer_token(&headers)?;
         Ok(Json(authority.get_credential(payload, token).await?))
     }
 }

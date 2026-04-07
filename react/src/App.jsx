@@ -14,21 +14,23 @@ import WalletOidc4vp from './pages/WalletOidc4vp';
 import WalletOidc4vci from './pages/WalletOidc4vci';
 
 import NotificationProvider from '@/contexts/NotificationContext';
+import { AuthProvider } from '@/contexts/AuthContext';
 
 function App() {
   const walletActive = import.meta.env.VITE_WALLET_ACTIVE === 'true';
 
   return (
     <BrowserRouter basename={import.meta.env.BASE_URL}>
-      <NotificationProvider>
+      <AuthProvider>
+        <NotificationProvider>
         <Routes>
           <Route path="/" element={<Layout />}>
             {/* Redirect root to /home */}
             <Route index element={<Navigate to="/home" replace />} />
             <Route path="home" element={<Home />} />
             <Route path="about" element={<About />} />
-            <Route path="minions" element={<Minions />} />
-            <Route path="minions/:id" element={<MinionDetails />} />
+            <Route path="participants" element={<Minions />} />
+            <Route path="participants/:id" element={<MinionDetails />} />
             <Route path="requests" element={<Requests />} />
             <Route path="requests/:id" element={<RequestDetails />} />
             {walletActive && (
@@ -42,7 +44,8 @@ function App() {
             )}
           </Route>
         </Routes>
-      </NotificationProvider>
+        </NotificationProvider>
+      </AuthProvider>
     </BrowserRouter>
   );
 }

@@ -7,7 +7,7 @@ Heimdall is a comprehensive **Self-Sovereign Identity (SSI) Authority** and **Wa
 Heimdall provides a modular architecture to handle digital identity:
 
 - **Issuer** 📜: Issues Verifiable Credentials (OID4VCI).
-- **Verifier** ✅: Verifies Verifiable Presentations.
+- **Verifier** ✅: Verifies Verifiable Presentations (OIDV4VP).
 - **GateKeeper** 🔑: Manages fine-grained authorization (GNAP).
 - **Approver** ⚖️: Handles credential approval workflows.
 - **Wallet** 💼: Embedded wallet for keys and DIDs.
@@ -17,33 +17,36 @@ Built with a **Clean Architecture** approach 🏗️, ensuring robustness and ma
 
 ---
 
+## 🏗️ Architecture
+
+_(Espacio reservado para añadir una foto/diagrama de la arquitectura)_
+![Heimdall Architecture](path/to/architecture_image.png)
+
+---
+
 ## 🧩 Modules
 
-### 🔑 1. GateKeeper (GNAP)
+Heimdall consists of several functional modules:
 
-Replaces traditional OAuth2 for advanced scenarios.
+- **Gatekeeper** 🔑: GNAP-based authorization service for advanced access control.
+- **Issuer** 📜: OID4VCI compliant service for issuing Verifiable Credentials.
+- **Verifier** ✅: OID4VP compliant service for validating Verifiable Presentations.
+- **Minion Manager** 👥: Handles participant management and entity onboarding.
+- **Approver** ⚖️: Manages credential approval workflows and policies.
+- **Wallet** 💼: Secure management of cryptographic keys and Decentralized Identifiers (DIDs).
+- **Admin UI** 🖥️: A React-based management dashboard accessible at `/admin/home`.
 
-- **Endpoints**: `/api/v1/gate/access`, `/api/v1/gate/continue/{id}`
-- **Role**: Validates requests, issues access tokens.
+---
 
-### 📜 2. Issuer (OID4VCI)
+## 🎭 Roles
 
-Compliant with OpenID4VCI standards.
+Heimdall supports different authority roles, each specialized in issuing specific sets of credentials:
 
-- **Endpoints**: `/.well-known/...`, `/credential`, `/token`
-
-### ✅ 3. Verifier
-
-Validates proofs provided by holders.
-
-- **Endpoints**: `/api/v1/verifier/pd/{state}`, `/api/v1/verifier/verify/{state}`
-
-### 💼 4. Wallet & Web Interface
-
-Manages cryptographic keys (EdDSA, RSA) and DIDs (`did:web`, `did:key`).
-
-- **Web UI**: Access the management dashboard at `/api/v1/react/`.
-- **Features**: Wallet onboarding, Credential implementation, Minion management.
+- **Legal Authority**: Focused on legal identity. Issues `EORI`, `LEI`, `VAT ID`, `Tax ID`, and local registration numbers.
+- **Dataspace Authority**: Specialized in ecosystem participation. Issues `DataspaceParticipant` credentials.
+- **Clearing House**: Infrastructure role for clearing and settlement logic. (Not implemented yet)
+- **Clearing House Proxy**: Proxy service for clearing house interactions. (Not implemented yet)
+- **Eco Authority**: A comprehensive hybrid role that combines all role capabilities.
 
 ---
 
@@ -62,32 +65,9 @@ The `CoreApplicationConfig` (`src/config/config.rs`) aggregates:
 
 ### 📂 Files
 
-- `static/environment`: `config.yaml` / `config.json`.
+- `static/environment/config/....yaml`
+- `static/environment/envs/....env`
 - `static/specs`: `openapi.json`.
-
----
-
-## 🚀 Initialization & Startup
-
-The initialization logic is handled in `src/setup`, primarily via the `AuthorityApplication` struct.
-
-### 🔄 Startup Process
-
-1.  **Configuration Load**: Reads the active config file.
-2.  **Vault Setup** 🔐: `VaultService` is initialized to handle secrets and database connections safely.
-3.  **Service Assembly**:
-    - Creates necessary services based on the active **Role**.
-    - Initializes **GitHub/Postgres** repositories.
-    - Sets up **GNAP**, **Issuer**, and **Verifier** services.
-4.  **Core Creation**: Assembles all services into the `Core` struct.
-5.  **Router**: Builds the Axum router with all module routes **including the React Static Server**.
-
-### 🔒 TLS & Fallback
-
-Heimdall attempts to start with **TLS** enabled by default (`run_tls`):
-
-- Reads certificates/keys from environment variables (`VAULT_CLIENT_CERT`, `VAULT_CLIENT_KEY`).
-- If TLS fails (e.g., missing certs in local dev), it automatically falls back to a basic HTTP server (`run_basic`).
 
 ---
 
@@ -99,6 +79,33 @@ A complete **OpenAPI 3.1.0** specification is available.
 - **Online**: Access `/api/v1/docs` when running locally via `openapi_router.rs`.
 
 ---
+
+## 🌍 Deployment
+
+Heimdall can be deployed in different environments. Below are the primary deployment methods:
+
+### 1. Mini Deployment (Local / Quickstart)
+
+The `mini` deployment is the fastest way to spin up the Heimdall core and its database using Docker Compose. It leverages `docker-compose.yml`.
+
+**Steps to deploy:**
+
+1. Clone the repository.
+2. Ensure you have Docker and Docker Compose installed.
+3. You can configure your environment variables if you want, but this version runs perfectly with the .example
+4. Run the following command:
+   ```bash
+   docker-compose up
+   ```
+
+This will start:
+
+- `heimdall-db`: The PostgreSQL persistence layer on port `1450`.
+- `heimdall`: The main backend application serving on port `1500`, connected to the database.
+
+### 2. Prod Deployment (Production)
+
+For a full production deployment with Vault, Keycloak, and oauth2-proxy, see the [Production Deployment Guide](./PROD-DEPLOYMENT.md).
 
 ## 🛠️ Development
 
@@ -112,29 +119,38 @@ A complete **OpenAPI 3.1.0** specification is available.
 
 To run the complete system (Rust Backend + React Frontend), follow these steps:
 
-1.  **Build the Frontend**:
-    Before running Rust, you must compile the React application code.
+1. **Build the Frontend**:
+   Before running Rust, you must compile the React application code.
 
-    **Windows (PowerShell):**
+   **Windows (PowerShell):**
 
-    ```powershell
-    .\react\build.ps1
-    ```
+   ```powershell
+   .\react\build.ps1
+   ```
 
-    **Linux/Mac (Bash):**
+   **Linux/Mac (Bash):**
 
-    ```bash
-    ./react/build.sh
-    ```
+   ```bash
+   ./react/build.sh
+   ```
 
-    _This generates the `react/dist` folder._
+   _This generates the `react/dist` folder._
 
-2.  **Run the Server**:
-    ```bash
-    cargo run
-    ```
-    The server will start (default port 1500) and serve the frontend at:
-    `http://localhost:1500/api/v1/react/`
+2. **Run the Server**:
+
+   ```bash
+   docker compose -f docker-compose.dev.yml up -d
+   ```
+
+   Depending on yor sistem copy the file heimdall.env.ps1.example o heimdall.env.sh.example into your terminal so that heimdall process can capture those environment variables
+
+   ```bash
+   cargo run setup -e ./static/environment/config/dev/dev_basic_dataspaces_authority.yaml
+   cargo run watch -x "run start -e ./static/environment/config/dev/dev_basic_dataspaces_authority.yaml"
+   ```
+
+   The server will start (default port 1500) and serve the frontend at:
+   `http://localhost:1500/admin/home`
 
 ### Development Mode
 

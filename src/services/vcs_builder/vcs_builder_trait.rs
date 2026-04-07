@@ -33,6 +33,7 @@ use crate::services::vcs_builder::BuilderConfigDefaultTrait;
 pub trait VcBuilderTrait: RoleConfigTrait + Send + Sync + 'static {
     fn build_vc(&self, model: &issuing::Model) -> Outcome<Value>;
     fn gather_data(&self, req_model: &vc_request::Model) -> Outcome<String>;
+    fn validate(&self, vc_type: &str) -> Outcome<VcType>;
     fn just_build(
         &self,
         model: &issuing::Model,
@@ -66,12 +67,12 @@ pub trait VcBuilderTrait: RoleConfigTrait + Send + Sync + 'static {
                         sub: Some(subject_id.to_string()),
                         vc: VCFromClaimsV1 {
                             context: vec!["https://www.w3.org/ns/credentials/v1".to_string()],
-                            r#type: vec!["VerifiableCredential".to_string(), vc_type.name()],
+                            r#type: vec!["VerifiableCredential".to_string(), vc_type.to_string()],
                             id: model.credential_id.clone(),
                             credential_subject,
                             issuer: VCIssuer {
                                 id: issuer_did,
-                                name: Some("RainbowAuthority".to_string())
+                                name: Some("HeimdallAuthority".to_string())
                             },
                             valid_from: Some(now),
                             valid_until: Some(now + Duration::days(365))
@@ -84,12 +85,12 @@ pub trait VcBuilderTrait: RoleConfigTrait + Send + Sync + 'static {
                         iss: Some(issuer_did.clone()),
                         sub: Some(subject_id.to_string()),
                         context: vec!["https://www.w3.org/ns/credentials/v2".to_string()],
-                        r#type: vec!["VerifiableCredential".to_string(), vc_type.name()],
+                        r#type: vec!["VerifiableCredential".to_string(), vc_type.to_string()],
                         id: model.credential_id.clone(),
                         credential_subject,
                         issuer: VCIssuer {
                             id: issuer_did,
-                            name: Some("RainbowAuthority".to_string())
+                            name: Some("HeimdallAuthority".to_string())
                         },
                         valid_from: Some(now),
                         valid_until: Some(now + Duration::days(365))

@@ -30,24 +30,20 @@ services:
     command: server
 
   heimdall-db:
-    container_name: "heimdall-db"
-    image: "postgres"
+    container_name: heimdall-db
+    image: postgres
     restart: always
     env_file:
       - ./static/environment/envs/db.env
-    ports:
-      - "1450:5432"
 
-  heimdall: 
-    container_name: heimdall
-    image: rmenendez8/heimdall:v1.3.0
-    # build: 
+  heimdall-setup:
+    container_name: heimdall-setup
+    image: rmenendez8/heimdall:v1.3.5
+    # build:
     #   context: .
     #   dockerfile: Dockerfile
-    ports:
-      - "1500:1500"
     volumes:
-      - ./static/environment/config:/app/static/environment/config
+      - ./static:/app/static
       - ./vault:/app/vault
     depends_on:
       - heimdall-db
@@ -55,6 +51,76 @@ services:
     env_file:
       - ./static/environment/envs/heimdall.env
     environment:
-      CONFIG_PATH: /app/static/environment/config/prod/basic_dataspace_authority.yaml
       RUST_BACKTRACE: 1
-    
+    command:
+      - setup
+      - --env-file
+      - /app/static/environment/config/prod/basic_dataspace_authority.yaml
+    restart: "no"
+
+  heimdall:
+    container_name: heimdall
+    image: rmenendez8/heimdall:v1.3.5
+    # build:
+    #   context: .
+    #   dockerfile: Dockerfile
+    volumes:
+      - ./static:/app/static
+      - ./vault:/app/vault
+    depends_on:
+      heimdall-setup:
+        condition: service_completed_successfully
+    env_file:
+      - ./static/environment/envs/heimdall.env
+    environment:
+      RUST_BACKTRACE: 1
+    command:
+      - start
+      - --env-file
+      - /app/static/environment/config/prod/basic_dataspace_authority.yaml
+
+  keycloak:
+    container_name: keycloak
+    image: quay.io/keycloak/keycloak:19.0.3
+    restart: always
+    ports:
+      - "8443:8443"
+    volumes:
+      - "./vault2/config/:/etc/x509/https:ro"
+      - "./react/keycloak-theme/heimdall:/opt/keycloak/themes/heimdall"
+    env_file:
+      - ./static/environment/envs/keycloak.env
+    depends_on:
+      - keycloak_postgres
+    command:
+      - start
+
+  keycloak_postgres:
+    container_name: keycloak_postgres
+    image: postgres:15
+    restart: always
+    env_file:
+      - ./static/environment/envs/keycloak.db.env
+    volumes:
+      - ./keycloak:/var/lib/postgresql/data
+
+  oauth2-proxy:
+    image: quay.io/oauth2-proxy/oauth2-proxy:v7.6.0
+    container_name: oauth2-proxy
+    ports:
+      - "443:4180"
+    volumes:
+      - ./vault2/config:/certs:ro
+      - ./react/proxy-templates:/templates:ro
+    env_file:
+      - ./static/environment/envs/proxy.env
+    command:
+      - --skip-auth-route=^/\.well-known.*
+      - --skip-auth-route=^/api/v1/issuer.*
+      - --skip-auth-route=^/api/v1/verifier.*
+      - --skip-auth-route=^/api/v1/gate.*
+      - --skip-auth-route=^/assets/.*
+      - --skip-auth-route=^/$
+    depends_on:
+      - heimdall
+      - keycloak

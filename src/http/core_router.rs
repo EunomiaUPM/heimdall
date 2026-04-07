@@ -50,24 +50,23 @@ impl RainbowAuthorityRouter {
             false => None
         };
 
-        let mut router = RouterBuilder::new()
+        let react = match self.core.config().is_react() {
+            true => Some(ReactRouter::new(self.core.clone())),
+            false => None
+        };
+
+        let router = RouterBuilder::new()
             .gatekeeper(GateKeeperRouter::new(self.core.clone()))
             .issuer(IssuerRouter::new(self.core.clone()))
             .verifier(VerifierRouter::new(self.core.clone()))
             .approver(ApproverRouter::new(self.core.clone()))
             .minion(MinionRouter::new(self.core.clone()))
             .wallet(wallet)
-            .react(self.core.config().is_react())
+            .react(react)
             .openapi(OpenapiRouter::new(self.openapi.clone()))
             .health(HealthRouter::new())
             .api_path(self.core.config().get_api_version())
             .build();
-
-        if self.core.config().is_react() {
-            let sse_router = ReactRouter::new(self.core.clone()).router();
-            let mount_path = format!("{}/react", self.core.config().get_api_version());
-            router = router.nest(&mount_path, sse_router);
-        }
 
         router
             .fallback(Self::fallback)

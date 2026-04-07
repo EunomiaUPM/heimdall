@@ -24,8 +24,9 @@ use tracing::info;
 use x509_parser::parse_x509_certificate;
 use ymir::data::entities::{issuing, vc_request};
 use ymir::errors::{BadFormat, Errors, Outcome};
-use ymir::types::vcs::vc_specs::legal_authority::{
-    LegalRegistrationNumberCredSubj, LegalRegistrationNumberTypes, VCData
+use ymir::types::present::Missing;
+use ymir::types::vcs::vc_specs::legal_reg_number::{
+    LeiCodeBuilder, LocalRegistrationNumberBuilder, TaxIdBuilder, VatIdBuilder
 };
 use ymir::types::vcs::VcType;
 use ymir::utils::{get_from_opt, parse_from_str, parse_to_string, parse_to_value};
@@ -48,24 +49,35 @@ impl RoleConfigTrait for LegalAuthorityVcBuilder {
 
 impl VcBuilderTrait for LegalAuthorityVcBuilder {
     fn build_vc(&self, model: &issuing::Model) -> Outcome<Value> {
-        let vc_type = VcType::from_str(&model.vc_type)?;
+        let vc_type = self.validate(&model.vc_type)?;
         info!("Building {} credential", vc_type);
 
-        let vc_data: VCData =
-            parse_from_str(&get_from_opt(model.credential_data.as_ref(), "credential data")?)?;
         let holder_did = get_from_opt(model.holder_did.as_ref(), "holder did")?;
+        let vc_data = &get_from_opt(model.credential_data.as_ref(), "credential data")?;
 
-        let VcType::LegalRegistrationNumber(data) = vc_type else {
-            return Err(Errors::unauthorized(
-                format!("Cannot issue vc type: {}", vc_type),
-                None
-            ));
+        let credential_subject = match vc_type {
+            VcType::LeiCode => {
+                let data = parse_from_str::<LeiCodeBuilder<Missing>>(vc_data)?;
+                let cred_subj = data.id(holder_did).build();
+                parse_to_value(&cred_subj)?
+            }
+            VcType::LocalRegistrationNumber => {
+                let data = parse_from_str::<LocalRegistrationNumberBuilder<Missing>>(vc_data)?;
+                let cred_subj = data.id(holder_did).build();
+                parse_to_value(&cred_subj)?
+            }
+            VcType::TaxId => {
+                let data = parse_from_str::<TaxIdBuilder<Missing>>(vc_data)?;
+                let cred_subj = data.id(holder_did).build();
+                parse_to_value(&cred_subj)?
+            }
+            VcType::VatId => {
+                let data = parse_from_str::<VatIdBuilder<Missing>>(vc_data)?;
+                let cred_subj = data.id(holder_did).build();
+                parse_to_value(&cred_subj)?
+            }
+            _ => unreachable!()
         };
-
-        let cred_subj =
-            LegalRegistrationNumberCredSubj::new(data, &holder_did, &vc_data.shitty_code);
-
-        let credential_subject = parse_to_value(&cred_subj)?;
 
         self.just_build(&model, credential_subject, &self.config)
     }
@@ -73,24 +85,20 @@ impl VcBuilderTrait for LegalAuthorityVcBuilder {
     fn gather_data(&self, req_model: &vc_request::Model) -> Outcome<String> {
         info!("Gathering data to issue vc");
 
-        let base_cert = req_model.cert.as_ref().ok_or_else(|| {
-            Errors::format(BadFormat::Received, "There was no cert in the Grant Request", None)
-        })?;
-
-        let cert_bytes = STANDARD.decode(base_cert).map_err(|e| {
+        let cert_bytes = STANDARD.decode(&req_model.cert).map_err(|e| {
             Errors::format(BadFormat::Received, "Unable to decode certificate", Some(Box::new(e)))
         })?;
         let (_, cert) = parse_x509_certificate(&cert_bytes)
             .map_err(|e| Errors::parse("Unable to parse x509 cert", Some(Box::new(e))))?;
 
-        let vc_type = VcType::from_str(&req_model.vc_type)?;
+        let vc_type = self.validate(&req_model.vc_type)?;
 
-        let VcType::LegalRegistrationNumber(data) = vc_type else {
-            return Err(Errors::unauthorized(
-                format!("Cannot issue vc type: {}", vc_type),
-                None
-            ));
-        };
+        let cert_country = cert
+            .subject
+            .iter_attributes()
+            .find(|attr| attr.attr_type().to_id_string() == "2.5.4.6")
+            .and_then(|attr| attr.attr_value().as_str().ok())
+            .map(|s| s.to_string());
 
         let oid_attr = cert
             .subject
@@ -108,12 +116,11 @@ impl VcBuilderTrait for LegalAuthorityVcBuilder {
             Errors::format(BadFormat::Received, "Unable to parse organization identifier", None)
         })?;
 
-        let prefix = match data {
-            LegalRegistrationNumberTypes::TaxId => "TAX",
-            LegalRegistrationNumberTypes::Euid => "EUID",
-            LegalRegistrationNumberTypes::Eori => "EORI",
-            LegalRegistrationNumberTypes::VatId => "VAT",
-            LegalRegistrationNumberTypes::LeiCode => "LEI"
+        let prefix = match vc_type {
+            VcType::LeiCode => "LEI",
+            VcType::LocalRegistrationNumber | VcType::TaxId => "NTR",
+            VcType::VatId => "VAT",
+            _ => unreachable!()
         };
 
         let shitty_code = org_id_str
@@ -122,12 +129,55 @@ impl VcBuilderTrait for LegalAuthorityVcBuilder {
             .ok_or_else(|| {
                 Errors::format(
                     BadFormat::Received,
-                    format!("No matching code found in cert for {:?}", data),
+                    format!("No matching code found in cert for {:?}", prefix),
                     None
                 )
             })?
             .to_string();
 
-        parse_to_string(&VCData { shitty_code })
+        match vc_type {
+            VcType::LeiCode => {
+                let data = LeiCodeBuilder::new(
+                    shitty_code,
+                    cert_country.ok_or_else(|| {
+                        Errors::format(BadFormat::Received, "No country code", None)
+                    })?
+                );
+
+                parse_to_string(&data)
+            }
+            VcType::LocalRegistrationNumber => {
+                let data = LocalRegistrationNumberBuilder::new(shitty_code);
+                parse_to_string(&data)
+            }
+            VcType::TaxId => {
+                let data = TaxIdBuilder::new(shitty_code);
+                parse_to_string(&data)
+            }
+            VcType::VatId => {
+                let mut data = VatIdBuilder::new(shitty_code);
+                if let Some(country) = cert_country {
+                    data = data.country_code(country);
+                }
+                parse_to_string(&data)
+            }
+            _ => unreachable!()
+        }
+    }
+
+    fn validate(&self, vc_type: &str) -> Outcome<VcType> {
+        let vc_type = VcType::from_str(vc_type)?;
+
+        match &vc_type {
+            VcType::Eori => Err(Errors::not_impl("EORI is not impl yet", None)),
+            VcType::Euid => Err(Errors::not_impl("EUID is not impl yet", None)),
+            VcType::LeiCode | VcType::LocalRegistrationNumber | VcType::TaxId | VcType::VatId => {
+                Ok(vc_type)
+            }
+            vc_type => Err(Errors::unauthorized(
+                format!("Unauthorized to issue vc_type {}", vc_type.to_string()),
+                None
+            ))
+        }
     }
 }

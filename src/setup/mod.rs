@@ -16,5 +16,5 @@
  */
 
 pub mod app;
-pub mod commands;
 pub mod db_migrations;
+pub mod cmd;

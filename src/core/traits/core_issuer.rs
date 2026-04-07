@@ -23,7 +23,7 @@ use ymir::services::issuer::IssuerTrait;
 use ymir::services::wallet::WalletTrait;
 use ymir::types::issuing::{
     AuthServerMetadata, CredentialRequest, GiveVC, IssuerMetadata, IssuingToken, TokenRequest,
-    VCCredOffer, WellKnownJwks
+    VCCredOffer, WellKnownJwks,
 };
 
 use crate::services::repo::RepoTrait;
@@ -36,15 +36,8 @@ pub trait CoreIssuerTrait: Send + Sync + 'static {
     fn vc_builder(&self) -> Arc<dyn VcBuilderTrait>;
     fn wallet(&self) -> Option<Arc<dyn WalletTrait>>;
     async fn get_cred_offer_data(&self, id: &str) -> Outcome<VCCredOffer> {
-        let mut model = self.repo().issuing().get_by_id(&id).await?;
-
-        let data = self.issuer().get_cred_offer_data(&model, None)?;
-
-        if model.step {
-            model.step = false;
-            self.repo().issuing().update(model).await?;
-        };
-        Ok(data)
+        let model = self.repo().issuing().get_by_id(&id).await?;
+        self.issuer().get_cred_offer_data(&model)
     }
     fn issuer_metadata(&self) -> IssuerMetadata {
         let vcs = self.vc_builder().get_role().credentials();
@@ -56,7 +49,9 @@ pub trait CoreIssuerTrait: Send + Sync + 'static {
         self.issuer().get_oauth_server_data(None, Some(&vcs))
     }
 
-    async fn jwks(&self) -> Outcome<WellKnownJwks> { self.issuer().get_jwks_data().await }
+    async fn jwks(&self) -> Outcome<WellKnownJwks> {
+        self.issuer().get_jwks_data().await
+    }
 
     async fn get_token(&self, payload: TokenRequest) -> Outcome<IssuingToken> {
         let model =

@@ -21,7 +21,6 @@ use std::str::FromStr;
 
 use serde::{Deserialize, Serialize};
 use ymir::errors::Errors;
-use ymir::types::vcs::vc_specs::legal_authority::LegalRegistrationNumberTypes;
 use ymir::types::vcs::VcType;
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
@@ -66,20 +65,32 @@ impl AuthorityRole {
     pub fn credentials(&self) -> Vec<VcType> {
         match self {
             AuthorityRole::LegalAuthority => {
-                vec![VcType::LegalRegistrationNumber(LegalRegistrationNumberTypes::Eori)]
+                vec![
+                    VcType::Eori,
+                    VcType::Eori,
+                    VcType::LocalRegistrationNumber,
+                    VcType::LeiCode,
+                    VcType::VatId,
+                    VcType::TaxId,
+                ]
             }
             AuthorityRole::ClearingHouse => {
-                vec![VcType::DataspaceParticipant]
+                vec![]
             }
             AuthorityRole::ClearingHouseProxy => {
-                vec![VcType::DataspaceParticipant]
+                vec![]
             }
             AuthorityRole::DataSpaceAuthority => {
                 vec![VcType::DataspaceParticipant]
             }
             AuthorityRole::EcoAuthority => {
                 vec![
-                    VcType::LegalRegistrationNumber(LegalRegistrationNumberTypes::TaxId),
+                    VcType::Eori,
+                    VcType::Eori,
+                    VcType::LocalRegistrationNumber,
+                    VcType::LeiCode,
+                    VcType::VatId,
+                    VcType::TaxId,
                     VcType::DataspaceParticipant,
                 ]
             }

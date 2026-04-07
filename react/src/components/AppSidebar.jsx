@@ -23,7 +23,7 @@ export function AppSidebar() {
   const items = [
     { title: 'Home', url: '/', icon: Home },
     { title: 'Requests', url: '/requests', icon: FileText },
-    { title: 'Minions', url: '/minions', icon: Users },
+    { title: 'Participants', url: '/participants', icon: Users },
     ...(walletActive ? [{ title: 'Wallet', url: '/wallet', icon: Wallet }] : []),
     { title: 'About', url: '/about', icon: Info },
   ];

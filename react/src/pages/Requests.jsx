@@ -44,6 +44,12 @@ const StatusBadge = ({ status, isVcIssued }) => {
   );
 };
 
+const getIdentityProofDisplay = (methods) => {
+  if (methods && methods.length === 1 && methods[0] === '') return 'Certificate';
+  if (methods.includes('oidc4vp')) return 'Verifiable Credential';
+  return methods.join(', ');
+};
+
 const Requests = () => {
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -104,7 +110,7 @@ const Requests = () => {
       case 'vcType':
         return req.vc_type;
       case 'interactMethod':
-        return req.interact_method.join(', ');
+        return getIdentityProofDisplay(req.interact_method);
       case 'status':
         return req.status;
       case 'createdAt':
@@ -119,7 +125,7 @@ const Requests = () => {
       req.id.toLowerCase().includes(filters.id.toLowerCase()) &&
       req.participant_slug.toLowerCase().includes(filters.slug.toLowerCase()) &&
       req.vc_type.toLowerCase().includes(filters.vcType.toLowerCase()) &&
-      req.interact_method.join(', ').toLowerCase().includes(filters.interactMethod.toLowerCase()) &&
+      getIdentityProofDisplay(req.interact_method).toLowerCase().includes(filters.interactMethod.toLowerCase()) &&
       req.status.toLowerCase().includes(filters.status.toLowerCase()) &&
       req.created_at.toLowerCase().includes(filters.createdAt.toLowerCase())
     );
@@ -167,7 +173,7 @@ const Requests = () => {
                 onClick={() => handleSort('slug')}
                 className="cursor-pointer text-brand-sky hover:text-brand-sky/80"
               >
-                Slug{getSortIndicator('slug')}
+                Alias{getSortIndicator('slug')}
               </TableHead>
               <TableHead
                 onClick={() => handleSort('vcType')}
@@ -179,7 +185,7 @@ const Requests = () => {
                 onClick={() => handleSort('interactMethod')}
                 className="cursor-pointer text-brand-sky hover:text-brand-sky/80"
               >
-                Interact Method{getSortIndicator('interactMethod')}
+                Identity Proof{getSortIndicator('interactMethod')}
               </TableHead>
               <TableHead
                 onClick={() => handleSort('status')}
@@ -261,7 +267,7 @@ const Requests = () => {
                 <TableCell className="font-mono text-xs">{req.id}</TableCell>
                 <TableCell>{req.participant_slug}</TableCell>
                 <TableCell className="text-brand-purple">{req.vc_type}</TableCell>
-                <TableCell>{req.interact_method.join(', ')}</TableCell>
+                <TableCell>{getIdentityProofDisplay(req.interact_method)}</TableCell>
                 <TableCell>
                   <StatusBadge status={req.status} isVcIssued={req.is_vc_issued} />
                 </TableCell>

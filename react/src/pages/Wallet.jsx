@@ -29,17 +29,7 @@ const Wallet = () => {
     return 'LINK';
   };
 
-  useEffect(() => {
-    // Check if wallet is already onboarded
-    const onboarded = localStorage.getItem('walletOnboarded') === 'true';
-    setIsOnboarded(onboarded);
-
-    // If onboarded and on base wallet path, redirect to DID page
-    if (onboarded && location.pathname === '/wallet') {
-      navigate('/wallet/did');
-    }
-  }, [location.pathname, navigate]);
-
+  // Define handleOnboard early so it can be used in the autolink effect
   const handleOnboard = async () => {
     setIsOnboarding(true);
     setError(null);
@@ -57,7 +47,8 @@ const Wallet = () => {
       localStorage.setItem('walletOnboarded', 'true');
       setIsOnboarded(true);
 
-      window.location.reload();
+      // Reloading the page clears URL params and resets the wallet view correctly
+      window.location.href = '/admin/wallet';
     } catch (err) {
       console.error('Error onboarding wallet:', err);
       setError(err.message);
@@ -65,6 +56,28 @@ const Wallet = () => {
       setIsOnboarding(false);
     }
   };
+
+  useEffect(() => {
+    // Check if wallet is already onboarded
+    const onboarded = localStorage.getItem('walletOnboarded') === 'true';
+    setIsOnboarded(onboarded);
+
+    // If onboarded and on base wallet path, redirect to DID page
+    if (onboarded && location.pathname === '/wallet') {
+      navigate('/wallet/did', { replace: true });
+    } else if (!onboarded && location.pathname === '/wallet') {
+      // Check for auto-link request from Notifications
+      const searchParams = new URLSearchParams(location.search);
+      if (searchParams.get('autolink') === 'true') {
+        const timer = setTimeout(() => {
+          handleOnboard();
+        }, 300); // small delay for UI rendering before firing network request
+        return () => clearTimeout(timer);
+      }
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.pathname, location.search, navigate]);
+
 
   const isActiveTab = (path) => {
     return location.pathname === path;

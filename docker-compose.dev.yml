@@ -1,0 +1,11 @@
+name: heimdall-dev
+
+services:
+  heimdall-db:
+    container_name: "heimdall-db"
+    image: "postgres"
+    restart: always
+    env_file:
+      - ./static/environment/envs/db.env.example
+    ports:
+      - "1450:5432"
