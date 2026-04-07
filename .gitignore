@@ -8,7 +8,10 @@ vault/**
 !vault/**/*.example
 !vault/**/*.gitkeep
 
-
+*.ps1
+cert.json.example
+public_key.json.example
+private_key.json.example
 
 # ENVIROMENT
 static/environment/envs/**
