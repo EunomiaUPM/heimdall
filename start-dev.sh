@@ -29,6 +29,15 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
+# 4.5 Build React
+echo -e "\033[0;36mPreparando y construyendo la app React...\033[0m"
+chmod +x ./react/build.sh
+./react/build.sh
+if [ $? -ne 0 ]; then
+    echo -e "\033[0;31mBuild de React fallido, abortando\033[0m"
+    exit 1
+fi
+
 # 5. Start
 echo -e "\033[0;36mArrancando heimdall...\033[0m"
 cargo watch -x "run start -e ./static/environment/config/dev/basic_dataspace_authority.yaml"
