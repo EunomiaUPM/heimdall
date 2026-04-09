@@ -162,5 +162,5 @@ To run the complete system (Rust Backend + React Frontend), follow these steps:
 
 ## 📄 License
 
-Copyright (C) 2025 - Universidad Politécnica de Madrid - UPM
+Copyright (C) 2026 - Universidad Politécnica de Madrid - UPM
 GNU General Public License v3.0
