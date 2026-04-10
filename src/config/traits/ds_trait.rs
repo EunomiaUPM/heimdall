@@ -15,8 +15,11 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-use crate::services::vcs_builder::BuilderConfigDefaultTrait;
+use crate::config::types::DsBuilderConfig;
 
-pub trait DataSpaceAuthorityConfigTrait: BuilderConfigDefaultTrait {
-    fn get_dataspace_id(&self) -> &str;
+pub trait DSConfigTrait {
+    fn get_ds_config(&self) -> &DsBuilderConfig;
+    fn get_ds_id(&self) -> &str {
+        &self.get_ds_config().dataspace_id
+    }
 }

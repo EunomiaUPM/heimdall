@@ -23,27 +23,33 @@ use ymir::data::entities::{issuing, vc_request};
 use ymir::errors::{Errors, Outcome};
 use ymir::types::vcs::VcType;
 
-use crate::config::role::{AuthorityRole, RoleConfigTrait};
+use crate::config::traits::RoleConfigTrait;
+use crate::config::types::AuthorityRole;
+use crate::services::vcs_builder::clearing_house::ClearingHouseAuthorityVcBuilder;
 use crate::services::vcs_builder::dataspace_authority::DataSpaceAuthorityVcBuilder;
 use crate::services::vcs_builder::legal_authority::LegalAuthorityVcBuilder;
 use crate::services::vcs_builder::VcBuilderTrait;
 
 pub struct EcoAuthorityBuilder {
     legal: Arc<LegalAuthorityVcBuilder>,
-    dataspace: Arc<DataSpaceAuthorityVcBuilder>
+    dataspace: Arc<DataSpaceAuthorityVcBuilder>,
+    clearing_house: Arc<ClearingHouseAuthorityVcBuilder>,
 }
 
 impl EcoAuthorityBuilder {
     pub fn new(
         legal: Arc<LegalAuthorityVcBuilder>,
-        dataspace: Arc<DataSpaceAuthorityVcBuilder>
+        dataspace: Arc<DataSpaceAuthorityVcBuilder>,
+        clearing_house: Arc<ClearingHouseAuthorityVcBuilder>,
     ) -> Self {
-        Self { legal, dataspace }
+        Self { legal, dataspace, clearing_house }
     }
 }
 
 impl RoleConfigTrait for EcoAuthorityBuilder {
-    fn get_role(&self) -> &AuthorityRole { &AuthorityRole::EcoAuthority }
+    fn get_role(&self) -> &AuthorityRole {
+        &AuthorityRole::EcoAuthority
+    }
 }
 
 impl VcBuilderTrait for EcoAuthorityBuilder {
@@ -57,10 +63,11 @@ impl VcBuilderTrait for EcoAuthorityBuilder {
             VcType::VatId => self.legal.build_vc(&model),
             VcType::TaxId => self.legal.build_vc(&model),
             VcType::DataspaceParticipant => self.dataspace.build_vc(model),
+            VcType::GxLabel => self.clearing_house.build_vc(model),
             _ => Err(Errors::unauthorized(
                 format!("Cannot issue vc type: {}", vc_type),
-                None
-            ))
+                None,
+            )),
         }
     }
 
@@ -74,12 +81,15 @@ impl VcBuilderTrait for EcoAuthorityBuilder {
             VcType::VatId => self.legal.gather_data(&req_model),
             VcType::TaxId => self.legal.gather_data(&req_model),
             VcType::DataspaceParticipant => self.dataspace.gather_data(&req_model),
+            VcType::GxLabel => self.clearing_house.gather_data(&req_model),
             _ => Err(Errors::unauthorized(
                 format!("Cannot issue vc type: {}", vc_type),
-                None
-            ))
+                None,
+            )),
         }
     }
 
-    fn validate(&self, vc_type: &str) -> Outcome<VcType> { VcType::from_str(vc_type) }
+    fn validate(&self, vc_type: &str) -> Outcome<VcType> {
+        VcType::from_str(vc_type)
+    }
 }

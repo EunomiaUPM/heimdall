@@ -15,8 +15,11 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-use ymir::config::traits::VcConfigTrait;
+use super::{ClHBuilderConfig, DsBuilderConfig};
+use serde::{Deserialize, Serialize};
 
-use crate::config::traits::RoleConfigTrait;
-
-pub trait BuilderConfigDefaultTrait: VcConfigTrait + RoleConfigTrait {}
+#[derive(Deserialize, Serialize, Clone, Debug)]
+pub struct IssueConfig {
+    pub ds_config: Option<DsBuilderConfig>,
+    pub clh_config: Option<ClHBuilderConfig>,
+}

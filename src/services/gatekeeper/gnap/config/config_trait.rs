@@ -17,7 +17,7 @@
 
 use ymir::config::traits::HostsConfigTrait;
 
-use crate::config::role::RoleConfigTrait;
+use crate::config::traits::RoleConfigTrait;
 
 pub trait GnapConfigTrait: RoleConfigTrait + HostsConfigTrait {
     fn get_api_path(&self) -> String;

@@ -41,7 +41,7 @@ did_config:
   #    domain: "CHANGE_ME"
   #    path: null
 
-role: DataSpaceAuthority
+role: EcoAuthority
 
 api_config:
   version: 'v1'
@@ -54,11 +54,15 @@ vc_config:
 issue_config:
   ds_config:
     dataspace_id: 'RainbowDataspace'
-  clh_config: null
+  clh_config:
+    label_level: 'SC'
+    engine_version: '2.11.0'
+    rules_version: 'CD25.10'
+    validated_criteria: 'https://docs.gaia-x.eu/policy-rules-committee/compliance-document/25.10/criteria_participant/#PA1.1'
 
 
 verify_req_config:
   is_cert_allowed: true
-  vcs_requested: []
+  vcs_requested: [ 'gx:VatId','gx:LegalPerson','gx:TermsAndConditions' ]
 
 is_react: true

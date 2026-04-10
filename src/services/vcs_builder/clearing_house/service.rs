@@ -21,37 +21,37 @@ use serde_json::Value;
 use tracing::info;
 use ymir::data::entities::{issuing, vc_request};
 use ymir::errors::{Errors, Outcome};
-use ymir::types::present::Missing;
-use ymir::types::vcs::vc_specs::dataspace::DataSpaceParticipantBuilder;
+use ymir::types::present::{Missing, Present};
+use ymir::types::vcs::vc_specs::gx_label::GxLabelCredSubjectBuilder;
 use ymir::types::vcs::VcType;
 use ymir::utils::{get_from_opt, parse_from_str, parse_to_string, parse_to_value};
 
 use super::super::VcBuilderTrait;
-use crate::config::traits::{DSConfigTrait, RoleConfigTrait};
+use super::ClearingHouseAuthorityConfig;
+use crate::config::traits::{ClHConfigTrait, RoleConfigTrait};
 use crate::config::types::AuthorityRole;
-use crate::services::vcs_builder::dataspace_authority::config::DataSpaceAuthorityConfig;
 
-pub struct DataSpaceAuthorityVcBuilder {
-    config: DataSpaceAuthorityConfig,
+pub struct ClearingHouseAuthorityVcBuilder {
+    config: ClearingHouseAuthorityConfig,
 }
 
-impl DataSpaceAuthorityVcBuilder {
-    pub fn new(config: DataSpaceAuthorityConfig) -> Self {
+impl ClearingHouseAuthorityVcBuilder {
+    pub fn new(config: ClearingHouseAuthorityConfig) -> Self {
         Self { config }
     }
 }
 
-impl RoleConfigTrait for DataSpaceAuthorityVcBuilder {
+impl RoleConfigTrait for ClearingHouseAuthorityVcBuilder {
     fn get_role(&self) -> &AuthorityRole {
         &self.config.get_role()
     }
 }
 
-impl VcBuilderTrait for DataSpaceAuthorityVcBuilder {
+impl VcBuilderTrait for ClearingHouseAuthorityVcBuilder {
     fn build_vc(&self, model: &issuing::Model) -> Outcome<Value> {
         let vc_type = VcType::from_str(&model.vc_type)?;
 
-        if !matches!(vc_type, VcType::DataspaceParticipant) {
+        if !matches!(vc_type, VcType::GxLabel) {
             return Err(Errors::unauthorized(
                 format!("Cannot issue vc type: {}", vc_type),
                 None,
@@ -66,7 +66,9 @@ impl VcBuilderTrait for DataSpaceAuthorityVcBuilder {
             .as_deref()
             .ok_or_else(|| Errors::crazy("Tried to issue a credential without any data", None))?;
 
-        let vc = parse_from_str::<DataSpaceParticipantBuilder<Missing>>(vc_data)?;
+        let vc = parse_from_str::<GxLabelCredSubjectBuilder<Missing, Present, Present, Present>>(
+            vc_data,
+        )?;
 
         let cred_subj = vc.id(holder_did).build();
 
@@ -74,10 +76,14 @@ impl VcBuilderTrait for DataSpaceAuthorityVcBuilder {
         self.just_build(&model, credential_subject, &self.config)
     }
 
-    fn gather_data(&self, req_model: &vc_request::Model) -> Outcome<String> {
-        let dataspace_id = self.config.get_ds_id().to_string();
-        let nick = req_model.participant_slug.clone();
-        let data = DataSpaceParticipantBuilder::new(nick, dataspace_id);
+    fn gather_data(&self, _req_model: &vc_request::Model) -> Outcome<String> {
+        let data = GxLabelCredSubjectBuilder::new(
+            self.config.get_label_level(),
+            self.config.get_engine_version(),
+            self.config.get_rules_version(),
+            self.config.get_validated_criteria(),
+        );
+
         parse_to_string(&data)
     }
 
@@ -85,7 +91,7 @@ impl VcBuilderTrait for DataSpaceAuthorityVcBuilder {
         let vc_type = VcType::from_str(vc_type)?;
 
         match &vc_type {
-            VcType::DataspaceParticipant => Ok(vc_type),
+            VcType::GxLabel => Ok(vc_type),
             vc_type => Err(Errors::unauthorized(
                 format!("Unauthorized to issue vc_type {}", vc_type.to_string()),
                 None,

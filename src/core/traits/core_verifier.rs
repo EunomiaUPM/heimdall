@@ -37,7 +37,10 @@ pub trait CoreVerifierTrait: Send + Sync + 'static {
         let result = self.verifier().verify_all(&mut ver_model, &vp_token).await;
         let int_model = self.repo().interaction().get_by_id(&ver_model.id).await?;
         result?;
+        let mut req_model = self.repo().request().get_by_id(&ver_model.id).await?;
+        req_model.vpt = Some(vp_token);
         self.repo().verification().update(ver_model).await?;
+        self.repo().request().update(req_model).await?;
         self.verifier().end_verification(&int_model).await
     }
 }

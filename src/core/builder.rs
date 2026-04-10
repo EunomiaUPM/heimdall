@@ -27,23 +27,27 @@ use ymir::services::wallet::walt_id::config::WaltIdConfig;
 use ymir::services::wallet::walt_id::WaltIdService;
 use ymir::services::wallet::WalletTrait;
 
-use crate::config::role::{AuthorityRole, RoleConfigTrait};
+use crate::config::traits::RoleConfigTrait;
+use crate::config::types::AuthorityRole;
 use crate::config::{CoreApplicationConfig, CoreConfigTrait};
 use crate::core::Core;
 use crate::services::gatekeeper::gnap::{config::GnapConfig, GnapService};
 use crate::services::notifications::{NotificationService, NotificationsTrait};
 use crate::services::repo::RepoForSql;
 use crate::services::repo::RepoTrait;
+use crate::services::vcs_builder::clearing_house::{
+    ClearingHouseAuthorityConfig, ClearingHouseAuthorityVcBuilder,
+};
 use crate::services::vcs_builder::dataspace_authority::{
-    config::DataSpaceAuthorityConfig, DataSpaceAuthorityVcBuilder
+    DataSpaceAuthorityConfig, DataSpaceAuthorityVcBuilder,
 };
 use crate::services::vcs_builder::legal_authority::{
-    LegalAuthorityConfig, LegalAuthorityVcBuilder
+    LegalAuthorityConfig, LegalAuthorityVcBuilder,
 };
 use crate::services::vcs_builder::{EcoAuthorityBuilder, VcBuilderTrait};
 
 pub struct CoreBuilder {
-    core: Core
+    core: Core,
 }
 
 impl CoreBuilder {
@@ -58,8 +62,8 @@ impl CoreBuilder {
                 Arc::new(LegalAuthorityVcBuilder::new(config))
             }
             AuthorityRole::ClearingHouse => {
-                let config = LegalAuthorityConfig::from(config.clone());
-                Arc::new(LegalAuthorityVcBuilder::new(config))
+                let config = ClearingHouseAuthorityConfig::from(config.clone());
+                Arc::new(ClearingHouseAuthorityVcBuilder::new(config))
             }
             AuthorityRole::ClearingHouseProxy => {
                 let config = LegalAuthorityConfig::from(config.clone());
@@ -76,7 +80,10 @@ impl CoreBuilder {
                 let dp_config = DataSpaceAuthorityConfig::from(config.clone());
                 let dp = Arc::new(DataSpaceAuthorityVcBuilder::new(dp_config));
 
-                Arc::new(EcoAuthorityBuilder::new(legal, dp))
+                let config = ClearingHouseAuthorityConfig::from(config.clone());
+                let clh = Arc::new(ClearingHouseAuthorityVcBuilder::new(config));
+
+                Arc::new(EcoAuthorityBuilder::new(legal, dp, clh))
             }
         };
 
@@ -117,11 +124,13 @@ impl CoreBuilder {
             verifier,
             vc_builder,
             repo,
-            core_config
+            core_config,
         );
 
         Self { core }
     }
 
-    pub fn build(self) -> Core { self.core }
+    pub fn build(self) -> Core {
+        self.core
+    }
 }

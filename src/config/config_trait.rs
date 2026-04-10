@@ -17,10 +17,10 @@
 
 use ymir::config::traits::{
     ApiConfigTrait, ConnectionConfigTrait, DatabaseConfigTrait, DidConfigTrait, HostsConfigTrait,
-    IssueConfigTrait, VcConfigTrait, VerifyReqConfigTrait, WalletConfigTrait
+    VcConfigTrait, VerifyReqConfigTrait, WalletConfigTrait,
 };
 
-use crate::config::role::RoleConfigTrait;
+use crate::config::traits::{IssueConfigTrait, RoleConfigTrait};
 
 pub trait CoreConfigTrait:
     HostsConfigTrait

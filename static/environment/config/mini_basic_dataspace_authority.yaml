@@ -52,7 +52,9 @@ vc_config:
   w3c_data_model: V2
 
 issue_config:
-  dataspace_id: 'RainbowDataspace'
+  ds_config:
+    dataspace_id: 'RainbowDataspace'
+  clh_config: null
 
 verify_req_config:
   is_cert_allowed: true

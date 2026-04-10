@@ -27,7 +27,7 @@ use ymir::types::vcs::vc_issuer::VCIssuer;
 use ymir::types::vcs::{VcModel, VcType, W3cDataModelVersion};
 use ymir::utils::{get_from_opt, parse_to_value};
 
-use crate::config::role::RoleConfigTrait;
+use crate::config::traits::RoleConfigTrait;
 use crate::services::vcs_builder::BuilderConfigDefaultTrait;
 
 pub trait VcBuilderTrait: RoleConfigTrait + Send + Sync + 'static {

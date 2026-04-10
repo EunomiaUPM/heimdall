@@ -15,8 +15,20 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-use ymir::config::traits::VcConfigTrait;
+use crate::config::types::ClHBuilderConfig;
 
-use crate::config::traits::RoleConfigTrait;
-
-pub trait BuilderConfigDefaultTrait: VcConfigTrait + RoleConfigTrait {}
+pub trait ClHConfigTrait {
+    fn get_clh_config(&self) -> &ClHBuilderConfig;
+    fn get_label_level(&self) -> &str {
+        &self.get_clh_config().label_level
+    }
+    fn get_engine_version(&self) -> &str {
+        &self.get_clh_config().engine_version
+    }
+    fn get_rules_version(&self) -> &str {
+        &self.get_clh_config().rules_version
+    }
+    fn get_validated_criteria(&self) -> &str {
+        &self.get_clh_config().validated_criteria
+    }
+}

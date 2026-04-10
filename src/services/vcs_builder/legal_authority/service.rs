@@ -32,7 +32,8 @@ use ymir::types::vcs::VcType;
 use ymir::utils::{get_from_opt, parse_from_str, parse_to_string, parse_to_value};
 
 use super::super::VcBuilderTrait;
-use crate::config::role::{AuthorityRole, RoleConfigTrait};
+use crate::config::types::AuthorityRole;
+use crate::config::traits::RoleConfigTrait;
 use crate::services::vcs_builder::legal_authority::config::LegalAuthorityConfig;
 
 pub struct LegalAuthorityVcBuilder {

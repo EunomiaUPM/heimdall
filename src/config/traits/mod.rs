@@ -15,8 +15,12 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-use crate::config::role::role::AuthorityRole;
+mod role_trait;
+mod clh_trait;
+mod ds_trait;
+mod issue_trait;
 
-pub trait RoleConfigTrait {
-    fn get_role(&self) -> &AuthorityRole;
-}
+pub use role_trait::RoleConfigTrait;
+pub use clh_trait::ClHConfigTrait;
+pub use ds_trait::DSConfigTrait;
+pub use issue_trait::IssueConfigTrait;

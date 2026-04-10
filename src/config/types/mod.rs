@@ -15,7 +15,12 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
+mod ds_config;
+mod issue_config;
+mod clh_config;
 mod role;
-mod role_trait;
-pub use role::*;
-pub use role_trait::RoleConfigTrait;
+
+pub use ds_config::DsBuilderConfig;
+pub use issue_config::IssueConfig;
+pub use clh_config::ClHBuilderConfig;
+pub use role::AuthorityRole;
