@@ -19,12 +19,15 @@ use std::str::FromStr;
 
 use serde_json::Value;
 use tracing::info;
+use ymir::capabilities::DigestSRI;
 use ymir::data::entities::{issuing, vc_request};
-use ymir::errors::{Errors, Outcome};
+use ymir::errors::{BadFormat, Errors, Outcome};
 use ymir::types::present::{Missing, Present};
-use ymir::types::vcs::vc_specs::gx_label::GxLabelCredSubjectBuilder;
+use ymir::types::vcs::vc_specs::gx_label::{CompliantCredential, GxLabelCredSubjectBuilder};
 use ymir::types::vcs::VcType;
-use ymir::utils::{get_from_opt, parse_from_str, parse_to_string, parse_to_value};
+use ymir::utils::{
+    decode_jwt_payload, get_claim, get_from_opt, parse_from_str, parse_to_string, parse_to_value,
+};
 
 use super::super::VcBuilderTrait;
 use super::ClearingHouseAuthorityConfig;
@@ -76,13 +79,17 @@ impl VcBuilderTrait for ClearingHouseAuthorityVcBuilder {
         self.just_build(&model, credential_subject, &self.config)
     }
 
-    fn gather_data(&self, _req_model: &vc_request::Model) -> Outcome<String> {
-        let data = GxLabelCredSubjectBuilder::new(
+    fn gather_data(&self, req_model: &vc_request::Model) -> Outcome<String> {
+        let builder = GxLabelCredSubjectBuilder::new(
             self.config.get_label_level(),
             self.config.get_engine_version(),
             self.config.get_rules_version(),
             self.config.get_validated_criteria(),
         );
+
+        let vpt = req_model.vpt.as_ref().ok_or_else(|| Errors::unauthorized("Authentication has not been completed yet", None))?;
+
+        let data = Self::complete(vpt, builder)?;
 
         parse_to_string(&data)
     }
@@ -97,5 +104,71 @@ impl VcBuilderTrait for ClearingHouseAuthorityVcBuilder {
                 None,
             )),
         }
+    }
+}
+
+impl ClearingHouseAuthorityVcBuilder {
+    fn parse_credential(credential: &Value) -> Outcome<CompliantCredential> {
+        let credential = decode_jwt_payload(credential.as_str().unwrap())?;
+
+        let id = get_claim(&credential, &["jti"])?;
+
+        let vc_type = credential
+            .get("type")
+            .and_then(|v| v.as_array())
+            .ok_or(Errors::format(
+                BadFormat::Received,
+                "Error retrieving vc type from credential",
+                None,
+            ))?
+            .iter()
+            .find(|v| v.as_str() != Some("VerifiableCredential"))
+            .and_then(|v| v.as_str())
+            .ok_or(Errors::format(
+                BadFormat::Received,
+                "No VC type found other than VerifiableCredential",
+                None,
+            ))?;
+
+        let digest_sri = DigestSRI::digest(&credential)?;
+
+        Ok(CompliantCredential {
+            id,
+            r#type: vc_type.to_string(),
+            digest_sri,
+        })
+    }
+
+    pub fn complete(
+        vpt: &str,
+        builder: GxLabelCredSubjectBuilder<Missing, Missing, Missing, Missing>,
+    ) -> Outcome<GxLabelCredSubjectBuilder<Missing, Present, Present, Present>> {
+        let vp = decode_jwt_payload(vpt)?;
+
+        let credentials = vp
+            .get("vp")
+            .and_then(|v| v.get("verifiableCredential"))
+            .and_then(|v| v.as_array())
+            .ok_or(Errors::format(
+                BadFormat::Received,
+                "Error retrieving vcs from vp token",
+                None,
+            ))?;
+
+        if credentials.len() != 3 {
+            return Err(Errors::unauthorized(
+                "Did not send the correct amount of credentials",
+                None,
+            ));
+        }
+
+        let legal_person = Self::parse_credential(&credentials[0])?;
+        let reg_number = Self::parse_credential(&credentials[1])?;
+        let terms_cons = Self::parse_credential(&credentials[2])?;
+
+        Ok(builder
+            .legal_person(legal_person)
+            .reg_number(reg_number)
+            .terms_cons(terms_cons))
     }
 }
