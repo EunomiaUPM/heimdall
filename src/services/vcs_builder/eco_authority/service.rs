@@ -42,7 +42,11 @@ impl EcoAuthorityBuilder {
         dataspace: Arc<DataSpaceAuthorityVcBuilder>,
         clearing_house: Arc<ClearingHouseAuthorityVcBuilder>,
     ) -> Self {
-        Self { legal, dataspace, clearing_house }
+        Self {
+            legal,
+            dataspace,
+            clearing_house,
+        }
     }
 }
 

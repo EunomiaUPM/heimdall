@@ -37,7 +37,9 @@ pub struct AuthorityApp;
 
 impl AuthorityApp {
     pub async fn create_router(config: &CoreApplicationConfig, vault: Arc<VaultService>) -> Router {
-        let core = CoreBuilder::from_config(config.clone(), vault).await.build();
+        let core = CoreBuilder::from_config(config.clone(), vault)
+            .await
+            .build();
 
         RainbowAuthorityRouter::new(Arc::new(core)).router()
     }
@@ -69,7 +71,7 @@ impl AuthorityApp {
 
         let tls_config = RustlsConfig::from_pem(
             cert.data().as_bytes().to_vec(),
-            pkey.data().as_bytes().to_vec()
+            pkey.data().as_bytes().to_vec(),
         )
         .await
         .map_err(|e| Errors::crazy("Errors parsing certificate stuff", Some(Box::new(e))))?;

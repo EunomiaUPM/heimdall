@@ -25,8 +25,8 @@ use ymir::config::traits::{
     VcConfigTrait, VerifyReqConfigTrait, WalletConfigTrait,
 };
 use ymir::config::types::{
-    ApiConfig, CommonHostsConfig, ConnectionConfig, DatabaseConfig, DidConfig,
-    VcConfig, VerifyReqConfig, WalletConfig,
+    ApiConfig, CommonHostsConfig, ConnectionConfig, DatabaseConfig, DidConfig, VcConfig,
+    VerifyReqConfig, WalletConfig,
 };
 use ymir::errors::{Errors, Outcome};
 use ymir::utils::read;
@@ -111,7 +111,9 @@ impl VcConfigTrait for CoreApplicationConfig {
 
 impl WalletConfigTrait for CoreApplicationConfig {
     fn wallet_config(&self) -> &WalletConfig {
-        self.wallet_config.as_ref().expect("Module wallet is not active")
+        self.wallet_config
+            .as_ref()
+            .expect("Module wallet is not active")
     }
 }
 

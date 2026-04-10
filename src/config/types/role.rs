@@ -29,7 +29,7 @@ pub enum AuthorityRole {
     ClearingHouse,
     ClearingHouseProxy,
     DataSpaceAuthority,
-    EcoAuthority
+    EcoAuthority,
 }
 
 impl FromStr for AuthorityRole {
@@ -42,7 +42,7 @@ impl FromStr for AuthorityRole {
             "DataSpaceAuthority" => Ok(Self::DataSpaceAuthority),
             "DataspaceAuthority" => Ok(Self::DataSpaceAuthority),
             "EcoAuthority" => Ok(Self::EcoAuthority),
-            _ => Err(Errors::parse("Invalid Authority Role", None))
+            _ => Err(Errors::parse("Invalid Authority Role", None)),
         }
     }
 }
@@ -54,7 +54,7 @@ impl fmt::Display for AuthorityRole {
             AuthorityRole::ClearingHouse => "ClearingHouse",
             AuthorityRole::ClearingHouseProxy => "ClearingHouseProxy",
             AuthorityRole::DataSpaceAuthority => "DataSpaceAuthority",
-            AuthorityRole::EcoAuthority => "EcoAuthority"
+            AuthorityRole::EcoAuthority => "EcoAuthority",
         };
 
         write!(f, "{s}")
@@ -92,7 +92,7 @@ impl AuthorityRole {
                     VcType::VatId,
                     VcType::TaxId,
                     VcType::DataspaceParticipant,
-                    VcType::GxLabel
+                    VcType::GxLabel,
                 ]
             }
         }

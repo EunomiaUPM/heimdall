@@ -18,8 +18,8 @@
 mod config;
 mod config_trait;
 mod parse_from;
-pub mod types;
 pub mod traits;
+pub mod types;
 
 pub use config::CoreApplicationConfig;
 pub use config_trait::CoreConfigTrait;

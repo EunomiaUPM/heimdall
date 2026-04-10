@@ -73,7 +73,11 @@ impl GateKeeperTrait for GnapService {
             )
         })?;
         let participant_slug = payload.client.class_id.as_deref().ok_or_else(|| {
-            Errors::format(BadFormat::Received, "Missing field class_id in the petition", None)
+            Errors::format(
+                BadFormat::Received,
+                "Missing field class_id in the petition",
+                None,
+            )
         })?;
 
         let vc_req = payload.credential_request.as_ref().ok_or_else(|| {
@@ -85,7 +89,11 @@ impl GateKeeperTrait for GnapService {
         })?;
 
         let vc_type = vc_req.access.datatypes.as_ref().ok_or_else(|| {
-            Errors::format(BadFormat::Received, "No field datatypes in the request", None)
+            Errors::format(
+                BadFormat::Received,
+                "No field datatypes in the request",
+                None,
+            )
         })?;
 
         let vc_type = vc_type
@@ -190,7 +198,11 @@ impl GateKeeperTrait for GnapService {
         })?;
 
         interact.finish.uri.as_ref().ok_or_else(|| {
-            Errors::format(BadFormat::Received, "Interact method does not have an uri", None)
+            Errors::format(
+                BadFormat::Received,
+                "Interact method does not have an uri",
+                None,
+            )
         })?;
 
         Ok((grant_request.clone(), interact.clone()))
@@ -204,8 +216,11 @@ impl GateKeeperTrait for GnapService {
         if available_vcs.contains(vc_type) {
             Ok(())
         } else {
-            let available =
-                available_vcs.iter().map(|v| v.to_string()).collect::<Vec<_>>().join(", ");
+            let available = available_vcs
+                .iter()
+                .map(|v| v.to_string())
+                .collect::<Vec<_>>()
+                .join(", ");
 
             Err(Errors::unauthorized(
                 format!("As a {} we can only issue {}", role, available),
@@ -247,7 +262,10 @@ impl GateKeeperTrait for GnapService {
         let token = extract_gnap_token(headers)?;
         if token != int_model.continue_token {
             return Err(Errors::security(
-                format!("Token '{}' does not match '{}'", token, int_model.continue_token),
+                format!(
+                    "Token '{}' does not match '{}'",
+                    token, int_model.continue_token
+                ),
                 None,
             ));
         }
@@ -270,7 +288,9 @@ impl GateKeeperTrait for GnapService {
                 interact_ref: model.interact_ref.clone(),
                 hash: model.hash.clone(),
             };
-            self.client.post(&url, Some(json_headers()), Body::json(&body)?).await?;
+            self.client
+                .post(&url, Some(json_headers()), Body::json(&body)?)
+                .await?;
 
             Ok(None)
         } else {
@@ -300,14 +320,19 @@ impl GateKeeperTrait for GnapService {
             false => {
                 info!("Rejecting petition to obtain a VC");
                 req_model.status = "Finalized".to_string();
-                let body = RejectedCallbackBody { rejected: "Petition was rejected".to_string() };
+                let body = RejectedCallbackBody {
+                    rejected: "Petition was rejected".to_string(),
+                };
                 parse_to_value(&body)
             }
         }
     }
 
     async fn notify_minion(&self, int_model: &recv_interaction::Model, body: Value) -> Outcome<()> {
-        let res = self.client.post(&int_model.uri, Some(json_headers()), Body::Json(body)).await?;
+        let res = self
+            .client
+            .post(&int_model.uri, Some(json_headers()), Body::Json(body))
+            .await?;
 
         if res.status().is_success() {
             info!("Minion received callback successfully");

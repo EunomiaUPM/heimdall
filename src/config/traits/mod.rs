@@ -15,12 +15,12 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-mod role_trait;
 mod clh_trait;
 mod ds_trait;
 mod issue_trait;
+mod role_trait;
 
-pub use role_trait::RoleConfigTrait;
 pub use clh_trait::ClHConfigTrait;
 pub use ds_trait::DSConfigTrait;
 pub use issue_trait::IssueConfigTrait;
+pub use role_trait::RoleConfigTrait;

@@ -54,8 +54,11 @@ pub trait CoreIssuerTrait: Send + Sync + 'static {
     }
 
     async fn get_token(&self, payload: TokenRequest) -> Outcome<IssuingToken> {
-        let model =
-            self.repo().issuing().get_by_pre_auth_code(&payload.pre_authorized_code).await?;
+        let model = self
+            .repo()
+            .issuing()
+            .get_by_pre_auth_code(&payload.pre_authorized_code)
+            .await?;
 
         self.issuer().validate_token_req(&model, &payload)?;
 
@@ -65,10 +68,15 @@ pub trait CoreIssuerTrait: Send + Sync + 'static {
     async fn get_credential(&self, payload: CredentialRequest, token: String) -> Outcome<GiveVC> {
         let mut iss_model = self.repo().issuing().get_by_token(&token).await?;
 
-        let did =
-            if let Some(wallet) = self.wallet() { Some(wallet.get_did().await?) } else { None };
+        let did = if let Some(wallet) = self.wallet() {
+            Some(wallet.get_did().await?)
+        } else {
+            None
+        };
 
-        self.issuer().validate_cred_req(&mut iss_model, &payload, &token, did.as_deref()).await?;
+        self.issuer()
+            .validate_cred_req(&mut iss_model, &payload, &token, did.as_deref())
+            .await?;
 
         let claims = self.vc_builder().build_vc(&iss_model)?;
         let data = self.issuer().issue_cred(&claims, did.as_deref()).await?;

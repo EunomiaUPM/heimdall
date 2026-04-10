@@ -46,7 +46,7 @@ pub trait CoreGatekeeperTrait: Send + Sync + 'static {
     async fn manage_req(
         &self,
         payload: Bytes,
-        headers: HeaderMap
+        headers: HeaderMap,
     ) -> Result<GrantResponse, GrantResponse> {
         self.manage_ok_req(&payload, &headers).await.map_err(|e| {
             e.log();
@@ -68,7 +68,10 @@ pub trait CoreGatekeeperTrait: Send + Sync + 'static {
 
         let _iss_model = self.repo().issuing().create(iss_model).await?;
 
-        if int_model.start.contains(&InteractStart::Oidc4VP.to_string()) {
+        if int_model
+            .start
+            .contains(&InteractStart::Oidc4VP.to_string())
+        {
             let n_ver_model = self.verifier().start_vp(&int_model.id)?;
 
             let ver_model = self.repo().verification().create(n_ver_model).await?;
@@ -86,11 +89,12 @@ pub trait CoreGatekeeperTrait: Send + Sync + 'static {
         &self,
         cont_id: String,
         payload: Bytes,
-        headers: HeaderMap
+        headers: HeaderMap,
     ) -> Outcome<CredentialResponse> {
         let int_model = self.repo().interaction().get_by_cont_id(&cont_id).await?;
 
-        self.gatekeeper().validate_cont_req(&int_model, &payload, &headers)?;
+        self.gatekeeper()
+            .validate_cont_req(&int_model, &payload, &headers)?;
 
         let mut iss_model = self.repo().issuing().get_by_id(&int_model.id).await?;
         let mut req_model = self.repo().request().get_by_id(&int_model.id).await?;
@@ -109,6 +113,9 @@ pub trait CoreGatekeeperTrait: Send + Sync + 'static {
 
         let _req_model = self.repo().request().update(req_model).await?;
         let _iss_model = self.repo().issuing().update(iss_model).await?;
-        Ok(CredentialResponse { credential_uri: vc_uri, credential_type: vc_type.to_conf() })
+        Ok(CredentialResponse {
+            credential_uri: vc_uri,
+            credential_type: vc_type.to_conf(),
+        })
     }
 }

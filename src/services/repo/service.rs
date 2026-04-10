@@ -19,10 +19,10 @@ use std::sync::Arc;
 
 use sea_orm::DatabaseConnection;
 use ymir::services::repo::postgres::repos::{
-    IssuingRepo, MinionsRepo, RecvInteractionRepo, RecvVerificationRepo, VcRequestRepo
+    IssuingRepo, MinionsRepo, RecvInteractionRepo, RecvVerificationRepo, VcRequestRepo,
 };
 use ymir::services::repo::subtraits::{
-    IssuingTrait, MinionsTrait, RecvInteractionTrait, RecvVerificationTrait, VcRequestTrait
+    IssuingTrait, MinionsTrait, RecvInteractionTrait, RecvVerificationTrait, VcRequestTrait,
 };
 
 use crate::services::repo::RepoTrait;
@@ -33,7 +33,7 @@ pub struct RepoForSql {
     interaction_repo: Arc<dyn RecvInteractionTrait>,
     verification_repo: Arc<dyn RecvVerificationTrait>,
     issuing_repo: Arc<dyn IssuingTrait>,
-    minions_repo: Arc<dyn MinionsTrait>
+    minions_repo: Arc<dyn MinionsTrait>,
 }
 
 impl RepoForSql {
@@ -43,18 +43,28 @@ impl RepoForSql {
             interaction_repo: Arc::new(RecvInteractionRepo::new(db_connection.clone())),
             verification_repo: Arc::new(RecvVerificationRepo::new(db_connection.clone())),
             issuing_repo: Arc::new(IssuingRepo::new(db_connection.clone())),
-            minions_repo: Arc::new(MinionsRepo::new(db_connection.clone()))
+            minions_repo: Arc::new(MinionsRepo::new(db_connection.clone())),
         }
     }
 }
 
 impl RepoTrait for RepoForSql {
-    fn request(&self) -> Arc<dyn VcRequestTrait> { self.request_repo.clone() }
+    fn request(&self) -> Arc<dyn VcRequestTrait> {
+        self.request_repo.clone()
+    }
 
-    fn interaction(&self) -> Arc<dyn RecvInteractionTrait> { self.interaction_repo.clone() }
+    fn interaction(&self) -> Arc<dyn RecvInteractionTrait> {
+        self.interaction_repo.clone()
+    }
 
-    fn verification(&self) -> Arc<dyn RecvVerificationTrait> { self.verification_repo.clone() }
-    fn minions(&self) -> Arc<dyn MinionsTrait> { self.minions_repo.clone() }
+    fn verification(&self) -> Arc<dyn RecvVerificationTrait> {
+        self.verification_repo.clone()
+    }
+    fn minions(&self) -> Arc<dyn MinionsTrait> {
+        self.minions_repo.clone()
+    }
 
-    fn issuing(&self) -> Arc<dyn IssuingTrait> { self.issuing_repo.clone() }
+    fn issuing(&self) -> Arc<dyn IssuingTrait> {
+        self.issuing_repo.clone()
+    }
 }

@@ -32,5 +32,7 @@ pub trait CoreMinionTrait: Send + Sync + 'static {
     async fn get_by_id(&self, id: String) -> Outcome<Model> {
         self.repo().minions().get_by_id(&id).await
     }
-    async fn get_me(&self) -> Outcome<Model> { self.repo().minions().get_me().await }
+    async fn get_me(&self) -> Outcome<Model> {
+        self.repo().minions().get_me().await
+    }
 }

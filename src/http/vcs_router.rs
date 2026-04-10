@@ -29,11 +29,13 @@ use ymir::utils::extract_payload;
 use crate::core::traits::CoreApproverTrait;
 
 pub struct ApproverRouter {
-    approver: Arc<dyn CoreApproverTrait>
+    approver: Arc<dyn CoreApproverTrait>,
 }
 
 impl ApproverRouter {
-    pub fn new(approver: Arc<dyn CoreApproverTrait>) -> Self { Self { approver } }
+    pub fn new(approver: Arc<dyn CoreApproverTrait>) -> Self {
+        Self { approver }
+    }
     pub fn router(self) -> Router {
         Router::new()
             .route("/all", get(Self::get_all_requests))
@@ -43,14 +45,14 @@ impl ApproverRouter {
     }
 
     async fn get_all_requests(
-        State(approver): State<Arc<dyn CoreApproverTrait>>
+        State(approver): State<Arc<dyn CoreApproverTrait>>,
     ) -> AppResult<Json<Vec<Model>>> {
         Ok(Json(approver.get_all().await?))
     }
 
     async fn get_one_request(
         State(approver): State<Arc<dyn CoreApproverTrait>>,
-        Path(id): Path<String>
+        Path(id): Path<String>,
     ) -> AppResult<Json<Model>> {
         Ok(Json(approver.get_by_id(id).await?))
     }
@@ -58,7 +60,7 @@ impl ApproverRouter {
     async fn manage_request(
         State(approver): State<Arc<dyn CoreApproverTrait>>,
         Path(id): Path<String>,
-        payload: Result<Json<VcDecisionApproval>, JsonRejection>
+        payload: Result<Json<VcDecisionApproval>, JsonRejection>,
     ) -> AppResult<()> {
         let payload = extract_payload(payload)?;
         approver.manage_req(id, payload).await

@@ -102,19 +102,29 @@ impl CoreBuilder {
         let client = Arc::new(ClientService::default());
 
         let gatekeeper = Arc::new(GnapService::new(gnap_config, client.clone()));
-        let issuer =
-            Arc::new(BasicIssuerService::new(issuer_config, client.clone(), vault.clone()));
+        let issuer = Arc::new(BasicIssuerService::new(
+            issuer_config,
+            client.clone(),
+            vault.clone(),
+        ));
         let verifier = Arc::new(BasicVerifierService::new(client.clone(), verifier_config));
 
         let wallet: Option<Arc<dyn WalletTrait>> = if config.is_wallet_active() {
             let walt_config = WaltIdConfig::from(config.clone());
-            Some(Arc::new(WaltIdService::new(walt_config, client.clone(), vault)))
+            Some(Arc::new(WaltIdService::new(
+                walt_config,
+                client.clone(),
+                vault,
+            )))
         } else {
             None
         };
 
-        let notifier: Option<Arc<dyn NotificationsTrait>> =
-            if config.is_react() { Some(Arc::new(NotificationService::new())) } else { None };
+        let notifier: Option<Arc<dyn NotificationsTrait>> = if config.is_react() {
+            Some(Arc::new(NotificationService::new()))
+        } else {
+            None
+        };
 
         let core = Core::new(
             wallet,

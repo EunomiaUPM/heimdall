@@ -18,7 +18,7 @@
 use std::sync::Arc;
 
 use ymir::services::repo::subtraits::{
-    IssuingTrait, MinionsTrait, RecvInteractionTrait, RecvVerificationTrait, VcRequestTrait
+    IssuingTrait, MinionsTrait, RecvInteractionTrait, RecvVerificationTrait, VcRequestTrait,
 };
 
 pub trait RepoTrait: Send + Sync + 'static {

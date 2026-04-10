@@ -15,8 +15,8 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-mod service;
 mod config;
+mod service;
 
-pub use service::ClearingHouseAuthorityVcBuilder;
 pub use config::ClearingHouseAuthorityConfig;
+pub use service::ClearingHouseAuthorityVcBuilder;

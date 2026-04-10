@@ -15,12 +15,12 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
+mod clh_config;
 mod ds_config;
 mod issue_config;
-mod clh_config;
 mod role;
 
+pub use clh_config::ClHBuilderConfig;
 pub use ds_config::DsBuilderConfig;
 pub use issue_config::IssueConfig;
-pub use clh_config::ClHBuilderConfig;
 pub use role::AuthorityRole;

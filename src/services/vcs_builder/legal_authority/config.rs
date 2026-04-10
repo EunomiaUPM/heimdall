@@ -18,28 +18,35 @@
 use ymir::config::traits::VcConfigTrait;
 use ymir::config::types::VcConfig;
 
-use crate::config::types::AuthorityRole;
 use crate::config::traits::RoleConfigTrait;
+use crate::config::types::AuthorityRole;
 use crate::config::CoreApplicationConfig;
 use crate::services::vcs_builder::BuilderConfigDefaultTrait;
 
 pub struct LegalAuthorityConfig {
     vc_config: VcConfig,
-    role: AuthorityRole
+    role: AuthorityRole,
 }
 
 impl VcConfigTrait for LegalAuthorityConfig {
-    fn vc_config(&self) -> &VcConfig { &self.vc_config }
+    fn vc_config(&self) -> &VcConfig {
+        &self.vc_config
+    }
 }
 
 impl RoleConfigTrait for LegalAuthorityConfig {
-    fn get_role(&self) -> &AuthorityRole { &self.role }
+    fn get_role(&self) -> &AuthorityRole {
+        &self.role
+    }
 }
 
 impl BuilderConfigDefaultTrait for LegalAuthorityConfig {}
 
 impl From<CoreApplicationConfig> for LegalAuthorityConfig {
     fn from(value: CoreApplicationConfig) -> Self {
-        Self { vc_config: value.vc_config().clone(), role: value.get_role().clone() }
+        Self {
+            vc_config: value.vc_config().clone(),
+            role: value.get_role().clone(),
+        }
     }
 }
