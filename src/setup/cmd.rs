@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2025 - Universidad Politécnica de Madrid - UPM
+ * Copyright (C) 2026 - Universidad Politécnica de Madrid - UPM
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -35,19 +35,19 @@ use crate::setup::db_migrations::AuthorityMigration;
 #[command(version = "0.1")]
 struct AuthorityCli {
     #[command(subcommand)]
-    command: AuthorityCliCommands
+    command: AuthorityCliCommands,
 }
 
 #[derive(Parser, Debug, PartialEq)]
 pub struct AuthCliArgs {
     #[arg(short, long)]
-    env_file: String
+    env_file: String,
 }
 
 #[derive(Subcommand, Debug, PartialEq)]
 pub enum AuthorityCliCommands {
     Start(AuthCliArgs),
-    Setup(AuthCliArgs)
+    Setup(AuthCliArgs),
 }
 
 pub struct AuthorityCommands;
@@ -66,7 +66,7 @@ impl AuthorityCommands {
                 let (config, vault) = Self::bootstrap(args)?;
                 match config.is_prod() {
                     true => vault.write_all_secrets(None).await?,
-                    false => vault.write_local_secrets(None).await?
+                    false => vault.write_local_secrets(None).await?,
                 }
                 let db_connection = vault.get_db_connection(&config).await;
                 AuthorityMigration::run(&db_connection).await?;
@@ -85,10 +85,10 @@ impl AuthorityCommands {
         };
         let table = json_to_table::json_to_table(
             &serde_json::to_value(&config)
-                .map_err(|e| Errors::parse("Error with config table", Some(Box::new(e))))?
+                .map_err(|e| Errors::parse("Error with config table", Some(Box::new(e))))?,
         )
-            .collapse()
-            .to_string();
+        .collapse()
+        .to_string();
         info!("Current Heimdall Config Config:\n{}", table);
         Ok((config, vault))
     }

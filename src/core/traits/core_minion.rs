@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2025 - Universidad Politécnica de Madrid - UPM
+ * Copyright (C) 2026 - Universidad Politécnica de Madrid - UPM
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -32,5 +32,7 @@ pub trait CoreMinionTrait: Send + Sync + 'static {
     async fn get_by_id(&self, id: String) -> Outcome<Model> {
         self.repo().minions().get_by_id(&id).await
     }
-    async fn get_me(&self) -> Outcome<Model> { self.repo().minions().get_me().await }
+    async fn get_me(&self) -> Outcome<Model> {
+        self.repo().minions().get_me().await
+    }
 }

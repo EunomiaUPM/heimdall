@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2025 - Universidad Politécnica de Madrid - UPM
+ * Copyright (C) 2026 - Universidad Politécnica de Madrid - UPM
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -31,7 +31,7 @@ use super::NotificationEvent;
 use super::NotificationsTrait;
 
 pub struct NotificationService {
-    sender: Arc<Sender<NotificationEvent>>
+    sender: Arc<Sender<NotificationEvent>>,
 }
 
 impl NotificationService {
@@ -47,10 +47,13 @@ impl NotificationsTrait for NotificationService {
         let event = NotificationEvent {
             id: model.id.clone(),
             title: "New Petition".to_string(),
-            message: format!("{} requests a {} credential", model.participant_slug, model.vc_type),
+            message: format!(
+                "{} requests a {} credential",
+                model.participant_slug, model.vc_type
+            ),
             level: "info".to_string(),
             created_at: chrono::Utc::now().to_rfc3339(),
-            link: Some(format!("/requests/{}", model.id))
+            link: Some(format!("/requests/{}", model.id)),
         };
         let _ = self.sender.send(event);
     }
@@ -64,7 +67,7 @@ impl NotificationsTrait for NotificationService {
                     let data = serde_json::to_string(&notification).unwrap_or_default();
                     Some(Ok(Event::default().data(data)))
                 }
-                Err(_) => None
+                Err(_) => None,
             }
         });
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2025 - Universidad Politécnica de Madrid - UPM
+ * Copyright (C) 2026 - Universidad Politécnica de Madrid - UPM
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,41 +15,46 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-use ymir::config::traits::{IssueConfigTrait, VcConfigTrait};
+use ymir::config::traits::VcConfigTrait;
 use ymir::config::types::VcConfig;
 
-use super::config_trait::DataSpaceAuthorityConfigTrait;
-use crate::config::role::{AuthorityRole, RoleConfigTrait};
+use crate::config::traits::{DSConfigTrait, IssueConfigTrait, RoleConfigTrait};
+use crate::config::types::{AuthorityRole, DsBuilderConfig};
 use crate::config::CoreApplicationConfig;
 use crate::services::vcs_builder::BuilderConfigDefaultTrait;
 
 pub struct DataSpaceAuthorityConfig {
     vc_config: VcConfig,
-    dataspace_id: String,
-    role: AuthorityRole
+    ds_config: DsBuilderConfig,
+    role: AuthorityRole,
 }
 
 impl VcConfigTrait for DataSpaceAuthorityConfig {
-    fn vc_config(&self) -> &VcConfig { &self.vc_config }
+    fn vc_config(&self) -> &VcConfig {
+        &self.vc_config
+    }
 }
 
 impl RoleConfigTrait for DataSpaceAuthorityConfig {
-    fn get_role(&self) -> &AuthorityRole { &self.role }
+    fn get_role(&self) -> &AuthorityRole {
+        &self.role
+    }
 }
 
 impl BuilderConfigDefaultTrait for DataSpaceAuthorityConfig {}
 
-impl DataSpaceAuthorityConfigTrait for DataSpaceAuthorityConfig {
-    fn get_dataspace_id(&self) -> &str { &self.dataspace_id }
+impl DSConfigTrait for DataSpaceAuthorityConfig {
+    fn get_ds_config(&self) -> &DsBuilderConfig {
+        &self.ds_config
+    }
 }
 
 impl From<CoreApplicationConfig> for DataSpaceAuthorityConfig {
     fn from(value: CoreApplicationConfig) -> Self {
-        let dataspace_id = value
-            .get_dataspace_id()
-            .map(|s| s.to_string())
-            .expect("Cannot work as a dataspace_authority as dataspace_id is not defined");
-
-        Self { vc_config: value.vc_config().clone(), dataspace_id, role: value.get_role().clone() }
+        Self {
+            vc_config: value.vc_config().clone(),
+            ds_config: value.get_ds_config().clone(),
+            role: value.get_role().clone(),
+        }
     }
 }

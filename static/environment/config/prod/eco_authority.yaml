@@ -41,7 +41,7 @@ did_config:
     domain: 'your_domain'
     path: null
 
-role: DataSpaceAuthority
+role: EcoAuthority
 
 api_config:
   version: 'v1'
@@ -54,10 +54,14 @@ vc_config:
 issue_config:
   ds_config:
     dataspace_id: 'change_me'
-  clh_config: null
+  clh_config:
+    label_level: 'change_me'
+    engine_version: 'change_me'
+    rules_version: 'change_me'
+    validated_criteria: 'change_me'
 
 verify_req_config:
   is_cert_allowed: true
-  vcs_requested: []
+  vcs_requested: [ 'gx:VatId','gx:LegalPerson','gx:TermsAndConditions' ]
 
 is_react: true

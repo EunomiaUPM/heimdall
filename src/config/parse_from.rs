@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2025 - Universidad Politécnica de Madrid - UPM
+ * Copyright (C) 2026 - Universidad Politécnica de Madrid - UPM
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,7 +17,7 @@
 
 use ymir::config::traits::{
     ApiConfigTrait, ConnectionConfigTrait, DidConfigTrait, HostsConfigTrait, VcConfigTrait,
-    VerifyReqConfigTrait, WalletConfigTrait
+    VerifyReqConfigTrait, WalletConfigTrait,
 };
 use ymir::services::issuer::basic::config::{BasicIssuerConfig, BasicIssuerConfigBuilder};
 use ymir::services::verifier::basic::config::{BasicVerifierConfig, BasicVerifierConfigBuilder};

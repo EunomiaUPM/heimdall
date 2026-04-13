@@ -15,6 +15,12 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-pub mod app;
-pub mod cmd;
-pub mod db_migrations;
+mod clh_config;
+mod ds_config;
+mod issue_config;
+mod role;
+
+pub use clh_config::ClHBuilderConfig;
+pub use ds_config::DsBuilderConfig;
+pub use issue_config::IssueConfig;
+pub use role::AuthorityRole;

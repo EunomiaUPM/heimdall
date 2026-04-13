@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2025 - Universidad Politécnica de Madrid - UPM
+ * Copyright (C) 2026 - Universidad Politécnica de Madrid - UPM
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -29,7 +29,7 @@ pub enum AuthorityRole {
     ClearingHouse,
     ClearingHouseProxy,
     DataSpaceAuthority,
-    EcoAuthority
+    EcoAuthority,
 }
 
 impl FromStr for AuthorityRole {
@@ -42,7 +42,7 @@ impl FromStr for AuthorityRole {
             "DataSpaceAuthority" => Ok(Self::DataSpaceAuthority),
             "DataspaceAuthority" => Ok(Self::DataSpaceAuthority),
             "EcoAuthority" => Ok(Self::EcoAuthority),
-            _ => Err(Errors::parse("Invalid Authority Role", None))
+            _ => Err(Errors::parse("Invalid Authority Role", None)),
         }
     }
 }
@@ -54,7 +54,7 @@ impl fmt::Display for AuthorityRole {
             AuthorityRole::ClearingHouse => "ClearingHouse",
             AuthorityRole::ClearingHouseProxy => "ClearingHouseProxy",
             AuthorityRole::DataSpaceAuthority => "DataSpaceAuthority",
-            AuthorityRole::EcoAuthority => "EcoAuthority"
+            AuthorityRole::EcoAuthority => "EcoAuthority",
         };
 
         write!(f, "{s}")
@@ -75,10 +75,10 @@ impl AuthorityRole {
                 ]
             }
             AuthorityRole::ClearingHouse => {
-                vec![]
+                vec![VcType::GxLabel]
             }
             AuthorityRole::ClearingHouseProxy => {
-                vec![]
+                vec![VcType::GxLabel]
             }
             AuthorityRole::DataSpaceAuthority => {
                 vec![VcType::DataspaceParticipant]
@@ -92,6 +92,7 @@ impl AuthorityRole {
                     VcType::VatId,
                     VcType::TaxId,
                     VcType::DataspaceParticipant,
+                    VcType::GxLabel,
                 ]
             }
         }

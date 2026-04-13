@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2025 - Universidad Politécnica de Madrid - UPM
+ * Copyright (C) 2026 - Universidad Politécnica de Madrid - UPM
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -30,26 +30,26 @@ pub trait GateKeeperTrait: Send + Sync + 'static {
     fn start(
         &self,
         grant_request: &Bytes,
-        headers: &HeaderMap
+        headers: &HeaderMap,
     ) -> Outcome<(vc_request::NewModel, recv_interaction::NewModel)>;
     fn validate_acc_req(
         &self,
         payload: &Bytes,
-        headers: &HeaderMap
+        headers: &HeaderMap,
     ) -> Outcome<(GrantRequest, Interact4GR)>;
     fn validate_vc_to_issue(&self, vc_type: &VcType) -> Outcome<()>;
     fn validate_cont_req(
         &self,
         int_model: &recv_interaction::Model,
         payload: &Bytes,
-        headers: &HeaderMap
+        headers: &HeaderMap,
     ) -> Outcome<()>;
     async fn end_verification(&self, model: &recv_interaction::Model) -> Outcome<Option<String>>;
     async fn apprv_dny_req(
         &self,
         approve: bool,
         req_model: &mut vc_request::Model,
-        int_model: &recv_interaction::Model
+        int_model: &recv_interaction::Model,
     ) -> Outcome<Value>;
     async fn notify_minion(&self, int_model: &recv_interaction::Model, body: Value) -> Outcome<()>;
     fn manage_cert(&self, model: &recv_interaction::Model) -> Outcome<GrantResponse>;

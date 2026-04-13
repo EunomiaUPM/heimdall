@@ -15,6 +15,20 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-pub mod app;
-pub mod cmd;
-pub mod db_migrations;
+use crate::config::types::ClHBuilderConfig;
+
+pub trait ClHConfigTrait {
+    fn get_clh_config(&self) -> &ClHBuilderConfig;
+    fn get_label_level(&self) -> &str {
+        &self.get_clh_config().label_level
+    }
+    fn get_engine_version(&self) -> &str {
+        &self.get_clh_config().engine_version
+    }
+    fn get_rules_version(&self) -> &str {
+        &self.get_clh_config().rules_version
+    }
+    fn get_validated_criteria(&self) -> &str {
+        &self.get_clh_config().validated_criteria
+    }
+}

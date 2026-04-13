@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2025 - Universidad Politécnica de Madrid - UPM
+ * Copyright (C) 2026 - Universidad Politécnica de Madrid - UPM
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,7 +15,11 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-mod role;
-mod role_trait;
-pub use role::*;
-pub use role_trait::RoleConfigTrait;
+use crate::config::types::DsBuilderConfig;
+
+pub trait DSConfigTrait {
+    fn get_ds_config(&self) -> &DsBuilderConfig;
+    fn get_ds_id(&self) -> &str {
+        &self.get_ds_config().dataspace_id
+    }
+}

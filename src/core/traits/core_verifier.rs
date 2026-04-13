@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2025 - Universidad Politécnica de Madrid - UPM
+ * Copyright (C) 2026 - Universidad Politécnica de Madrid - UPM
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -37,7 +37,12 @@ pub trait CoreVerifierTrait: Send + Sync + 'static {
         let result = self.verifier().verify_all(&mut ver_model, &vp_token).await;
         let int_model = self.repo().interaction().get_by_id(&ver_model.id).await?;
         result?;
-        self.repo().verification().update(ver_model).await?;
+        let ver_model = self.repo().verification().update(ver_model).await?;
+
+        let mut req_model = self.repo().request().get_by_id(&ver_model.id).await?;
+        req_model.vpt = Some(vp_token);
+        self.repo().request().update(req_model).await?;
+
         self.verifier().end_verification(&int_model).await
     }
 }

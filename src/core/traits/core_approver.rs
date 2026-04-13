@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2025 - Universidad Politécnica de Madrid - UPM
+ * Copyright (C) 2026 - Universidad Politécnica de Madrid - UPM
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -38,8 +38,10 @@ pub trait CoreApproverTrait: Send + Sync + 'static {
     async fn manage_req(&self, id: String, payload: VcDecisionApproval) -> Outcome<()> {
         let mut req_model = self.repo().request().get_by_id(&id).await?;
         let int_model = self.repo().interaction().get_by_id(&id).await?;
-        let body =
-            self.gatekeeper().apprv_dny_req(payload.approve, &mut req_model, &int_model).await?;
+        let body = self
+            .gatekeeper()
+            .apprv_dny_req(payload.approve, &mut req_model, &int_model)
+            .await?;
         self.repo().request().update(req_model).await?;
         self.gatekeeper().notify_minion(&int_model, body).await
     }

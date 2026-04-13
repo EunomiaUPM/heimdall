@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2025 - Universidad Politécnica de Madrid - UPM
+ * Copyright (C) 2026 - Universidad Politécnica de Madrid - UPM
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -26,26 +26,34 @@ use axum::{Form, Json, Router};
 use ymir::errors::AppResult;
 use ymir::types::issuing::{
     AuthServerMetadata, CredentialRequest, GiveVC, IssuerMetadata, IssuingToken, TokenRequest,
-    VCCredOffer, WellKnownJwks
+    VCCredOffer, WellKnownJwks,
 };
 use ymir::utils::{
-    extract_bearer_token, extract_form_payload, extract_payload, extract_query_param
+    extract_bearer_token, extract_form_payload, extract_payload, extract_query_param,
 };
 
 use crate::core::traits::CoreIssuerTrait;
 
 pub struct IssuerRouter {
-    issuer: Arc<dyn CoreIssuerTrait>
+    issuer: Arc<dyn CoreIssuerTrait>,
 }
 
 impl IssuerRouter {
-    pub fn new(issuer: Arc<dyn CoreIssuerTrait>) -> Self { Self { issuer } }
+    pub fn new(issuer: Arc<dyn CoreIssuerTrait>) -> Self {
+        Self { issuer }
+    }
 
     pub fn router(self) -> Router {
         Router::new()
             .route("/credentialOffer", get(Self::cred_offer))
-            .route("/.well-known/openid-credential-issuer", get(Self::get_issuer))
-            .route("/.well-known/oauth-authorization-server", get(Self::get_oauth_server))
+            .route(
+                "/.well-known/openid-credential-issuer",
+                get(Self::get_issuer),
+            )
+            .route(
+                "/.well-known/oauth-authorization-server",
+                get(Self::get_oauth_server),
+            )
             .route("/jwks", get(Self::get_jwks))
             .route("/token", post(Self::get_token))
             .route("/credential", post(Self::post_credential))
@@ -54,40 +62,46 @@ impl IssuerRouter {
 
     pub fn well_known(&self) -> Router {
         Router::new()
-            .route("/.well-known/openid-credential-issuer", get(Self::get_issuer))
-            .route("/.well-known/oauth-authorization-server", get(Self::get_oauth_server))
+            .route(
+                "/.well-known/openid-credential-issuer",
+                get(Self::get_issuer),
+            )
+            .route(
+                "/.well-known/oauth-authorization-server",
+                get(Self::get_oauth_server),
+            )
             .with_state(self.issuer.clone())
     }
 
     async fn cred_offer(
         State(issuer): State<Arc<dyn CoreIssuerTrait>>,
-        Query(params): Query<HashMap<String, String>>
+        Query(params): Query<HashMap<String, String>>,
     ) -> AppResult<Json<VCCredOffer>> {
         let id = extract_query_param(&params, "id")?;
         Ok(Json(issuer.get_cred_offer_data(&id).await?))
     }
 
     async fn get_issuer(
-        State(issuer): State<Arc<dyn CoreIssuerTrait>>
+        State(issuer): State<Arc<dyn CoreIssuerTrait>>,
     ) -> AppResult<Json<IssuerMetadata>> {
         Ok(Json(issuer.issuer_metadata()))
     }
 
     async fn get_oauth_server(
-        State(issuer): State<Arc<dyn CoreIssuerTrait>>
+        State(issuer): State<Arc<dyn CoreIssuerTrait>>,
     ) -> AppResult<Json<AuthServerMetadata>> {
         Ok(Json(issuer.oauth_server_metadata()))
     }
 
     async fn get_jwks(
-        State(issuer): State<Arc<dyn CoreIssuerTrait>>
+        State(issuer): State<Arc<dyn CoreIssuerTrait>>,
     ) -> AppResult<Json<WellKnownJwks>> {
         Ok(Json(issuer.jwks().await?))
     }
 
     async fn get_token(
         State(issuer): State<Arc<dyn CoreIssuerTrait>>,
-        payload: Result<Form<TokenRequest>, FormRejection>
+        payload: Result<Form<TokenRequest>, FormRejection>,
     ) -> AppResult<Json<IssuingToken>> {
         let payload = extract_form_payload(payload)?;
         Ok(Json(issuer.get_token(payload).await?))
@@ -96,7 +110,7 @@ impl IssuerRouter {
     async fn post_credential(
         State(authority): State<Arc<dyn CoreIssuerTrait>>,
         headers: HeaderMap,
-        payload: Result<Json<CredentialRequest>, JsonRejection>
+        payload: Result<Json<CredentialRequest>, JsonRejection>,
     ) -> AppResult<Json<GiveVC>> {
         let payload = extract_payload(payload)?;
         let token = extract_bearer_token(&headers)?;

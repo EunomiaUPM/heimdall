@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2025 - Universidad Politécnica de Madrid - UPM
+ * Copyright (C) 2026 - Universidad Politécnica de Madrid - UPM
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -26,25 +26,30 @@ use ymir::data::entities::{issuing, vc_request};
 use ymir::errors::{BadFormat, Errors, Outcome};
 use ymir::types::present::Missing;
 use ymir::types::vcs::vc_specs::legal_reg_number::{
-    LeiCodeBuilder, LocalRegistrationNumberBuilder, TaxIdBuilder, VatIdBuilder
+    LeiCodeBuilder, LocalRegistrationNumberBuilder, TaxIdBuilder, VatIdBuilder,
 };
 use ymir::types::vcs::VcType;
 use ymir::utils::{get_from_opt, parse_from_str, parse_to_string, parse_to_value};
 
 use super::super::VcBuilderTrait;
-use crate::config::role::{AuthorityRole, RoleConfigTrait};
+use crate::config::traits::RoleConfigTrait;
+use crate::config::types::AuthorityRole;
 use crate::services::vcs_builder::legal_authority::config::LegalAuthorityConfig;
 
 pub struct LegalAuthorityVcBuilder {
-    config: LegalAuthorityConfig
+    config: LegalAuthorityConfig,
 }
 
 impl LegalAuthorityVcBuilder {
-    pub fn new(config: LegalAuthorityConfig) -> Self { Self { config } }
+    pub fn new(config: LegalAuthorityConfig) -> Self {
+        Self { config }
+    }
 }
 
 impl RoleConfigTrait for LegalAuthorityVcBuilder {
-    fn get_role(&self) -> &AuthorityRole { &self.config.get_role() }
+    fn get_role(&self) -> &AuthorityRole {
+        &self.config.get_role()
+    }
 }
 
 impl VcBuilderTrait for LegalAuthorityVcBuilder {
@@ -76,7 +81,7 @@ impl VcBuilderTrait for LegalAuthorityVcBuilder {
                 let cred_subj = data.id(holder_did).build();
                 parse_to_value(&cred_subj)?
             }
-            _ => unreachable!()
+            _ => unreachable!(),
         };
 
         self.just_build(&model, credential_subject, &self.config)
@@ -86,7 +91,11 @@ impl VcBuilderTrait for LegalAuthorityVcBuilder {
         info!("Gathering data to issue vc");
 
         let cert_bytes = STANDARD.decode(&req_model.cert).map_err(|e| {
-            Errors::format(BadFormat::Received, "Unable to decode certificate", Some(Box::new(e)))
+            Errors::format(
+                BadFormat::Received,
+                "Unable to decode certificate",
+                Some(Box::new(e)),
+            )
         })?;
         let (_, cert) = parse_x509_certificate(&cert_bytes)
             .map_err(|e| Errors::parse("Unable to parse x509 cert", Some(Box::new(e))))?;
@@ -108,19 +117,23 @@ impl VcBuilderTrait for LegalAuthorityVcBuilder {
                 Errors::format(
                     BadFormat::Received,
                     "No organizational identifier found in certificate",
-                    None
+                    None,
                 )
             })?;
 
         let org_id_str = oid_attr.attr_value().as_str().map_err(|_| {
-            Errors::format(BadFormat::Received, "Unable to parse organization identifier", None)
+            Errors::format(
+                BadFormat::Received,
+                "Unable to parse organization identifier",
+                None,
+            )
         })?;
 
         let prefix = match vc_type {
             VcType::LeiCode => "LEI",
             VcType::LocalRegistrationNumber | VcType::TaxId => "NTR",
             VcType::VatId => "VAT",
-            _ => unreachable!()
+            _ => unreachable!(),
         };
 
         let shitty_code = org_id_str
@@ -130,7 +143,7 @@ impl VcBuilderTrait for LegalAuthorityVcBuilder {
                 Errors::format(
                     BadFormat::Received,
                     format!("No matching code found in cert for {:?}", prefix),
-                    None
+                    None,
                 )
             })?
             .to_string();
@@ -141,7 +154,7 @@ impl VcBuilderTrait for LegalAuthorityVcBuilder {
                     shitty_code,
                     cert_country.ok_or_else(|| {
                         Errors::format(BadFormat::Received, "No country code", None)
-                    })?
+                    })?,
                 );
 
                 parse_to_string(&data)
@@ -161,7 +174,7 @@ impl VcBuilderTrait for LegalAuthorityVcBuilder {
                 }
                 parse_to_string(&data)
             }
-            _ => unreachable!()
+            _ => unreachable!(),
         }
     }
 
@@ -176,8 +189,8 @@ impl VcBuilderTrait for LegalAuthorityVcBuilder {
             }
             vc_type => Err(Errors::unauthorized(
                 format!("Unauthorized to issue vc_type {}", vc_type.to_string()),
-                None
-            ))
+                None,
+            )),
         }
     }
 }

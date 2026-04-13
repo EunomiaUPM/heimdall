@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2025 - Universidad Politécnica de Madrid - UPM
+ * Copyright (C) 2026 - Universidad Politécnica de Madrid - UPM
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -29,11 +29,13 @@ use ymir::types::gnap::CredentialResponse;
 use crate::core::traits::CoreGatekeeperTrait;
 
 pub struct GateKeeperRouter {
-    gatekeeper: Arc<dyn CoreGatekeeperTrait>
+    gatekeeper: Arc<dyn CoreGatekeeperTrait>,
 }
 
 impl GateKeeperRouter {
-    pub fn new(gatekeeper: Arc<dyn CoreGatekeeperTrait>) -> Self { Self { gatekeeper } }
+    pub fn new(gatekeeper: Arc<dyn CoreGatekeeperTrait>) -> Self {
+        Self { gatekeeper }
+    }
 
     pub fn router(self) -> Router {
         Router::new()
@@ -45,7 +47,7 @@ impl GateKeeperRouter {
     async fn access_req(
         State(gatekeeper): State<Arc<dyn CoreGatekeeperTrait>>,
         headers: HeaderMap,
-        payload: Bytes
+        payload: Bytes,
     ) -> AppResult {
         Ok(gatekeeper
             .manage_req(payload, headers)
@@ -59,7 +61,7 @@ impl GateKeeperRouter {
         State(authority): State<Arc<dyn CoreGatekeeperTrait>>,
         headers: HeaderMap,
         Path(id): Path<String>,
-        payload: Bytes
+        payload: Bytes,
     ) -> AppResult<Json<CredentialResponse>> {
         Ok(Json(authority.manage_cont_req(id, payload, headers).await?))
     }

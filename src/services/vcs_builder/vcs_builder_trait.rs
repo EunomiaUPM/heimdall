@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2025 - Universidad Politécnica de Madrid - UPM
+ * Copyright (C) 2026 - Universidad Politécnica de Madrid - UPM
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -27,7 +27,7 @@ use ymir::types::vcs::vc_issuer::VCIssuer;
 use ymir::types::vcs::{VcModel, VcType, W3cDataModelVersion};
 use ymir::utils::{get_from_opt, parse_to_value};
 
-use crate::config::role::RoleConfigTrait;
+use crate::config::traits::RoleConfigTrait;
 use crate::services::vcs_builder::BuilderConfigDefaultTrait;
 
 pub trait VcBuilderTrait: RoleConfigTrait + Send + Sync + 'static {
@@ -38,14 +38,16 @@ pub trait VcBuilderTrait: RoleConfigTrait + Send + Sync + 'static {
         &self,
         model: &issuing::Model,
         credential_subject: Value,
-        config: &dyn BuilderConfigDefaultTrait
+        config: &dyn BuilderConfigDefaultTrait,
     ) -> Outcome<Value> {
-        let subject_id =
-            credential_subject.get("id").and_then(|v| v.as_str()).ok_or_else(|| {
+        let subject_id = credential_subject
+            .get("id")
+            .and_then(|v| v.as_str())
+            .ok_or_else(|| {
                 Errors::format(
                     BadFormat::Received,
                     "Unable to retrieve credential subject id",
-                    None
+                    None,
                 )
             })?;
 
@@ -72,11 +74,11 @@ pub trait VcBuilderTrait: RoleConfigTrait + Send + Sync + 'static {
                             credential_subject,
                             issuer: VCIssuer {
                                 id: issuer_did,
-                                name: Some("HeimdallAuthority".to_string())
+                                name: Some("HeimdallAuthority".to_string()),
                             },
                             valid_from: Some(now),
-                            valid_until: Some(now + Duration::days(365))
-                        }
+                            valid_until: Some(now + Duration::days(365)),
+                        },
                     })?,
                     W3cDataModelVersion::V2 => parse_to_value(&VCClaimsV2 {
                         exp: None,
@@ -90,18 +92,18 @@ pub trait VcBuilderTrait: RoleConfigTrait + Send + Sync + 'static {
                         credential_subject,
                         issuer: VCIssuer {
                             id: issuer_did,
-                            name: Some("HeimdallAuthority".to_string())
+                            name: Some("HeimdallAuthority".to_string()),
                         },
                         valid_from: Some(now),
-                        valid_until: Some(now + Duration::days(365))
-                    })?
+                        valid_until: Some(now + Duration::days(365)),
+                    })?,
                 };
                 Ok(vc)
             }
             VcModel::SdJwtVc => Err(Errors::not_impl(
                 "Cannot issue vcs with the format 'sd_jwt' right now",
-                None
-            ))
+                None,
+            )),
         }
     }
 }

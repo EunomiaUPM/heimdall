@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2025 - Universidad Politécnica de Madrid - UPM
+ * Copyright (C) 2026 - Universidad Politécnica de Madrid - UPM
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,7 +18,8 @@
 mod config;
 mod config_trait;
 mod parse_from;
-pub mod role;
+pub mod traits;
+pub mod types;
 
 pub use config::CoreApplicationConfig;
 pub use config_trait::CoreConfigTrait;

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2025 - Universidad Politécnica de Madrid - UPM
+ * Copyright (C) 2026 - Universidad Politécnica de Madrid - UPM
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,8 +15,11 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-use crate::services::vcs_builder::BuilderConfigDefaultTrait;
+use super::{ClHBuilderConfig, DsBuilderConfig};
+use serde::{Deserialize, Serialize};
 
-pub trait DataSpaceAuthorityConfigTrait: BuilderConfigDefaultTrait {
-    fn get_dataspace_id(&self) -> &str;
+#[derive(Deserialize, Serialize, Clone, Debug)]
+pub struct IssueConfig {
+    pub ds_config: Option<DsBuilderConfig>,
+    pub clh_config: Option<ClHBuilderConfig>,
 }

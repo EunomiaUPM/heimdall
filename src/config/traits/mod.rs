@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2025 - Universidad Politécnica de Madrid - UPM
+ * Copyright (C) 2026 - Universidad Politécnica de Madrid - UPM
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,8 +15,12 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-use crate::config::role::role::AuthorityRole;
+mod clh_trait;
+mod ds_trait;
+mod issue_trait;
+mod role_trait;
 
-pub trait RoleConfigTrait {
-    fn get_role(&self) -> &AuthorityRole;
-}
+pub use clh_trait::ClHConfigTrait;
+pub use ds_trait::DSConfigTrait;
+pub use issue_trait::IssueConfigTrait;
+pub use role_trait::RoleConfigTrait;

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2025 - Universidad Politécnica de Madrid - UPM
+ * Copyright (C) 2026 - Universidad Politécnica de Madrid - UPM
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -27,21 +27,24 @@ use ymir::types::vcs::VcType;
 use ymir::utils::{get_from_opt, parse_from_str, parse_to_string, parse_to_value};
 
 use super::super::VcBuilderTrait;
-use crate::config::role::{AuthorityRole, RoleConfigTrait};
-use crate::services::vcs_builder::dataspace_authority::config::{
-    DataSpaceAuthorityConfig, DataSpaceAuthorityConfigTrait
-};
+use crate::config::traits::{DSConfigTrait, RoleConfigTrait};
+use crate::config::types::AuthorityRole;
+use crate::services::vcs_builder::dataspace_authority::config::DataSpaceAuthorityConfig;
 
 pub struct DataSpaceAuthorityVcBuilder {
-    config: DataSpaceAuthorityConfig
+    config: DataSpaceAuthorityConfig,
 }
 
 impl DataSpaceAuthorityVcBuilder {
-    pub fn new(config: DataSpaceAuthorityConfig) -> Self { Self { config } }
+    pub fn new(config: DataSpaceAuthorityConfig) -> Self {
+        Self { config }
+    }
 }
 
 impl RoleConfigTrait for DataSpaceAuthorityVcBuilder {
-    fn get_role(&self) -> &AuthorityRole { &self.config.get_role() }
+    fn get_role(&self) -> &AuthorityRole {
+        &self.config.get_role()
+    }
 }
 
 impl VcBuilderTrait for DataSpaceAuthorityVcBuilder {
@@ -51,7 +54,7 @@ impl VcBuilderTrait for DataSpaceAuthorityVcBuilder {
         if !matches!(vc_type, VcType::DataspaceParticipant) {
             return Err(Errors::unauthorized(
                 format!("Cannot issue vc type: {}", vc_type),
-                None
+                None,
             ));
         }
 
@@ -72,7 +75,7 @@ impl VcBuilderTrait for DataSpaceAuthorityVcBuilder {
     }
 
     fn gather_data(&self, req_model: &vc_request::Model) -> Outcome<String> {
-        let dataspace_id = self.config.get_dataspace_id().to_string();
+        let dataspace_id = self.config.get_ds_id().to_string();
         let nick = req_model.participant_slug.clone();
         let data = DataSpaceParticipantBuilder::new(nick, dataspace_id);
         parse_to_string(&data)
@@ -85,8 +88,8 @@ impl VcBuilderTrait for DataSpaceAuthorityVcBuilder {
             VcType::DataspaceParticipant => Ok(vc_type),
             vc_type => Err(Errors::unauthorized(
                 format!("Unauthorized to issue vc_type {}", vc_type.to_string()),
-                None
-            ))
+                None,
+            )),
         }
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2025 - Universidad Politécnica de Madrid - UPM
+ * Copyright (C) 2026 - Universidad Politécnica de Madrid - UPM
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,8 +15,19 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-mod config;
-mod config_trait;
+use crate::config::traits::ClHConfigTrait;
+use serde::{Deserialize, Serialize};
 
-pub use config::DataSpaceAuthorityConfig;
-pub use config_trait::DataSpaceAuthorityConfigTrait;
+#[derive(Deserialize, Serialize, Clone, Debug)]
+pub struct ClHBuilderConfig {
+    pub label_level: String,
+    pub engine_version: String,
+    pub rules_version: String,
+    pub validated_criteria: String,
+}
+
+impl ClHConfigTrait for ClHBuilderConfig {
+    fn get_clh_config(&self) -> &ClHBuilderConfig {
+        self
+    }
+}
