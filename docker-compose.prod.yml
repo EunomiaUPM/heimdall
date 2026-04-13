@@ -38,7 +38,7 @@ services:
 
   heimdall-setup:
     container_name: heimdall-setup
-    image: rmenendez8/heimdall:v1.3.5
+    image: rmenendez8/heimdall:v1.3.6
     # build:
     #   context: .
     #   dockerfile: Dockerfile
@@ -55,12 +55,12 @@ services:
     command:
       - setup
       - --env-file
-      - /app/static/environment/config/prod/basic_dataspace_authority.yaml
+      - /app/static/environment/config/prod/eco_authority.yaml
     restart: "no"
 
   heimdall:
     container_name: heimdall
-    image: rmenendez8/heimdall:v1.3.5
+    image: rmenendez8/heimdall:v1.3.6
     # build:
     #   context: .
     #   dockerfile: Dockerfile
@@ -77,7 +77,7 @@ services:
     command:
       - start
       - --env-file
-      - /app/static/environment/config/prod/basic_dataspace_authority.yaml
+      - /app/static/environment/config/prod/eco_authority.yaml
 
   keycloak:
     container_name: keycloak
@@ -86,7 +86,7 @@ services:
     ports:
       - "8443:8443"
     volumes:
-      - "./vault2/config/:/etc/x509/https:ro"
+      - "./vault/config/:/etc/x509/https:ro"
       - "./react/keycloak-theme/heimdall:/opt/keycloak/themes/heimdall"
     env_file:
       - ./static/environment/envs/keycloak.env
@@ -110,7 +110,7 @@ services:
     ports:
       - "443:4180"
     volumes:
-      - ./vault2/config:/certs:ro
+      - ./vault/config:/certs:ro
       - ./react/proxy-templates:/templates:ro
     env_file:
       - ./static/environment/envs/proxy.env

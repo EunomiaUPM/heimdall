@@ -106,7 +106,6 @@ Edit `./static/environment/config/prod/basic_dataspace_authority.yaml`:
 | 38 | Replace `your_domain` with `your.domain.com` |
 | 41 | Replace `your_domain` with `your.domain.com` |
 | 55 | Replace `change_me` with your desired dataspace identifier |
-| 56 | Replace `change_me` with your desired dataspace name |
 
 ---
 
