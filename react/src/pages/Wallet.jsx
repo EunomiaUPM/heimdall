@@ -3,35 +3,24 @@ import { VITE_API_SERVER_URL as apiUrl } from '@/lib/api';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { useNotifications } from '@/contexts/NotificationContext';
 
 const Wallet = () => {
-  const [isOnboarded, setIsOnboarded] = useState(false);
-  const [isOnboarding, setIsOnboarding] = useState(false);
+  const { isWalletLinked, isWalletLoading, checkWalletStatus } = useNotifications();
+  const [isLinking, setIsLinking] = useState(false);
   const [error, setError] = useState(null);
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Determine button state color
-  // Default (not onboarded, not error): Purple (brand-accent)
-  // Error: Red (danger)
-  // Onboarded: Green (success)
-  // We'll use variants for this now
-  const getButtonVariant = () => {
-    if (isOnboarded) return 'default'; // Map to success style via className
-    if (error) return 'destructive';
-    return 'default'; // Map to brand style via className
-  };
-
   const getButtonText = () => {
-    if (isOnboarding) return 'LINKING...';
-    if (isOnboarded) return 'LINK AGAIN';
+    if (isLinking) return 'LINKING...';
+    if (isWalletLinked) return 'LINK AGAIN';
     if (error) return 'RETRY LINK';
     return 'LINK';
   };
 
-  // Define handleOnboard early so it can be used in the autolink effect
   const handleOnboard = async () => {
-    setIsOnboarding(true);
+    setIsLinking(true);
     setError(null);
 
     try {
@@ -43,29 +32,28 @@ const Wallet = () => {
         throw new Error('Failed to link wallet');
       }
 
-      // Mark as onboarded in localStorage
-      localStorage.setItem('walletOnboarded', 'true');
-      setIsOnboarded(true);
+      // Refresh global status
+      await checkWalletStatus();
 
-      // Reloading the page clears URL params and resets the wallet view correctly
-      window.location.href = '/admin/wallet';
+      // Navigate to DID page if we were on the base wallet path
+      if (location.pathname === '/wallet') {
+        navigate('/wallet/did', { replace: true });
+      }
     } catch (err) {
       console.error('Error onboarding wallet:', err);
       setError(err.message);
     } finally {
-      setIsOnboarding(false);
+      setIsLinking(false);
     }
   };
 
   useEffect(() => {
-    // Check if wallet is already onboarded
-    const onboarded = localStorage.getItem('walletOnboarded') === 'true';
-    setIsOnboarded(onboarded);
+    if (isWalletLoading) return;
 
     // If onboarded and on base wallet path, redirect to DID page
-    if (onboarded && location.pathname === '/wallet') {
+    if (isWalletLinked && location.pathname === '/wallet') {
       navigate('/wallet/did', { replace: true });
-    } else if (!onboarded && location.pathname === '/wallet') {
+    } else if (!isWalletLinked && location.pathname === '/wallet') {
       // Check for auto-link request from Notifications
       const searchParams = new URLSearchParams(location.search);
       if (searchParams.get('autolink') === 'true') {
@@ -76,12 +64,20 @@ const Wallet = () => {
       }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [location.pathname, location.search, navigate]);
+  }, [location.pathname, location.search, navigate, isWalletLinked, isWalletLoading]);
 
 
   const isActiveTab = (path) => {
     return location.pathname === path;
   };
+
+  if (isWalletLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-brand-sky animate-pulse">Checking wallet status...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full min-h-screen">
@@ -91,12 +87,12 @@ const Wallet = () => {
         {/* Always visible Link Button */}
         <Button
           onClick={handleOnboard}
-          disabled={isOnboarding}
+          disabled={isLinking}
           variant={error ? 'destructive' : 'default'}
           className={cn(
             'font-bold transition-all shadow-lg',
-            isOnboarded ? 'bg-success hover:bg-success/90 text-white' : '',
-            !isOnboarded && !error
+            isWalletLinked ? 'bg-success hover:bg-success/90 text-white' : '',
+            !isWalletLinked && !error
               ? 'bg-brand-purple hover:bg-brand-purple/90 text-white shadow-brand-purple/40'
               : '',
           )}
@@ -105,14 +101,14 @@ const Wallet = () => {
         </Button>
       </div>
 
-      {error && !isOnboarded && (
+      {error && !isWalletLinked && (
         <div className="mb-6 p-4 rounded-md border border-danger bg-danger/10 text-danger">
           Error: {error}
         </div>
       )}
 
       {/* Sub-navigation tabs - Only visible if onboarded */}
-      {isOnboarded && (
+      {isWalletLinked && (
         <>
           <div className="flex border-b border-brand-sky mb-8 mt-6">
             <button
