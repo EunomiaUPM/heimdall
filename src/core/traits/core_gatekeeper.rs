@@ -66,7 +66,7 @@ pub trait CoreGatekeeperTrait: Send + Sync + 'static {
 
         let iss_model = self.issuer().start_vci(&req_model);
 
-        let iss_model = self.repo().issuing().create(iss_model).await?;
+        let mut iss_model = self.repo().issuing().create(iss_model).await?;
 
         if int_model
             .start
@@ -82,7 +82,17 @@ pub trait CoreGatekeeperTrait: Send + Sync + 'static {
 
             Ok(response)
         } else {
-            self.gatekeeper().manage_cert(&int_model, &iss_model)
+            if self.gatekeeper().auto_approve_cert() {
+                let credential_data = self.vc_builder().gather_data(&req_model)?;
+                let mut req_model = req_model; 
+                req_model.status = "Approved".to_string();
+                iss_model.credential_data = Some(credential_data);
+                let iss_model = self.repo().issuing().update(iss_model).await?;
+                self.repo().request().update(req_model).await?;
+                GrantResponse::vc_approved(&iss_model)
+            } else {
+                self.gatekeeper().manage_cert(&int_model)
+            }
         }
     }
     async fn manage_cont_req(

@@ -348,23 +348,19 @@ impl GateKeeperTrait for GnapService {
         }
     }
 
-    fn manage_cert(
-        &self,
-        model: &recv_interaction::Model,
-        iss_model: &issuing::Model,
-    ) -> Outcome<GrantResponse> {
+    fn manage_cert(&self, model: &recv_interaction::Model) -> Outcome<GrantResponse> {
         info!("Managing cross-user request");
         if self.config.is_cert_allowed() {
-            if self.config.auto_approve_cert() {
-                GrantResponse::vc_approved(iss_model)
-            } else {
-                Ok(GrantResponse::pending(&InteractStart::Cert, model, None))
-            }
+            Ok(GrantResponse::pending(&InteractStart::Cert, model, None))
         } else {
             Err(Errors::unauthorized(
                 "Not able to allow certification using a cert",
                 None,
             ))
         }
+    }
+
+    fn auto_approve_cert(&self) -> bool {
+        self.config.auto_approve_cert()
     }
 }
