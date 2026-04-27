@@ -9,6 +9,69 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { cn } from '@/lib/utils';
+import { ChevronRight, FileJson, Copy, Check } from 'lucide-react';
+
+const DidDocItem = ({ did }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
+  
+  let formattedDoc = did.document;
+  try {
+    const parsed = typeof did.document === 'string' ? JSON.parse(did.document) : did.document;
+    formattedDoc = JSON.stringify(parsed, null, 2);
+  } catch (e) {
+    // leave as is if not JSON
+  }
+
+  const handleCopy = (e) => {
+    e.stopPropagation();
+    navigator.clipboard.writeText(formattedDoc);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <div className="group border border-brand-purple/20 rounded-xl overflow-hidden bg-background/50 transition-all hover:bg-background/60 shadow-md mb-4">
+      <button 
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full flex items-center justify-between p-4 text-left transition-colors"
+      >
+        <div className="flex items-center gap-3">
+           <div className={cn("transition-transform duration-200", isOpen ? "rotate-90 text-brand-purple" : "text-muted-foreground")}>
+             <ChevronRight className="h-5 w-5" />
+           </div>
+           <span className="text-sm font-semibold text-foreground">{did.alias}</span>
+           <span className="text-xs text-muted-foreground/60 font-mono truncate max-w-[200px] md:max-w-md">{did.did}</span>
+        </div>
+      </button>
+      {isOpen && (
+        <div className="p-4 pt-0">
+          <div className="bg-black/30 rounded-xl border border-brand-purple/10 overflow-hidden">
+             <div className="flex items-center justify-between px-4 py-2 border-b border-brand-purple/10 bg-black/20">
+                <span className="text-[10px] font-bold uppercase tracking-widest text-brand-purple/70 flex items-center gap-2">
+                  <FileJson className="h-3 w-3" />
+                  JSON Document
+                </span>
+                <button 
+                  onClick={handleCopy}
+                  className="flex items-center gap-1.5 text-[10px] font-mono text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  {copied ? <Check className="h-3 w-3 text-success" /> : <Copy className="h-3 w-3" />}
+                  {copied ? "Copied!" : "Copy"}
+                </button>
+             </div>
+             <div className="p-4 overflow-x-auto">
+               <pre className="font-mono text-[11px] text-muted-foreground/90 whitespace-pre-wrap break-all leading-relaxed">
+                 {formattedDoc}
+               </pre>
+             </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
 
 const WalletInfo = () => {
   const [walletInfo, setWalletInfo] = useState(null);
@@ -100,17 +163,7 @@ const WalletInfo = () => {
       {/* DID Document Previews */}
       <h3 className="text-xl font-bold text-brand-purple mb-4">DID Documents</h3>
       {walletInfo.dids.map((did, index) => (
-        <details
-          key={index}
-          className="group rounded-lg border border-brand-purple bg-background/60 p-4 shadow-md shadow-brand-purple/20 mb-4 open:bg-background/80 transition-all"
-        >
-          <summary className="text-brand-purple cursor-pointer font-bold mb-2 group-open:mb-4 select-none hover:text-brand-purple/80 break-all">
-            {did.alias} - {did.did}
-          </summary>
-          <pre className="text-muted-foreground whitespace-pre-wrap break-all font-mono text-xs leading-relaxed bg-black/40 p-4 rounded border border-brand-purple/30">
-            {did.document}
-          </pre>
-        </details>
+        <DidDocItem key={index} did={did} />
       ))}
     </div>
   );

@@ -37,7 +37,7 @@ const Wallet = () => {
 
       // Navigate to DID page if we were on the base wallet path
       if (location.pathname === '/wallet') {
-        navigate('/wallet/did', { replace: true });
+        navigate('/wallet/info', { replace: true });
       }
     } catch (err) {
       console.error('Error onboarding wallet:', err);
@@ -52,7 +52,7 @@ const Wallet = () => {
 
     // If onboarded and on base wallet path, redirect to DID page
     if (isWalletLinked && location.pathname === '/wallet') {
-      navigate('/wallet/did', { replace: true });
+      navigate('/wallet/info', { replace: true });
     } else if (!isWalletLinked && location.pathname === '/wallet') {
       // Check for auto-link request from Notifications
       const searchParams = new URLSearchParams(location.search);
@@ -112,17 +112,6 @@ const Wallet = () => {
         <>
           <div className="flex border-b border-brand-sky mb-8 mt-6">
             <button
-              onClick={() => navigate('/wallet/did')}
-              className={cn(
-                'px-6 py-3 transition-colors font-medium border-b-2 -mb-[2px]',
-                isActiveTab('/wallet/did')
-                  ? 'border-brand-sky text-brand-sky bg-brand-sky/10'
-                  : 'border-transparent text-gray-400 hover:text-brand-sky hover:bg-brand-sky/5',
-              )}
-            >
-              DID
-            </button>
-            <button
               onClick={() => navigate('/wallet/info')}
               className={cn(
                 'px-6 py-3 transition-colors font-medium border-b-2 -mb-[2px]',
@@ -143,6 +132,17 @@ const Wallet = () => {
               )}
             >
               Credentials
+            </button>
+            <button
+              onClick={() => navigate('/wallet/did')}
+              className={cn(
+                'px-6 py-3 transition-colors font-medium border-b-2 -mb-[2px]',
+                isActiveTab('/wallet/did')
+                  ? 'border-brand-sky text-brand-sky bg-brand-sky/10'
+                  : 'border-transparent text-gray-400 hover:text-brand-sky hover:bg-brand-sky/5',
+              )}
+            >
+              DID
             </button>
             <button
               onClick={() => navigate('/wallet/oidc4vp')}

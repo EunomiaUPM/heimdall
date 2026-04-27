@@ -7,6 +7,7 @@ import {
   SidebarContent,
   SidebarGroup,
   SidebarGroupContent,
+  SidebarGroupLabel,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
@@ -20,13 +21,14 @@ export function AppSidebar() {
   const { state } = useSidebar();
   const isCollapsed = state === 'collapsed';
 
-  const items = [
+  const mainItems = [
     { title: 'Home', url: '/', icon: Home },
     { title: 'Requests', url: '/requests', icon: FileText },
     { title: 'Participants', url: '/participants', icon: Users },
-    ...(walletActive ? [{ title: 'Wallet', url: '/wallet', icon: Wallet }] : []),
     { title: 'About', url: '/about', icon: Info },
   ];
+
+  const myAreaItems = walletActive ? [{ title: 'Wallet', url: '/wallet', icon: Wallet }] : [];
 
   return (
     <Sidebar className="bg-base-sidebar" collapsible="icon">
@@ -61,8 +63,9 @@ export function AppSidebar() {
           </div>
 
           <SidebarGroupContent>
+            <SidebarGroupLabel>Main Menu</SidebarGroupLabel>
             <SidebarMenu>
-              {items.map((item) => (
+              {mainItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton
                     asChild
@@ -80,6 +83,30 @@ export function AppSidebar() {
               ))}
             </SidebarMenu>
           </SidebarGroupContent>
+          
+          {myAreaItems.length > 0 && (
+            <SidebarGroupContent className="mt-6">
+              <SidebarGroupLabel>My Area</SidebarGroupLabel>
+              <SidebarMenu>
+                {myAreaItems.map((item) => (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={
+                        location.pathname === item.url ||
+                        (item.url !== '/' && location.pathname.startsWith(item.url))
+                      }
+                    >
+                      <Link to={item.url}>
+                        <item.icon />
+                        <span>{item.title}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          )}
         </SidebarGroup>
       </SidebarContent>
     </Sidebar>
