@@ -26,7 +26,7 @@ use tracing::info;
 use ymir::capabilities::HttpSig;
 use ymir::config::traits::HostsConfigTrait;
 use ymir::config::types::HostType;
-use ymir::data::entities::{issuing, recv_interaction, vc_request};
+use ymir::data::entities::{recv_interaction, vc_request};
 use ymir::errors::{BadFormat, Errors, Outcome};
 use ymir::services::client::ClientTrait;
 use ymir::types::gnap::grant_request::{GrantRequest, Interact4GR, InteractStart, KeyProof};
