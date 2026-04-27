@@ -19,7 +19,7 @@ use async_trait::async_trait;
 use axum::body::Bytes;
 use axum::http::HeaderMap;
 use serde_json::Value;
-use ymir::data::entities::{recv_interaction, vc_request};
+use ymir::data::entities::{issuing, recv_interaction, vc_request};
 use ymir::errors::Outcome;
 use ymir::types::gnap::grant_request::{GrantRequest, Interact4GR};
 use ymir::types::gnap::grant_response::GrantResponse;
@@ -52,5 +52,5 @@ pub trait GateKeeperTrait: Send + Sync + 'static {
         int_model: &recv_interaction::Model,
     ) -> Outcome<Value>;
     async fn notify_minion(&self, int_model: &recv_interaction::Model, body: Value) -> Outcome<()>;
-    fn manage_cert(&self, model: &recv_interaction::Model) -> Outcome<GrantResponse>;
+    fn manage_cert(&self, model: &recv_interaction::Model, iss_model: &issuing::Model) -> Outcome<GrantResponse>;
 }

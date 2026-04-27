@@ -66,7 +66,7 @@ pub trait CoreGatekeeperTrait: Send + Sync + 'static {
 
         let iss_model = self.issuer().start_vci(&req_model);
 
-        let _iss_model = self.repo().issuing().create(iss_model).await?;
+        let iss_model = self.repo().issuing().create(iss_model).await?;
 
         if int_model
             .start
@@ -82,7 +82,7 @@ pub trait CoreGatekeeperTrait: Send + Sync + 'static {
 
             Ok(response)
         } else {
-            self.gatekeeper().manage_cert(&int_model)
+            self.gatekeeper().manage_cert(&int_model, &iss_model)
         }
     }
     async fn manage_cont_req(
@@ -104,17 +104,15 @@ pub trait CoreGatekeeperTrait: Send + Sync + 'static {
         self.gatekeeper().validate_vc_to_issue(&vc_type)?;
 
         let credential_data = self.vc_builder().gather_data(&req_model)?;
-        let vc_uri = self.issuer().generate_issuing_uri(&int_model.id, None);
-        info!(vc_uri);
+        info!(iss_model.uri);
 
-        req_model.vc_uri = Some(vc_uri.clone());
-        iss_model.uri = Some(vc_uri.clone());
+        req_model.vc_uri = Some(iss_model.uri.clone());
         iss_model.credential_data = Some(credential_data);
 
         let _req_model = self.repo().request().update(req_model).await?;
-        let _iss_model = self.repo().issuing().update(iss_model).await?;
+        let iss_model = self.repo().issuing().update(iss_model).await?;
         Ok(CredentialResponse {
-            credential_uri: vc_uri,
+            credential_uri: iss_model.uri.clone(),
             credential_type: vc_type.to_conf(),
         })
     }

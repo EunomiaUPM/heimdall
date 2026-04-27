@@ -28,6 +28,7 @@ pub struct GnapConfig {
     role: AuthorityRole,
     api_path: String,
     is_cert_allowed: bool,
+    auto_approve_cert: bool
 }
 
 impl From<CoreApplicationConfig> for GnapConfig {
@@ -37,6 +38,7 @@ impl From<CoreApplicationConfig> for GnapConfig {
             role: config.get_role().clone(),
             api_path: config.get_api_version(),
             is_cert_allowed: config.is_cert_allowed(),
+            auto_approve_cert: config.auto_approve_cert(),
         }
     }
 }
@@ -59,5 +61,8 @@ impl GnapConfigTrait for GnapConfig {
     }
     fn is_cert_allowed(&self) -> bool {
         self.is_cert_allowed
+    }
+    fn auto_approve_cert(&self) -> bool {
+        self.auto_approve_cert
     }
 }

@@ -26,7 +26,7 @@ use tracing::info;
 use ymir::capabilities::HttpSig;
 use ymir::config::traits::HostsConfigTrait;
 use ymir::config::types::HostType;
-use ymir::data::entities::{recv_interaction, vc_request};
+use ymir::data::entities::{issuing, recv_interaction, vc_request};
 use ymir::errors::{BadFormat, Errors, Outcome};
 use ymir::services::client::ClientTrait;
 use ymir::types::gnap::grant_request::{GrantRequest, Interact4GR, InteractStart, KeyProof};
@@ -348,10 +348,18 @@ impl GateKeeperTrait for GnapService {
         }
     }
 
-    fn manage_cert(&self, model: &recv_interaction::Model) -> Outcome<GrantResponse> {
+    fn manage_cert(
+        &self,
+        model: &recv_interaction::Model,
+        iss_model: &issuing::Model,
+    ) -> Outcome<GrantResponse> {
         info!("Managing cross-user request");
         if self.config.is_cert_allowed() {
-            Ok(GrantResponse::pending(&InteractStart::Cert, model, None))
+            if self.config.auto_approve_cert() {
+                GrantResponse::vc_approved(iss_model)
+            } else {
+                Ok(GrantResponse::pending(&InteractStart::Cert, model, None))
+            }
         } else {
             Err(Errors::unauthorized(
                 "Not able to allow certification using a cert",

@@ -45,7 +45,7 @@ impl RainbowAuthorityRouter {
         Self { core, openapi }
     }
 
-    pub fn router2(self) -> Router {
+    pub fn router(self) -> Router {
         let api_version = self.core.config().get_api_version();
         let issuer = IssuerRouter::new(self.core.clone());
         let gatekeeper = GateKeeperRouter::new(self.core.clone());
@@ -106,9 +106,6 @@ impl RainbowAuthorityRouter {
             .layer(CorsLayer::permissive())
     }
 
-    pub fn router(self) -> Router {
-        self.router2()
-    }
     async fn fallback() -> impl IntoResponse {
         error!("Wrong route");
         StatusCode::NOT_FOUND.into_response()
