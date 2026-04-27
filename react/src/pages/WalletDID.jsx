@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { VITE_API_SERVER_URL as apiUrl } from '@/lib/api';
 
 const WalletDID = () => {
   const [didDocument, setDidDocument] = useState(null);
@@ -9,7 +8,7 @@ const WalletDID = () => {
   useEffect(() => {
     const fetchDID = async () => {
       try {
-        const response = await fetch(`${apiUrl}/wallet/did.json`);
+        const response = await fetch('/.well-known/did.json');
         if (!response.ok) {
           throw new Error('Failed to fetch DID document');
         }
@@ -24,7 +23,7 @@ const WalletDID = () => {
     };
 
     fetchDID();
-  }, [apiUrl]);
+  }, []);
 
   if (loading) return <div className="text-brand-sky">Loading DID document...</div>;
   if (error) return <div className="text-danger">Error: {error}</div>;

@@ -87,7 +87,9 @@ impl VcBuilderTrait for ClearingHouseAuthorityVcBuilder {
             self.config.get_validated_criteria(),
         );
 
-        let vpt = req_model.vpt.as_ref().ok_or_else(|| Errors::unauthorized("Authentication has not been completed yet", None))?;
+        let vpt = req_model.vpt.as_ref().ok_or_else(|| {
+            Errors::unauthorized("Authentication has not been completed yet", None)
+        })?;
 
         let data = Self::complete(vpt, builder)?;
 

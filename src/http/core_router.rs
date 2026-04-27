@@ -17,21 +17,22 @@
 
 use std::sync::Arc;
 
+use crate::core::traits::CoreTrait;
+use crate::http::{
+    ApproverRouter, GateKeeperRouter, IssuerRouter, MinionRouter, ReactRouter, VerifierRouter,
+};
 use axum::extract::Request;
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::Router;
 use tower_http::cors::CorsLayer;
+use tower_http::services::{ServeDir, ServeFile};
 use tower_http::trace::{DefaultOnResponse, TraceLayer};
 use tracing::{error, info, Level};
 use uuid::Uuid;
+use ymir::config::types::HostType;
 use ymir::http::{HealthRouter, OpenapiRouter, WalletRouter};
-
-use crate::core::traits::CoreTrait;
-use crate::http::builder::RouterBuilder;
-use crate::http::{
-    ApproverRouter, GateKeeperRouter, IssuerRouter, MinionRouter, ReactRouter, VerifierRouter,
-};
+use ymir::types::dids::{DidService, DidServiceType};
 
 pub struct RainbowAuthorityRouter {
     core: Arc<dyn CoreTrait>,
@@ -44,31 +45,53 @@ impl RainbowAuthorityRouter {
         Self { core, openapi }
     }
 
-    pub fn router(self) -> Router {
-        let wallet = match self.core.config().is_wallet_active() {
-            true => Some(WalletRouter::new(self.core.clone())),
-            false => None,
-        };
+    pub fn router2(self) -> Router {
+        let api_version = self.core.config().get_api_version();
+        let issuer = IssuerRouter::new(self.core.clone());
+        let gatekeeper = GateKeeperRouter::new(self.core.clone());
+        let verifier = VerifierRouter::new(self.core.clone());
+        let approver = ApproverRouter::new(self.core.clone());
+        let minion = MinionRouter::new(self.core.clone());
+        let health = HealthRouter::new();
+        let openapi = OpenapiRouter::new(self.openapi.clone());
 
-        let react = match self.core.config().is_react() {
-            true => Some(ReactRouter::new(self.core.clone())),
-            false => None,
-        };
+        let mut base_router = Router::new().merge(issuer.well_known());
 
-        let router = RouterBuilder::new()
-            .gatekeeper(GateKeeperRouter::new(self.core.clone()))
-            .issuer(IssuerRouter::new(self.core.clone()))
-            .verifier(VerifierRouter::new(self.core.clone()))
-            .approver(ApproverRouter::new(self.core.clone()))
-            .minion(MinionRouter::new(self.core.clone()))
-            .wallet(wallet)
-            .react(react)
-            .openapi(OpenapiRouter::new(self.openapi.clone()))
-            .health(HealthRouter::new())
-            .api_path(self.core.config().get_api_version())
-            .build();
+        let mut api_router = Router::new()
+            .merge(health.router())
+            .nest("/minions", minion.router())
+            .nest("/approver", approver.router())
+            .nest("/gate", gatekeeper.router())
+            .nest("/issuer", issuer.router())
+            .nest("/verifier", verifier.router())
+            .nest("/docs", openapi.router());
 
-        router
+        if self.core.config().is_wallet_active() {
+            let services = vec![DidService::basic(
+                DidServiceType::CredentialIssuer,
+                format!(
+                    "{}{}/gate/access",
+                    self.core.config().get_host(HostType::Http),
+                    api_version
+                ),
+            )];
+            let wallet = WalletRouter::new(self.core.clone());
+            base_router = base_router.merge(wallet.well_known(Some(services)));
+            api_router = api_router.nest("/wallet", wallet.router());
+        }
+
+        if self.core.config().is_react() {
+            let react = ReactRouter::new(self.core.clone());
+            base_router = base_router.nest_service(
+                "/admin",
+                ServeDir::new("./react/dist")
+                    .not_found_service(ServeFile::new("./react/dist/index.html")),
+            );
+            api_router = api_router.nest("/react", react.router());
+        }
+
+        base_router
+            .nest(&api_version, api_router)
             .fallback(Self::fallback)
             .layer(
                 TraceLayer::new_for_http()
@@ -81,6 +104,10 @@ impl RainbowAuthorityRouter {
                     .on_response(DefaultOnResponse::new().level(Level::TRACE)),
             )
             .layer(CorsLayer::permissive())
+    }
+
+    pub fn router(self) -> Router {
+        self.router2()
     }
     async fn fallback() -> impl IntoResponse {
         error!("Wrong route");
