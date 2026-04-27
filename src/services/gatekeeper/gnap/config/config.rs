@@ -28,7 +28,7 @@ pub struct GnapConfig {
     role: AuthorityRole,
     api_path: String,
     is_cert_allowed: bool,
-    auto_approve_cert: bool
+    auto_approve_cert: bool,
 }
 
 impl From<CoreApplicationConfig> for GnapConfig {

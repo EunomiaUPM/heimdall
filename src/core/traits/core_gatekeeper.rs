@@ -84,7 +84,7 @@ pub trait CoreGatekeeperTrait: Send + Sync + 'static {
         } else {
             if self.gatekeeper().auto_approve_cert() {
                 let credential_data = self.vc_builder().gather_data(&req_model)?;
-                let mut req_model = req_model; 
+                let mut req_model = req_model;
                 req_model.status = "Approved".to_string();
                 iss_model.credential_data = Some(credential_data);
                 let iss_model = self.repo().issuing().update(iss_model).await?;
