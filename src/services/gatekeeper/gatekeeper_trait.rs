@@ -53,4 +53,5 @@ pub trait GateKeeperTrait: Send + Sync + 'static {
     ) -> Outcome<Value>;
     async fn notify_minion(&self, int_model: &recv_interaction::Model, body: Value) -> Outcome<()>;
     fn manage_cert(&self, model: &recv_interaction::Model) -> Outcome<GrantResponse>;
+    fn auto_approve_cert(&self) -> bool;
 }

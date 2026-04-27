@@ -359,4 +359,8 @@ impl GateKeeperTrait for GnapService {
             ))
         }
     }
+
+    fn auto_approve_cert(&self) -> bool {
+        self.config.auto_approve_cert()
+    }
 }

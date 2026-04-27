@@ -22,4 +22,5 @@ use crate::config::traits::RoleConfigTrait;
 pub trait GnapConfigTrait: RoleConfigTrait + HostsConfigTrait {
     fn get_api_path(&self) -> String;
     fn is_cert_allowed(&self) -> bool;
+    fn auto_approve_cert(&self) -> bool;
 }
