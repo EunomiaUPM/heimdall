@@ -38,7 +38,7 @@ services:
 
   heimdall-setup:
     container_name: heimdall-setup
-    image: rmenendez8/heimdall:v1.3.6
+    image: rmenendez8/heimdall:v2.0.0
     # build:
     #   context: .
     #   dockerfile: Dockerfile
@@ -60,7 +60,7 @@ services:
 
   heimdall:
     container_name: heimdall
-    image: rmenendez8/heimdall:v1.3.6
+    image: rmenendez8/heimdall:v2.0.0
     # build:
     #   context: .
     #   dockerfile: Dockerfile

@@ -18,6 +18,7 @@
 use std::sync::Arc;
 
 use crate::core::traits::CoreTrait;
+use crate::http::fed_catalog_router::FedCatalogRouter;
 use crate::http::{
     ApproverRouter, GateKeeperRouter, IssuerRouter, MinionRouter, ReactRouter, VerifierRouter,
 };
@@ -51,6 +52,7 @@ impl RainbowAuthorityRouter {
         let gatekeeper = GateKeeperRouter::new(self.core.clone());
         let verifier = VerifierRouter::new(self.core.clone());
         let approver = ApproverRouter::new(self.core.clone());
+        let fed_catalog = FedCatalogRouter::new(self.core.clone());
         let minion = MinionRouter::new(self.core.clone());
         let health = HealthRouter::new();
         let openapi = OpenapiRouter::new(self.openapi.clone());
@@ -67,14 +69,23 @@ impl RainbowAuthorityRouter {
             .nest("/docs", openapi.router());
 
         if self.core.config().is_wallet_active() {
-            let services = vec![DidService::basic(
-                DidServiceType::CredentialIssuer,
-                format!(
-                    "{}{}/gate/access",
-                    self.core.config().get_host(HostType::Http),
-                    api_version
+            let services = vec![
+                DidService::basic(
+                    DidServiceType::CredentialIssuer,
+                    format!(
+                        "{}{}/gate/access",
+                        self.core.config().get_host(HostType::Http),
+                        api_version
+                    ),
                 ),
-            )];
+                DidService::basic(
+                    DidServiceType::FederatedCatalog,
+                    format!(
+                        "{}/.well-known/federated-catalog",
+                        self.core.config().get_host(HostType::Http),
+                    ),
+                ),
+            ];
             let wallet = WalletRouter::new(self.core.clone());
             base_router = base_router.merge(wallet.well_known(Some(services)));
             api_router = api_router.nest("/wallet", wallet.router());
@@ -91,6 +102,7 @@ impl RainbowAuthorityRouter {
         }
 
         base_router
+            .merge(fed_catalog.well_known())
             .nest(&api_version, api_router)
             .fallback(Self::fallback)
             .layer(

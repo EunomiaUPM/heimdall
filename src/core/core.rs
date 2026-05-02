@@ -25,8 +25,8 @@ use ymir::services::wallet::WalletTrait;
 
 use crate::config::CoreConfigTrait;
 use crate::core::traits::{
-    CoreApproverTrait, CoreGatekeeperTrait, CoreIssuerTrait, CoreMinionTrait, CoreReactTrait,
-    CoreTrait, CoreVerifierTrait,
+    CoreApproverTrait, CoreFedCatalog, CoreGatekeeperTrait, CoreIssuerTrait, CoreMinionTrait,
+    CoreReactTrait, CoreTrait, CoreVerifierTrait,
 };
 use crate::services::gatekeeper::GateKeeperTrait;
 use crate::services::notifications::NotificationsTrait;
@@ -65,6 +65,12 @@ impl Core {
             config,
             notifier,
         }
+    }
+}
+
+impl CoreFedCatalog for Core {
+    fn repo(&self) -> Arc<dyn RepoTrait> {
+        self.repo.clone()
     }
 }
 
