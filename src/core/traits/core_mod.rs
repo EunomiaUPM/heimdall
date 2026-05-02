@@ -21,8 +21,8 @@ use async_trait::async_trait;
 use ymir::core_traits::CoreWalletTrait;
 
 use super::{
-    CoreApproverTrait, CoreGatekeeperTrait, CoreIssuerTrait, CoreMinionTrait, CoreReactTrait,
-    CoreVerifierTrait,
+    CoreApproverTrait, CoreFedCatalog, CoreGatekeeperTrait, CoreIssuerTrait, CoreMinionTrait,
+    CoreReactTrait, CoreVerifierTrait,
 };
 use crate::config::CoreConfigTrait;
 
@@ -32,6 +32,7 @@ pub trait CoreTrait:
     + CoreIssuerTrait
     + CoreApproverTrait
     + CoreGatekeeperTrait
+    + CoreFedCatalog
     + CoreWalletTrait
     + CoreMinionTrait
     + CoreReactTrait

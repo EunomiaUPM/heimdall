@@ -16,6 +16,7 @@
  */
 
 mod core_approver;
+mod core_fed_catalog;
 mod core_gaia;
 mod core_gatekeeper;
 mod core_issuer;
@@ -25,6 +26,7 @@ mod core_react;
 mod core_verifier;
 
 pub use core_approver::CoreApproverTrait;
+pub use core_fed_catalog::CoreFedCatalog;
 pub use core_gatekeeper::CoreGatekeeperTrait;
 pub use core_issuer::CoreIssuerTrait;
 pub use core_minion::CoreMinionTrait;

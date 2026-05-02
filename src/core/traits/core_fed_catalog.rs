@@ -15,20 +15,17 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-mod core_router;
-mod fed_catalog_router;
-mod gatekeeper_router;
-mod issuer_router;
-mod minion_router;
-pub mod react_router;
-mod vcs_router;
-mod verifier_router;
+use crate::services::repo::RepoTrait;
+use async_trait::async_trait;
+use std::sync::Arc;
+use ymir::data::entities::minions::Model;
+use ymir::errors::Outcome;
 
-pub use core_router::RainbowAuthorityRouter;
-pub use fed_catalog_router::FedCatalogRouter;
-pub use gatekeeper_router::GateKeeperRouter;
-pub use issuer_router::IssuerRouter;
-pub use minion_router::MinionRouter;
-pub use react_router::ReactRouter;
-pub use vcs_router::ApproverRouter;
-pub use verifier_router::VerifierRouter;
+#[async_trait]
+pub trait CoreFedCatalog: Send + Sync + 'static {
+    fn repo(&self) -> Arc<dyn RepoTrait>;
+
+    async fn get_all(&self) -> Outcome<Vec<Model>> {
+        self.repo().minions().get_all(None, None).await
+    }
+}
