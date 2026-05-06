@@ -17,19 +17,20 @@
 
 use std::net::SocketAddr;
 use std::sync::Arc;
+use std::time::Duration;
 
 use axum::{serve, Router};
 use axum_server::tls_rustls::RustlsConfig;
 use tokio::net::TcpListener;
-use tracing::info;
-use ymir::config::traits::{ConnectionConfigTrait, HostsConfigTrait};
+use tracing::{debug, error, info, warn};
+use ymir::config::traits::{ApiConfigTrait, ConnectionConfigTrait, HostsConfigTrait};
 use ymir::config::types::HostType;
 use ymir::errors::{Errors, Outcome};
 use ymir::services::vault::{VaultService, VaultTrait};
 use ymir::types::secrets::StringHelper;
 use ymir::utils::expect_from_env;
 
-use crate::config::CoreApplicationConfig;
+use crate::config::{CoreApplicationConfig, CoreConfigTrait};
 use crate::core::CoreBuilder;
 use crate::http::RainbowAuthorityRouter;
 
@@ -54,6 +55,10 @@ impl AuthorityApp {
         let listener = TcpListener::bind(format!("0.0.0.0:{}", port))
             .await
             .map_err(|e| Errors::crazy("Error with tcp listener", Some(Box::new(e))))?;
+
+        if config.is_wallet_active() {
+            Self::spawn_auto_link(config.get_api_version(), port, false);
+        }
 
         serve(listener, router)
             .await
@@ -85,6 +90,10 @@ impl AuthorityApp {
             .map_err(|e| Errors::crazy("Errors with socker address", Some(Box::new(e))))?;
         info!("Starting Authority server with TLS in {}", addr);
 
+        if config.is_wallet_active() {
+            Self::spawn_auto_link(config.get_api_version(), port, true);
+        }
+
         axum_server::bind_rustls(addr, tls_config)
             .serve(router.into_make_service())
             .await
@@ -97,5 +106,56 @@ impl AuthorityApp {
         } else {
             Self::run_basic(config, vault).await
         }
+    }
+
+    fn spawn_auto_link(api_version: String, port: String, tls: bool) {
+        tokio::spawn(async move {
+            let scheme = if tls { "https" } else { "http" };
+            let url = format!("{}://127.0.0.1:{}{}/wallet/link", scheme, port, api_version);
+
+            let client = match reqwest::Client::builder()
+                .danger_accept_invalid_certs(true)
+                .build()
+            {
+                Ok(c) => c,
+                Err(e) => {
+                    error!("Auto wallet link: failed to build HTTP client: {}", e);
+                    return;
+                }
+            };
+
+            let max_attempts = 20;
+            for attempt in 1..=max_attempts {
+                match client.post(&url).send().await {
+                    Ok(resp) => {
+                        let status = resp.status();
+                        if status.is_success() {
+                            info!("Auto wallet link succeeded ({}) at {}", status, url);
+                        } else {
+                            let body = resp.text().await.unwrap_or_default();
+                            warn!(
+                                "Auto wallet link returned {} from {}: {}",
+                                status, url, body
+                            );
+                        }
+                        return;
+                    }
+                    Err(e) => {
+                        if attempt == max_attempts {
+                            error!(
+                                "Auto wallet link giving up after {} attempts on {}: {}",
+                                attempt, url, e
+                            );
+                            return;
+                        }
+                        debug!(
+                            "Auto wallet link attempt {}/{} on {} failed ({}); retrying...",
+                            attempt, max_attempts, url, e
+                        );
+                        tokio::time::sleep(Duration::from_millis(500)).await;
+                    }
+                }
+            }
+        });
     }
 }

@@ -1,6 +1,8 @@
-import { useState, useEffect } from 'react';
-import { VITE_API_SERVER_URL as apiUrl } from '@/lib/api';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { ArrowRight, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
+import { VITE_API_SERVER_URL as apiUrl } from '@/lib/api';
+import { formatIdentifier } from '@/lib/utils';
 import {
   Table,
   TableBody,
@@ -10,42 +12,18 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
-import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
 import { GeneralErrorComponent } from '@/components/GeneralErrorComponent';
-
-const StatusBadge = ({ status, isVcIssued }) => {
-  const getStatusClasses = (status, isVcIssued) => {
-    switch (status?.toLowerCase()) {
-      case 'processing':
-      case 'proccesing':
-        return 'bg-yellow-500/15 text-yellow-500 border-yellow-500';
-      case 'pending':
-        return 'bg-orange-500/15 text-orange-500 border-orange-500';
-      case 'approved':
-        return 'bg-brand-sky/15 text-brand-sky border-brand-sky';
-      case 'finalized':
-        return isVcIssued
-          ? 'bg-green-500/15 text-green-500 border-green-500'
-          : 'bg-red-500/15 text-red-500 border-red-500';
-      default:
-        return 'bg-brand-sky/15 text-brand-sky border-brand-sky';
-    }
-  };
-
-  return (
-    <span
-      className={cn(
-        'inline-block px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider border shadow-sm',
-        getStatusClasses(status, isVcIssued),
-      )}
-    >
-      {status}
-    </span>
-  );
-};
+import { PageLayout } from '@/components/layout/PageLayout';
+import { PageHeader } from '@/components/layout/PageHeader';
+import { PageSection } from '@/components/layout/PageSection';
+import { FormatDate } from '@/components/ui/format-date';
 
 const getIdentityProofDisplay = (methods) => {
-  if (methods && methods.length === 1 && methods[0] === '') return 'Certificate';
+  if (!methods || methods.length === 0) return '—';
+  if (methods.length === 1 && methods[0] === '') return 'Certificate';
   if (methods.includes('oidc4vp')) return 'Verifiable Credential';
   return methods.join(', ');
 };
@@ -62,227 +40,246 @@ const Requests = () => {
     status: '',
     createdAt: '',
   });
-  const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
+  const [sortConfig, setSortConfig] = useState(null);
   const navigate = useNavigate();
 
+  const fetchRequests = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await fetch(`${apiUrl}/approver/all`);
+      if (!response.ok) throw new Error('Failed to fetch requests');
+      const data = await response.json();
+      setRequests(data);
+    } catch (err) {
+      console.error('Error fetching requests:', err);
+      setError(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchRequests = async () => {
-      try {
-        const response = await fetch(`${apiUrl}/approver/all`);
-        if (!response.ok) {
-          throw new Error('Failed to fetch requests');
-        }
-        const data = await response.json();
-        setRequests(data);
-        setLoading(false);
-      } catch (err) {
-        console.error('Error fetching requests:', err);
-        setError(err.message);
-        setLoading(false);
-      }
-    };
-
     fetchRequests();
-  }, [apiUrl]);
-
-  const handleRowClick = (id) => {
-    navigate(`/requests/${id}`);
-  };
-
-  const handleFilterChange = (field, value) => {
-    setFilters((prev) => ({ ...prev, [field]: value }));
-  };
+  }, []);
 
   const handleSort = (key) => {
     let direction = 'asc';
-    if (sortConfig.key === key && sortConfig.direction === 'asc') {
-      direction = 'desc';
-    }
+    if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') direction = 'desc';
     setSortConfig({ key, direction });
   };
 
-  const getSortValue = (req, key) => {
-    switch (key) {
-      case 'id':
-        return req.id;
-      case 'slug':
-        return req.participant_slug;
-      case 'vcType':
-        return req.vc_type;
-      case 'interactMethod':
-        return getIdentityProofDisplay(req.interact_method);
-      case 'status':
-        return req.status;
-      case 'createdAt':
-        return req.created_at;
-      default:
-        return '';
-    }
-  };
-
-  const filteredRequests = requests.filter((req) => {
-    return (
-      req.id.toLowerCase().includes(filters.id.toLowerCase()) &&
-      req.participant_slug.toLowerCase().includes(filters.slug.toLowerCase()) &&
-      req.vc_type.toLowerCase().includes(filters.vcType.toLowerCase()) &&
-      getIdentityProofDisplay(req.interact_method).toLowerCase().includes(filters.interactMethod.toLowerCase()) &&
-      req.status.toLowerCase().includes(filters.status.toLowerCase()) &&
-      req.created_at.toLowerCase().includes(filters.createdAt.toLowerCase())
+  const getSortIcon = (key) => {
+    if (!sortConfig || sortConfig.key !== key)
+      return <ArrowUpDown className="ml-2 h-3.5 w-3.5 opacity-50 inline-block" />;
+    return sortConfig.direction === 'asc' ? (
+      <ArrowUp className="ml-2 h-3.5 w-3.5 inline-block" />
+    ) : (
+      <ArrowDown className="ml-2 h-3.5 w-3.5 inline-block" />
     );
-  });
-
-  const sortedRequests = [...filteredRequests].sort((a, b) => {
-    if (!sortConfig.key) return 0;
-
-    const aValue = getSortValue(a, sortConfig.key);
-    const bValue = getSortValue(b, sortConfig.key);
-
-    if (aValue < bValue) {
-      return sortConfig.direction === 'asc' ? -1 : 1;
-    }
-    if (aValue > bValue) {
-      return sortConfig.direction === 'asc' ? 1 : -1;
-    }
-    return 0;
-  });
-
-  const getSortIndicator = (key) => {
-    if (sortConfig.key !== key) {
-      return ' ⇅';
-    }
-    return sortConfig.direction === 'asc' ? ' ▲' : ' ▼';
   };
 
-  if (loading) return <div className="p-8 text-brand-sky">Loading...</div>;
-  if (error) return <GeneralErrorComponent error={error} reset={() => window.location.reload()} />;
+  const filteredRequests = useMemo(
+    () =>
+      requests.filter(
+        (r) =>
+          (r.id || '').toLowerCase().includes(filters.id.toLowerCase()) &&
+          (r.participant_slug || '').toLowerCase().includes(filters.slug.toLowerCase()) &&
+          (r.vc_type || '').toLowerCase().includes(filters.vcType.toLowerCase()) &&
+          getIdentityProofDisplay(r.interact_method)
+            .toLowerCase()
+            .includes(filters.interactMethod.toLowerCase()) &&
+          (r.status || '').toLowerCase().includes(filters.status.toLowerCase()) &&
+          (r.created_at || '').toLowerCase().includes(filters.createdAt.toLowerCase()),
+      ),
+    [requests, filters],
+  );
+
+  const sortedRequests = useMemo(() => {
+    if (!sortConfig) return filteredRequests;
+    return [...filteredRequests].sort((a, b) => {
+      const aVal = (a[sortConfig.key] ?? '').toString().toLowerCase();
+      const bVal = (b[sortConfig.key] ?? '').toString().toLowerCase();
+      if (aVal < bVal) return sortConfig.direction === 'asc' ? -1 : 1;
+      if (aVal > bVal) return sortConfig.direction === 'asc' ? 1 : -1;
+      return 0;
+    });
+  }, [filteredRequests, sortConfig]);
+
+  if (loading) {
+    return (
+      <PageLayout>
+        <PageHeader title="Requests" />
+        <Skeleton className="h-64 w-full rounded-xl" />
+      </PageLayout>
+    );
+  }
+
+  if (error) return <GeneralErrorComponent error={error} reset={fetchRequests} />;
 
   return (
-    <div className="w-full">
-      <h1 className="text-3xl font-bold text-brand-sky font-ubuntu mb-6">Requests</h1>
-      <div className="rounded-md border border-stroke bg-background/50 shadow-md">
-        <Table>
-          <TableHeader>
-            <TableRow className="border-b-brand-sky/30 hover:bg-transparent">
-              <TableHead
-                onClick={() => handleSort('id')}
-                className="cursor-pointer text-brand-sky hover:text-brand-sky/80"
-              >
-                ID{getSortIndicator('id')}
-              </TableHead>
-              <TableHead
-                onClick={() => handleSort('slug')}
-                className="cursor-pointer text-brand-sky hover:text-brand-sky/80"
-              >
-                Alias{getSortIndicator('slug')}
-              </TableHead>
-              <TableHead
-                onClick={() => handleSort('vcType')}
-                className="cursor-pointer text-brand-sky hover:text-brand-sky/80"
-              >
-                VC Type{getSortIndicator('vcType')}
-              </TableHead>
-              <TableHead
-                onClick={() => handleSort('interactMethod')}
-                className="cursor-pointer text-brand-sky hover:text-brand-sky/80"
-              >
-                Identity Proof{getSortIndicator('interactMethod')}
-              </TableHead>
-              <TableHead
-                onClick={() => handleSort('status')}
-                className="cursor-pointer text-brand-sky hover:text-brand-sky/80"
-              >
-                Status{getSortIndicator('status')}
-              </TableHead>
-              <TableHead
-                onClick={() => handleSort('createdAt')}
-                className="cursor-pointer text-brand-sky hover:text-brand-sky/80"
-              >
-                Created At{getSortIndicator('createdAt')}
-              </TableHead>
-            </TableRow>
-            <TableRow className="bg-brand-blue/30 hover:bg-brand-blue/30 border-none">
-              <TableHead className="p-2">
-                <Input
-                  placeholder="Filter..."
-                  value={filters.id}
-                  onChange={(e) => handleFilterChange('id', e.target.value)}
-                  onClick={(e) => e.stopPropagation()}
-                  className="h-8"
-                />
-              </TableHead>
-              <TableHead className="p-2">
-                <Input
-                  placeholder="Filter..."
-                  value={filters.slug}
-                  onChange={(e) => handleFilterChange('slug', e.target.value)}
-                  onClick={(e) => e.stopPropagation()}
-                  className="h-8"
-                />
-              </TableHead>
-              <TableHead className="p-2">
-                <Input
-                  placeholder="Filter..."
-                  value={filters.vcType}
-                  onChange={(e) => handleFilterChange('vcType', e.target.value)}
-                  onClick={(e) => e.stopPropagation()}
-                  className="h-8"
-                />
-              </TableHead>
-              <TableHead className="p-2">
-                <Input
-                  placeholder="Filter..."
-                  value={filters.interactMethod}
-                  onChange={(e) => handleFilterChange('interactMethod', e.target.value)}
-                  onClick={(e) => e.stopPropagation()}
-                  className="h-8"
-                />
-              </TableHead>
-              <TableHead className="p-2">
-                <Input
-                  placeholder="Filter..."
-                  value={filters.status}
-                  onChange={(e) => handleFilterChange('status', e.target.value)}
-                  onClick={(e) => e.stopPropagation()}
-                  className="h-8"
-                />
-              </TableHead>
-              <TableHead className="p-2">
-                <Input
-                  placeholder="Filter..."
-                  value={filters.createdAt}
-                  onChange={(e) => handleFilterChange('createdAt', e.target.value)}
-                  onClick={(e) => e.stopPropagation()}
-                  className="h-8"
-                />
-              </TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {sortedRequests.map((req) => (
-              <TableRow
-                key={req.id}
-                onClick={() => handleRowClick(req.id)}
-                className="cursor-pointer border-b-brand-sky/20 hover:bg-brand-sky/5 transition-colors"
-              >
-                <TableCell className="font-mono text-xs">{req.id}</TableCell>
-                <TableCell>{req.participant_slug}</TableCell>
-                <TableCell className="text-brand-purple">{req.vc_type}</TableCell>
-                <TableCell>{getIdentityProofDisplay(req.interact_method)}</TableCell>
-                <TableCell>
-                  <StatusBadge status={req.status} isVcIssued={req.is_vc_issued} />
-                </TableCell>
-                <TableCell>{req.created_at}</TableCell>
+    <PageLayout>
+      <PageHeader
+        title="Requests"
+        badge={
+          <Badge size="lg" className="uppercase font-medium">
+            {requests.length} total
+          </Badge>
+        }
+      />
+
+      <PageSection title="Credential requests">
+        <div className="rounded-md border border-white/10 bg-background-200/5">
+          <Table className="text-sm">
+            <TableHeader>
+              <TableRow className="border-b-white/10 hover:bg-transparent">
+                <TableHead
+                  onClick={() => handleSort('id')}
+                  className="cursor-pointer text-white/80"
+                >
+                  Request ID {getSortIcon('id')}
+                </TableHead>
+                <TableHead
+                  onClick={() => handleSort('participant_slug')}
+                  className="cursor-pointer text-white/80"
+                >
+                  Alias {getSortIcon('participant_slug')}
+                </TableHead>
+                <TableHead
+                  onClick={() => handleSort('vc_type')}
+                  className="cursor-pointer text-white/80"
+                >
+                  VC Type {getSortIcon('vc_type')}
+                </TableHead>
+                <TableHead
+                  onClick={() => handleSort('interact_method')}
+                  className="cursor-pointer text-white/80"
+                >
+                  Identity Proof {getSortIcon('interact_method')}
+                </TableHead>
+                <TableHead
+                  onClick={() => handleSort('status')}
+                  className="cursor-pointer text-white/80"
+                >
+                  Status {getSortIcon('status')}
+                </TableHead>
+                <TableHead
+                  onClick={() => handleSort('created_at')}
+                  className="cursor-pointer text-white/80"
+                >
+                  Created at {getSortIcon('created_at')}
+                </TableHead>
+                <TableHead className="text-white/80">Actions</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-        {sortedRequests.length === 0 && requests.length > 0 && (
-          <div className="p-8 text-center text-muted-foreground">
-            No requests match the current filters
-          </div>
-        )}
-      </div>
-    </div>
+              <TableRow className="bg-background-200/20 hover:bg-background-200/20 border-none">
+                <TableHead className="p-2">
+                  <Input
+                    placeholder="Filter…"
+                    value={filters.id}
+                    onChange={(e) => setFilters((f) => ({ ...f, id: e.target.value }))}
+                    onClick={(e) => e.stopPropagation()}
+                    className="h-8"
+                  />
+                </TableHead>
+                <TableHead className="p-2">
+                  <Input
+                    placeholder="Filter…"
+                    value={filters.slug}
+                    onChange={(e) => setFilters((f) => ({ ...f, slug: e.target.value }))}
+                    onClick={(e) => e.stopPropagation()}
+                    className="h-8"
+                  />
+                </TableHead>
+                <TableHead className="p-2">
+                  <Input
+                    placeholder="Filter…"
+                    value={filters.vcType}
+                    onChange={(e) => setFilters((f) => ({ ...f, vcType: e.target.value }))}
+                    onClick={(e) => e.stopPropagation()}
+                    className="h-8"
+                  />
+                </TableHead>
+                <TableHead className="p-2">
+                  <Input
+                    placeholder="Filter…"
+                    value={filters.interactMethod}
+                    onChange={(e) =>
+                      setFilters((f) => ({ ...f, interactMethod: e.target.value }))
+                    }
+                    onClick={(e) => e.stopPropagation()}
+                    className="h-8"
+                  />
+                </TableHead>
+                <TableHead className="p-2">
+                  <Input
+                    placeholder="Filter…"
+                    value={filters.status}
+                    onChange={(e) => setFilters((f) => ({ ...f, status: e.target.value }))}
+                    onClick={(e) => e.stopPropagation()}
+                    className="h-8"
+                  />
+                </TableHead>
+                <TableHead className="p-2">
+                  <Input
+                    placeholder="Filter…"
+                    value={filters.createdAt}
+                    onChange={(e) => setFilters((f) => ({ ...f, createdAt: e.target.value }))}
+                    onClick={(e) => e.stopPropagation()}
+                    className="h-8"
+                  />
+                </TableHead>
+                <TableHead />
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {sortedRequests.map((r) => (
+                <TableRow
+                  key={r.id}
+                  onClick={() => navigate(`/requests/${r.id}`)}
+                  className="cursor-pointer border-b-white/5 hover:bg-white/5 transition-colors"
+                >
+                  <TableCell>
+                    <Badge variant="info">{formatIdentifier(r.id)}</Badge>
+                  </TableCell>
+                  <TableCell className="capitalize">{r.participant_slug || '—'}</TableCell>
+                  <TableCell>
+                    <Badge variant="info">{r.vc_type}</Badge>
+                  </TableCell>
+                  <TableCell className="text-white/80">
+                    {getIdentityProofDisplay(r.interact_method)}
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="status" state={r.status}>
+                      {r.status}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">
+                    <FormatDate date={r.created_at} />
+                  </TableCell>
+                  <TableCell>
+                    <Button
+                      variant="link"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigate(`/requests/${r.id}`);
+                      }}
+                    >
+                      See request
+                      <ArrowRight />
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+          {sortedRequests.length === 0 && requests.length > 0 && (
+            <div className="p-8 text-center text-muted-foreground italic text-sm">
+              No requests match the current filters
+            </div>
+          )}
+        </div>
+      </PageSection>
+    </PageLayout>
   );
 };
 

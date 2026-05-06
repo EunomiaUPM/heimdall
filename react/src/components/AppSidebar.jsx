@@ -1,5 +1,4 @@
 import React from 'react';
-// 1. Asegúrate de que useLocation esté importado de react-router-dom
 import { Link, useLocation } from 'react-router-dom';
 import { Home, Users, Wallet, FileText, Info } from 'lucide-react';
 import {
@@ -16,88 +15,77 @@ import {
 import logoImg from '@/assets/logo.svg';
 
 export function AppSidebar() {
-  const location = useLocation(); // Esto ya no debería dar error
+  const location = useLocation();
   const walletActive = import.meta.env.VITE_WALLET_ACTIVE === 'true';
   const { state } = useSidebar();
   const isCollapsed = state === 'collapsed';
 
-  const mainItems = [
-    { title: 'Home', url: '/', icon: Home },
-    { title: 'Requests', url: '/requests', icon: FileText },
-    { title: 'Participants', url: '/participants', icon: Users },
-    { title: 'About', url: '/about', icon: Info },
+  const navGroups = [
+    {
+      title: 'General',
+      items: [
+        { title: 'Home', url: '/', icon: Home },
+        { title: 'Requests', url: '/requests', icon: FileText },
+        { title: 'Participants', url: '/participants', icon: Users },
+        { title: 'About', url: '/about', icon: Info },
+      ],
+    },
+    ...(walletActive
+      ? [
+          {
+            title: 'My area',
+            items: [{ title: 'My wallet', url: '/wallet', icon: Wallet }],
+          },
+        ]
+      : []),
   ];
 
-  const myAreaItems = walletActive ? [{ title: 'Wallet', url: '/wallet', icon: Wallet }] : [];
+  const isItemActive = (url) =>
+    location.pathname === url || (url !== '/' && location.pathname.startsWith(url));
 
   return (
-    <Sidebar className="bg-base-sidebar" collapsible="icon">
+    <Sidebar className="bg-base-sidebar z-50" collapsible="icon">
       <SidebarContent>
-        <SidebarGroup>
-          {/* Título HEIMDALL: Se oculta suavemente */}
-          <div
-            className={`flex flex-col items-center px-3 pt-3 transition-all duration-300 ease-in-out ${
-              isCollapsed ? 'opacity-0 h-0 overflow-hidden' : 'opacity-100 h-auto'
+        {/* HEIMDALL title above the logo (kept from original) */}
+        <div
+          className={`flex flex-col items-center px-3 pt-3 transition-all duration-300 ease-in-out ${
+            isCollapsed ? 'opacity-0 h-0 overflow-hidden' : 'opacity-100 h-auto'
+          }`}
+        >
+          <div className="text-4xl font-extra tracking-widest text-center">HEIMDALL</div>
+          <div className="mt-3 w-full border-t border-sidebar-border" />
+        </div>
+
+        {/* Logo (full when expanded, iso when collapsed) */}
+        <div className="relative h-24 w-full flex items-center justify-center overflow-hidden">
+          <img
+            src={logoImg}
+            className={`absolute h-16 w-auto transition-all duration-500 ease-in-out ${
+              isCollapsed ? 'opacity-0 scale-50 pointer-events-none' : 'opacity-100 scale-100'
             }`}
-          >
-            <div className="text-4xl font-extra tracking-widest text-center">HEIMDALL</div>
-            <div className="mt-3 w-full border-t border-sidebar-border" />
-          </div>
+            alt="Heimdall Logo"
+          />
+          <img
+            src={`${import.meta.env.BASE_URL}iso_logo.svg`}
+            className={`absolute h-10 w-auto transition-all duration-500 ease-in-out ${
+              isCollapsed ? 'opacity-100 scale-100' : 'opacity-0 scale-50 pointer-events-none'
+            }`}
+            alt="Heimdall Iso"
+          />
+        </div>
 
-          {/* Contenedor de Logos: Mantiene el espacio para evitar saltos */}
-          <div className="relative h-24 w-full flex items-center justify-center overflow-hidden">
-            <img
-              src={logoImg}
-              className={`absolute h-16 w-auto transition-all duration-500 ease-in-out ${
-                isCollapsed ? 'opacity-0 scale-50 pointer-events-none' : 'opacity-100 scale-100'
-              }`}
-              alt="Heimdall Logo"
-            />
-            <img
-              src={`${import.meta.env.BASE_URL}iso_logo.svg`}
-              className={`absolute h-10 w-auto transition-all duration-500 ease-in-out ${
-                isCollapsed ? 'opacity-100 scale-100' : 'opacity-0 scale-50 pointer-events-none'
-              }`}
-              alt="Heimdall Iso"
-            />
-          </div>
-
-          <SidebarGroupContent>
-            <SidebarGroupLabel>Main Menu</SidebarGroupLabel>
-            <SidebarMenu>
-              {mainItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={
-                      location.pathname === item.url ||
-                      (item.url !== '/' && location.pathname.startsWith(item.url))
-                    }
-                  >
-                    <Link to={item.url}>
-                      <item.icon />
-                      <span>{item.title}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-          
-          {myAreaItems.length > 0 && (
-            <SidebarGroupContent className="mt-6">
-              <SidebarGroupLabel>My Area</SidebarGroupLabel>
+        {navGroups.map((group) => (
+          <SidebarGroup key={group.title}>
+            <SidebarGroupContent>
+              <SidebarGroupLabel>{group.title}</SidebarGroupLabel>
               <SidebarMenu>
-                {myAreaItems.map((item) => (
+                {group.items.map((item) => (
                   <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton
-                      asChild
-                      isActive={
-                        location.pathname === item.url ||
-                        (item.url !== '/' && location.pathname.startsWith(item.url))
-                      }
-                    >
-                      <Link to={item.url}>
+                    <SidebarMenuButton asChild>
+                      <Link
+                        to={item.url}
+                        className={isItemActive(item.url) ? 'bg-white/10 text-white' : ''}
+                      >
                         <item.icon />
                         <span>{item.title}</span>
                       </Link>
@@ -106,8 +94,8 @@ export function AppSidebar() {
                 ))}
               </SidebarMenu>
             </SidebarGroupContent>
-          )}
-        </SidebarGroup>
+          </SidebarGroup>
+        ))}
       </SidebarContent>
     </Sidebar>
   );

@@ -75,3 +75,13 @@ export const formatUrn = (urn, truncate = true) => {
 
   return urn;
 };
+
+/*
+  Formats a structured identifier (DID, URN…) without dropping the prefix.
+  - Keeps the full identifier from the start (no leading truncation).
+  - Only adds an ellipsis at the end when length > maxLength (default 40).
+*/
+export const formatIdentifier = (value, maxLength = 40) => {
+  if (!value || typeof value !== 'string') return '';
+  return value.length > maxLength ? value.slice(0, maxLength) + '...' : value;
+};

@@ -1308,6 +1308,7 @@ dependencies = [
  "clap",
  "futures-util",
  "json_to_table",
+ "reqwest 0.13.1",
  "rustls",
  "sea-orm",
  "sea-orm-migration",

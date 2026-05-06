@@ -1,10 +1,29 @@
 import { useState, useEffect } from 'react';
-import { VITE_API_SERVER_URL as apiUrl } from '@/lib/api';
 import { useParams, useNavigate } from 'react-router-dom';
-import BooleanBadge from '../components/BooleanBadge';
+import {
+  ArrowLeft,
+  Shield,
+  Globe,
+  Cpu,
+  Key,
+  Calendar,
+  Activity,
+} from 'lucide-react';
+import { VITE_API_SERVER_URL as apiUrl } from '@/lib/api';
 import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
-import { ArrowLeft } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import { Separator } from '@/components/ui/separator';
+import { PageLayout } from '@/components/layout/PageLayout';
+import { PageHeader } from '@/components/layout/PageHeader';
+import { InfoList } from '@/components/ui/info-list';
+import { GeneralErrorComponent } from '@/components/GeneralErrorComponent';
 
 const MinionDetails = () => {
   const { id } = useParams();
@@ -13,93 +32,201 @@ const MinionDetails = () => {
   const [error, setError] = useState(null);
   const navigate = useNavigate();
 
+  const fetchMinion = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await fetch(`${apiUrl}/minions/${id}`);
+      if (!response.ok) throw new Error('Failed to fetch minion details');
+      const data = await response.json();
+      setMinion(data);
+    } catch (err) {
+      console.error('Error fetching minion details:', err);
+      setError(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchMinion = async () => {
-      try {
-        const response = await fetch(`${apiUrl}/minions/${id}`);
-        if (!response.ok) {
-          throw new Error('Failed to fetch minion details');
-        }
-        const data = await response.json();
-        setMinion(data);
-        setLoading(false);
-      } catch (err) {
-        console.error('Error fetching minion details:', err);
-        setError(err.message);
-        setLoading(false);
-      }
-    };
-
     fetchMinion();
-  }, [id, apiUrl]);
+  }, [id]);
 
-  if (loading) return <div className="p-8 text-brand-sky">Loading...</div>;
-  if (error) return <div className="p-8 text-danger">Error: {error}</div>;
-  if (!minion) return <div className="p-8 text-danger">Participant not found</div>;
+  if (loading) {
+    return (
+      <PageLayout>
+        <PageHeader title="Participant Details" />
+        <div className="space-y-6">
+          <Skeleton className="h-48 w-full rounded-xl" />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <Skeleton className="h-64 w-full rounded-xl" />
+            <Skeleton className="h-64 w-full rounded-xl" />
+          </div>
+        </div>
+      </PageLayout>
+    );
+  }
+
+  if (error) return <GeneralErrorComponent error={error} reset={fetchMinion} />;
+
+  if (!minion) {
+    return (
+      <PageLayout>
+        <PageHeader title="Participant Details" />
+        <p className="text-muted-foreground italic">Participant not found.</p>
+      </PageLayout>
+    );
+  }
+
+  const formatDate = (d) => (d ? new Date(d).toLocaleString() : 'N/A');
 
   return (
-    <div className="w-full">
-      <div className="relative mb-6 flex items-center justify-center">
+    <PageLayout>
+      <PageHeader
+        title={minion.participant_slug || 'Participant Details'}
+        badge={
+          <div className="flex gap-2">
+            <Badge variant="role" dsrole={minion.participant_type}>
+              {minion.participant_type}
+            </Badge>
+            {minion.is_me && <Badge variant="info">Local Agent</Badge>}
+          </div>
+        }
+      >
         <Button
-          variant="outline"
+          variant="link"
+          className="mt-2 px-0"
           onClick={() => navigate('/participants')}
-          className="absolute left-0 border-brand-purple text-brand-purple hover:bg-brand-purple/10 hover:text-brand-purple"
         >
-          <ArrowLeft className="mr-2 h-4 w-4" /> Back to List
+          <ArrowLeft className="mr-1 h-4 w-4" /> Back to participants
         </Button>
-        <h1 className="text-3xl font-bold text-brand-sky font-ubuntu">Participant Details</h1>
-      </div>
+      </PageHeader>
 
-      <div className="rounded-lg border border-brand-sky bg-background/60 p-6 shadow-lg shadow-brand-sky/20 text-left">
-        <div className="space-y-4">
-          <p>
-            <strong className="text-brand-sky">Participant ID:</strong>{' '}
-            <span className="text-muted-foreground break-all inline-block max-w-full">
-              {minion.participant_id}
-            </span>
-          </p>
-          <p>
-            <strong className="text-brand-sky">Alias:</strong>{' '}
-            <span className="text-muted-foreground">{minion.participant_slug}</span>
-          </p>
-          <p>
-            <strong className="text-brand-sky">Role:</strong>{' '}
-            <span className="text-brand-purple">{minion.participant_type}</span>
-          </p>
-          {minion.base_url && (
-            <p>
-              <strong className="text-brand-sky">Base URL:</strong>{' '}
-              <span className="text-muted-foreground">{minion.base_url}</span>
-            </p>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Left column: Identity info */}
+        <div className="lg:col-span-2 space-y-6">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-lg font-semibold flex items-center gap-2">
+                <Shield className="h-5 w-5 text-brand-sky" />
+                Identity Information
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <InfoList
+                items={[
+                  {
+                    label: 'Identifier (DID)',
+                    value: {
+                      type: 'custom',
+                      content: (
+                        <div className="font-mono text-xs break-all bg-background-200 p-2 rounded border border-white/10">
+                          {minion.participant_id}
+                        </div>
+                      ),
+                    },
+                  },
+                  minion.base_url
+                    ? {
+                        label: 'Base URL',
+                        value: {
+                          type: 'custom',
+                          content: (
+                            <a
+                              href={minion.base_url}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="flex items-center gap-1 text-brand-sky hover:underline"
+                            >
+                              <Globe className="h-3 w-3" />
+                              {minion.base_url}
+                            </a>
+                          ),
+                        },
+                      }
+                    : null,
+                  minion.vc_uri
+                    ? {
+                        label: 'VC URI',
+                        value: {
+                          type: 'custom',
+                          content: (
+                            <div className="font-mono text-xs break-all bg-background-200 p-2 rounded border border-white/10">
+                              {minion.vc_uri}
+                            </div>
+                          ),
+                        },
+                      }
+                    : null,
+                  {
+                    label: 'Verifiable Credential',
+                    value: {
+                      type: 'custom',
+                      content: (
+                        <span
+                          className={
+                            minion.is_vc_issued
+                              ? 'font-medium text-success-400'
+                              : 'font-medium text-warn-400'
+                          }
+                        >
+                          {minion.is_vc_issued ? 'Issued' : 'Pending'}
+                        </span>
+                      ),
+                    },
+                  },
+                ].filter(Boolean)}
+              />
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Right column: Activity */}
+        <div className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base font-semibold flex items-center gap-2">
+                <Calendar className="h-4 w-4 text-brand-sky" />
+                Timestamps
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex justify-between items-center text-sm">
+                <span className="text-muted-foreground flex items-center gap-2">
+                  <Key className="h-3 w-3" /> First Registered
+                </span>
+                <span className="font-medium">{formatDate(minion.saved_at)}</span>
+              </div>
+              <Separator />
+              <div className="flex justify-between items-center text-sm">
+                <span className="text-muted-foreground flex items-center gap-2">
+                  <Activity className="h-3 w-3" /> Last Interaction
+                </span>
+                <span className="font-medium">
+                  {minion.last_interaction ? formatDate(minion.last_interaction) : 'None'}
+                </span>
+              </div>
+            </CardContent>
+          </Card>
+
+          {minion.extra_fields && Object.keys(minion.extra_fields).length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base font-semibold flex items-center gap-2">
+                  <Cpu className="h-4 w-4 text-brand-sky" />
+                  Extended Metadata
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <pre className="text-[10px] bg-background-300 p-3 rounded-lg overflow-x-auto max-h-[300px]">
+                  {JSON.stringify(minion.extra_fields, null, 2)}
+                </pre>
+              </CardContent>
+            </Card>
           )}
-          {minion.vc_uri && (
-            <p>
-              <strong className="text-brand-sky">VC URI:</strong>{' '}
-              <span className="text-muted-foreground break-all inline-block max-w-full">
-                {minion.vc_uri}
-              </span>
-            </p>
-          )}
-          <p>
-            <strong className="text-brand-sky">Verifiable Credential:</strong>{' '}
-            <span className={cn('font-medium', minion.is_vc_issued ? 'text-green-500' : 'text-orange-500')}>
-              {minion.is_vc_issued ? 'Issued' : 'Pending'}
-            </span>
-          </p>
-          <p>
-            <strong className="text-brand-sky">Added On:</strong>{' '}
-            <span className="text-muted-foreground">{minion.saved_at}</span>
-          </p>
-          <p>
-            <strong className="text-brand-sky">Last Activity:</strong>{' '}
-            <span className="text-muted-foreground">{minion.last_interaction}</span>
-          </p>
-          <p>
-            <strong className="text-brand-sky">Is Me:</strong> <BooleanBadge value={minion.is_me} />
-          </p>
         </div>
       </div>
-    </div>
+    </PageLayout>
   );
 };
 
