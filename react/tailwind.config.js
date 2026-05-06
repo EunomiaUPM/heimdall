@@ -40,7 +40,7 @@ module.exports = {
         brand: {
           snow: '#EFF7FB', // white
           sky: '#9DD5F2', // light blue
-          purple: '#B592DB',
+          purple: '#62388E',
           blue: '#24234C', // dark blue
           black: '#0D0D1C',
         },
@@ -57,6 +57,21 @@ module.exports = {
           400: '#2E3356',
           300: '#2E3356',
           200: '#2E3356',
+        },
+        foreground: {
+          // LIGHT BASE color palette
+          DEFAULT: '#d3d2e0',
+          950: '#353243',
+          900: '#524d65',
+          800: '#645d7a',
+          700: '#786f92',
+          600: '#867ea3', // default
+          500: '#9e9ab8',
+          400: '#b9b7ce',
+          300: '#d3d2e0',
+          200: '#d3d2e0',
+          100: '#f1f1f6',
+          50: '#f8f8fa',
         },
         primary: {
           // blue-ish

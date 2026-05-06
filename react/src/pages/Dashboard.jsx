@@ -1,9 +1,15 @@
+import { PageLayout } from '@/components/layout/PageLayout';
+import { PageHeader } from '@/components/layout/PageHeader';
+import { PageSection } from '@/components/layout/PageSection';
+
 const Dashboard = () => {
   return (
-    <div style={{ padding: '20px' }}>
-      <h1>Dashboard</h1>
-      <p>Interact with the system here.</p>
-    </div>
+    <PageLayout>
+      <PageHeader title="Dashboard" />
+      <PageSection>
+        <p className="text-muted-foreground text-sm">Interact with the system here.</p>
+      </PageSection>
+    </PageLayout>
   );
 };
 

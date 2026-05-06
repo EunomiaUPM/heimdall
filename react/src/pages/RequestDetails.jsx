@@ -1,12 +1,26 @@
 import { useState, useEffect } from 'react';
-import { VITE_API_SERVER_URL as apiUrl } from '@/lib/api';
 import { useParams, useNavigate } from 'react-router-dom';
 import { X509 } from 'jsrsasign';
-import BooleanBadge from '../components/BooleanBadge';
-import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
 import { ArrowLeft } from 'lucide-react';
 import QRCode from 'react-qr-code';
+import { VITE_API_SERVER_URL as apiUrl } from '@/lib/api';
+import { formatIdentifier } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
+import { PageLayout } from '@/components/layout/PageLayout';
+import { PageHeader } from '@/components/layout/PageHeader';
+import { PageSection } from '@/components/layout/PageSection';
+import { InfoGrid } from '@/components/layout/InfoGrid';
+import { InfoList } from '@/components/ui/info-list';
+import { GeneralErrorComponent } from '@/components/GeneralErrorComponent';
+
+const getIdentityProofDisplay = (methods) => {
+  if (!methods || methods.length === 0) return '—';
+  if (methods.length === 1 && methods[0] === '') return 'Certificate';
+  if (methods.includes('oidc4vp')) return 'Verifiable Credential';
+  return methods.join(', ');
+};
 
 const RequestDetails = () => {
   const { id } = useParams();
@@ -17,63 +31,53 @@ const RequestDetails = () => {
   const [parsedCert, setParsedCert] = useState(null);
   const navigate = useNavigate();
 
-  useEffect(() => {
-    const fetchRequest = async () => {
-      try {
-        const response = await fetch(`${apiUrl}/approver/${id}`);
-        if (!response.ok) {
-          throw new Error('Failed to fetch request details');
-        }
-        const data = await response.json();
-        setRequest(data);
+  const fetchRequest = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await fetch(`${apiUrl}/approver/${id}`);
+      if (!response.ok) throw new Error('Failed to fetch request details');
+      const data = await response.json();
+      setRequest(data);
 
-        if (data.cert) {
-          try {
-            // The user said the cert is "plano" (cleaned). We need to wrap it to parse it as PEM.
-            const pem = `-----BEGIN CERTIFICATE-----\n${data.cert}\n-----END CERTIFICATE-----`;
-            const x = new X509();
-            x.readCertPEM(pem);
-            setParsedCert({
-              subject: x.getSubjectString(),
-              issuer: x.getIssuerString(),
-              serial: x.getSerialNumberHex(),
-              notBefore: x.getNotBefore(),
-              notAfter: x.getNotAfter(),
-            });
-          } catch (certErr) {
-            console.error('Error parsing cert:', certErr);
-            setParsedCert({ error: 'Failed to parse certificate' });
-          }
+      if (data.cert) {
+        try {
+          const pem = `-----BEGIN CERTIFICATE-----\n${data.cert}\n-----END CERTIFICATE-----`;
+          const x = new X509();
+          x.readCertPEM(pem);
+          setParsedCert({
+            subject: x.getSubjectString(),
+            issuer: x.getIssuerString(),
+            serial: x.getSerialNumberHex(),
+            notBefore: x.getNotBefore(),
+            notAfter: x.getNotAfter(),
+          });
+        } catch (certErr) {
+          console.error('Error parsing cert:', certErr);
+          setParsedCert({ error: 'Failed to parse certificate' });
         }
-
-        setLoading(false);
-      } catch (err) {
-        console.error('Error fetching request details:', err);
-        setError(err.message);
-        setLoading(false);
       }
-    };
+    } catch (err) {
+      console.error('Error fetching request details:', err);
+      setError(err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
     fetchRequest();
-  }, [id, apiUrl]);
+  }, [id]);
 
   const handleDecision = async (approve) => {
     setSubmitting(true);
     try {
       const response = await fetch(`${apiUrl}/approver/${id}`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ approve }),
       });
-
-      if (!response.ok) {
-        throw new Error('Failed to submit decision');
-      }
-
-      // Refresh data or navigate back
-      alert(`Request ${approve ? 'Approved' : 'Rejected'} successfully!`);
+      if (!response.ok) throw new Error('Failed to submit decision');
       navigate('/requests');
     } catch (err) {
       console.error('Error submitting decision:', err);
@@ -83,180 +87,173 @@ const RequestDetails = () => {
     }
   };
 
-  if (loading) return <div className="p-8 text-brand-sky">Loading...</div>;
-  if (error) return <div className="p-8 text-danger">Error: {error}</div>;
-  if (!request) return <div className="p-8 text-muted-foreground">Request not found</div>;
+  if (loading) {
+    return (
+      <PageLayout>
+        <PageHeader title="Request Details" />
+        <Skeleton className="h-64 w-full rounded-xl" />
+      </PageLayout>
+    );
+  }
 
-  // If interact_method is an array with a single empty string, it's a Certificate auth
+  if (error) return <GeneralErrorComponent error={error} reset={fetchRequest} />;
+
+  if (!request) {
+    return (
+      <PageLayout>
+        <PageHeader title="Request Details" />
+        <p className="text-muted-foreground italic">Request not found.</p>
+      </PageLayout>
+    );
+  }
+
   const isCertificateAuth =
-    request.interact_method && request.interact_method.length === 1 && request.interact_method[0] === '';
+    request.interact_method &&
+    request.interact_method.length === 1 &&
+    request.interact_method[0] === '';
 
-  const showDecisionButtons = isCertificateAuth;
-
-  const getStatusColorClass = (status, isVcIssued) => {
-    switch (status?.toLowerCase()) {
-      case 'processing':
-      case 'proccesing':
-        return 'text-yellow-500 border-yellow-500 shadow-yellow-500/30';
-      case 'pending':
-        return 'text-orange-500 border-orange-500 shadow-orange-500/30';
-      case 'approved':
-        return 'text-brand-sky border-brand-sky shadow-brand-sky/30';
-      case 'finalized':
-        return isVcIssued
-          ? 'text-green-500 border-green-500 shadow-green-500/30'
-          : 'text-red-500 border-red-500 shadow-red-500/30';
-      default:
-        return 'text-brand-sky border-brand-sky shadow-brand-sky/30';
-    }
-  };
-
-  const statusClasses = getStatusColorClass(request.status, request.is_vc_issued);
+  const showDecisionButtons = isCertificateAuth && request.status === 'Pending';
 
   return (
-    <div className="w-full">
-      <div className="relative mb-6 flex items-center justify-center">
-        <Button
-          variant="outline"
-          onClick={() => navigate('/requests')}
-          className="absolute left-0 border-brand-purple text-brand-purple hover:bg-brand-purple/10 hover:text-brand-purple"
-        >
-          <ArrowLeft className="mr-2 h-4 w-4" /> Back to List
-        </Button>
-        <h1 className="text-3xl font-bold text-brand-sky font-ubuntu">Request Details</h1>
-      </div>
-
-      <div
-        className={cn(
-          'rounded-lg border bg-background/60 p-6 shadow-lg text-left mb-6',
-          statusClasses,
-        )}
+    <PageLayout>
+      <PageHeader
+        title="Request Details"
+        badge={
+          <Badge variant="info" size="lg">
+            {formatIdentifier(request.id)}
+          </Badge>
+        }
       >
-        <div className="space-y-4">
-          <p>
-            <strong className="text-brand-sky">ID:</strong>{' '}
-            <span className="text-muted-foreground">{request.id}</span>
-          </p>
-          <p>
-            <strong className="text-brand-sky">Alias:</strong>{' '}
-            <span className="text-muted-foreground">{request.participant_slug}</span>
-          </p>
-          <p>
-            <strong className="text-brand-sky">VC Type:</strong>{' '}
-            <span className="text-brand-purple">{request.vc_type}</span>
-          </p>
-          <p>
-            <strong className="text-brand-sky">Identity Proof:</strong>{' '}
-            <span className="text-muted-foreground">
-              {isCertificateAuth
-                ? 'Certificate'
-                : request.interact_method.includes('oidc4vp')
-                ? 'Verifiable Credential'
-                : request.interact_method.join(', ')}
-            </span>
-          </p>
-          <p>
-            <strong className="text-brand-sky">Status:</strong>{' '}
-            <span className="font-bold">{request.status}</span>
-          </p>
-          {request.vc_uri && (
-            <div className="space-y-4">
-              <div>
-                <strong className="text-brand-sky block mb-1">VC URI:</strong>{' '}
-                <span className="text-muted-foreground break-all">{request.vc_uri}</span>
-              </div>
-              <div className="p-4 bg-white/10 rounded-lg inline-block">
-                <QRCode
-                  value={request.vc_uri}
-                  size={150}
-                  style={{ height: 'auto', maxWidth: '100%', width: '100%' }}
-                  viewBox={`0 0 150 150`}
-                />
+        <Button
+          variant="link"
+          className="mt-2 px-0"
+          onClick={() => navigate('/requests')}
+        >
+          <ArrowLeft className="mr-1 h-4 w-4" /> Back to requests
+        </Button>
+      </PageHeader>
+
+      <InfoGrid>
+        <PageSection title="Request">
+          <InfoList
+            items={[
+              { label: 'Request ID', value: { type: 'urn', value: request.id } },
+              { label: 'Alias', value: request.participant_slug || '—' },
+              { label: 'VC Type', value: request.vc_type },
+              {
+                label: 'Identity Proof',
+                value: getIdentityProofDisplay(request.interact_method),
+              },
+              {
+                label: 'Status',
+                value: { type: 'status', value: request.status },
+              },
+              {
+                label: 'VC Issued',
+                value: {
+                  type: 'custom',
+                  content: request.is_vc_issued ? (
+                    <Badge variant="status" state="success">
+                      Issued
+                    </Badge>
+                  ) : (
+                    <Badge variant="status" state="warn">
+                      Pending
+                    </Badge>
+                  ),
+                },
+              },
+            ]}
+          />
+        </PageSection>
+
+        <PageSection title="Activity">
+          <InfoList
+            items={[
+              {
+                label: 'Created at',
+                value: { type: 'date', value: request.created_at },
+              },
+              request.ended_at
+                ? { label: 'Ended at', value: { type: 'date', value: request.ended_at } }
+                : null,
+            ].filter(Boolean)}
+          />
+        </PageSection>
+      </InfoGrid>
+
+      {request.vc_uri && (
+        <PageSection title="Verifiable Credential URI">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
+            <div className="md:col-span-2 space-y-2">
+              <p className="text-[10px] uppercase tracking-wide text-white/50 font-medium">
+                URI
+              </p>
+              <div className="p-3 rounded-md bg-background-200/30 border border-white/10 break-all font-mono text-xs text-white/80">
+                {request.vc_uri}
               </div>
             </div>
-          )}
-          <p>
-            <strong className="text-brand-sky">VC Issued:</strong>{' '}
-            <BooleanBadge value={request.is_vc_issued} />
-          </p>
-          <p>
-            <strong className="text-brand-sky">Created At:</strong>{' '}
-            <span className="text-muted-foreground">{request.created_at}</span>
-          </p>
-          {request.ended_at && (
-            <p>
-              <strong className="text-brand-sky">Ended At:</strong>{' '}
-              <span className="text-muted-foreground">{request.ended_at}</span>
-            </p>
-          )}
-        </div>
-      </div>
+            <div className="p-4 bg-white/95 rounded-lg w-fit">
+              <QRCode
+                value={request.vc_uri}
+                size={150}
+                style={{ height: 'auto', maxWidth: '100%', width: '100%' }}
+                viewBox="0 0 150 150"
+              />
+            </div>
+          </div>
+        </PageSection>
+      )}
 
       {request.cert && (
-        <div className="rounded-lg border border-brand-purple bg-background/60 p-6 shadow-lg shadow-brand-purple/20 text-left mb-6 text-muted-foreground">
-          <h3 className="text-xl font-bold text-brand-purple drop-shadow-md mb-4">
-            Certificate Details
-          </h3>
+        <PageSection title="Certificate Details">
           {parsedCert && !parsedCert.error ? (
-            <div className="space-y-2">
-              <p>
-                <strong className="text-brand-purple">Subject:</strong>{' '}
-                <span className="break-all inline-block max-w-full">{parsedCert.subject}</span>
-              </p>
-              <p>
-                <strong className="text-brand-purple">Issuer:</strong>{' '}
-                <span className="break-all inline-block max-w-full">{parsedCert.issuer}</span>
-              </p>
-              <p>
-                <strong className="text-brand-purple">Serial:</strong>{' '}
-                <span>{parsedCert.serial}</span>
-              </p>
-              <p>
-                <strong className="text-brand-purple">Not Before:</strong>{' '}
-                <span>{parsedCert.notBefore}</span>
-              </p>
-              <p>
-                <strong className="text-brand-purple">Not After:</strong>{' '}
-                <span>{parsedCert.notAfter}</span>
-              </p>
-            </div>
+            <InfoList
+              items={[
+                { label: 'Subject', value: parsedCert.subject },
+                { label: 'Issuer', value: parsedCert.issuer },
+                { label: 'Serial', value: parsedCert.serial },
+                { label: 'Not Before', value: parsedCert.notBefore },
+                { label: 'Not After', value: parsedCert.notAfter },
+              ]}
+            />
           ) : (
-            <p>
-              <em className="text-danger">
-                {parsedCert?.error || 'Raw cert available but parsing failed.'}
-              </em>
+            <p className="text-sm text-destructive italic">
+              {parsedCert?.error || 'Raw cert available but parsing failed.'}
             </p>
           )}
-          <details className="mt-4">
-            <summary className="text-brand-purple cursor-pointer hover:underline">
+          <details className="mt-4 group">
+            <summary className="text-xs uppercase tracking-wide text-white/60 cursor-pointer hover:text-white/80">
               Raw Certificate
             </summary>
-            <pre className="mt-2 text-xs overflow-x-auto whitespace-pre-wrap break-all bg-black/40 p-3 rounded border border-brand-purple/50 text-muted-foreground">
+            <pre className="mt-2 text-xs overflow-x-auto whitespace-pre-wrap break-all bg-black/40 p-3 rounded border border-white/10 text-muted-foreground">
               {request.cert}
             </pre>
           </details>
-        </div>
+        </PageSection>
       )}
 
-      {showDecisionButtons && request.status === 'Pending' && (
-        <div className="flex gap-4 mt-6">
-          <Button
-            onClick={() => handleDecision(true)}
-            disabled={submitting}
-            className="bg-green-500/20 text-green-500 border border-green-500 hover:bg-green-500/30 font-bold shadow-lg shadow-green-500/20"
-          >
-            {submitting ? 'PROCESSING...' : 'APPROVE'}
-          </Button>
-          <Button
-            onClick={() => handleDecision(false)}
-            disabled={submitting}
-            className="bg-red-500/20 text-red-500 border border-red-500 hover:bg-red-500/30 font-bold shadow-lg shadow-red-500/20"
-          >
-            {submitting ? 'PROCESSING...' : 'REJECT'}
-          </Button>
-        </div>
+      {showDecisionButtons && (
+        <PageSection title="Decision">
+          <div className="flex gap-3">
+            <Button
+              onClick={() => handleDecision(true)}
+              disabled={submitting}
+              className="bg-success-600/20 text-success-300 border border-success-600 hover:bg-success-600/30 font-semibold"
+            >
+              {submitting ? 'Processing…' : 'Approve'}
+            </Button>
+            <Button
+              onClick={() => handleDecision(false)}
+              disabled={submitting}
+              className="bg-danger-600/20 text-danger-300 border border-danger-600 hover:bg-danger-600/30 font-semibold"
+            >
+              {submitting ? 'Processing…' : 'Reject'}
+            </Button>
+          </div>
+        </PageSection>
       )}
-    </div>
+    </PageLayout>
   );
 };
 
