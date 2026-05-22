@@ -34,7 +34,7 @@ pub trait CoreIssuerTrait: Send + Sync + 'static {
     fn issuer(&self) -> Arc<dyn IssuerTrait>;
     fn repo(&self) -> Arc<dyn RepoTrait>;
     fn vc_builder(&self) -> Arc<dyn VcBuilderTrait>;
-    fn wallet(&self) -> Option<Arc<dyn WalletTrait>>;
+    fn wallet(&self) -> Arc<dyn WalletTrait>;
     async fn get_cred_offer_data(&self, id: &str) -> Outcome<VCCredOffer> {
         let model = self.repo().issuing().get_by_id(&id).await?;
         self.issuer().get_cred_offer_data(&model)
@@ -68,18 +68,15 @@ pub trait CoreIssuerTrait: Send + Sync + 'static {
     async fn get_credential(&self, payload: CredentialRequest, token: String) -> Outcome<GiveVC> {
         let mut iss_model = self.repo().issuing().get_by_token(&token).await?;
 
-        let did = if let Some(wallet) = self.wallet() {
-            Some(wallet.get_did().await?)
-        } else {
-            None
-        };
+        let did = self.wallet().get_did().await?;
+        let sig_ctx = self.issuer().get_sig_context(&did).await?;
 
         self.issuer()
-            .validate_cred_req(&mut iss_model, &payload, &token, did.as_deref())
+            .validate_cred_req(&mut iss_model, &payload, &token, &did)
             .await?;
 
         let claims = self.vc_builder().build_vc(&iss_model)?;
-        let data = self.issuer().issue_cred(&claims, did.as_deref()).await?;
+        let data = self.issuer().issue_cred(&claims, &sig_ctx).await?;
 
         let mut req_model = self.repo().request().get_by_id(&iss_model.id).await?;
         let int_model = self.repo().interaction().get_by_id(&iss_model.id).await?;

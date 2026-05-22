@@ -15,18 +15,6 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-use std::sync::Arc;
-
-use ymir::services::client::ClientService;
-use ymir::services::issuer::basic::config::BasicIssuerConfig;
-use ymir::services::issuer::basic::BasicIssuerService;
-use ymir::services::vault::{VaultService, VaultTrait};
-use ymir::services::verifier::basic::config::BasicVerifierConfig;
-use ymir::services::verifier::basic::BasicVerifierService;
-use ymir::services::wallet::walt_id::config::WaltIdConfig;
-use ymir::services::wallet::walt_id::WaltIdService;
-use ymir::services::wallet::WalletTrait;
-
 use crate::config::traits::RoleConfigTrait;
 use crate::config::types::AuthorityRole;
 use crate::config::{CoreApplicationConfig, CoreConfigTrait};
@@ -45,6 +33,18 @@ use crate::services::vcs_builder::legal_authority::{
     LegalAuthorityConfig, LegalAuthorityVcBuilder,
 };
 use crate::services::vcs_builder::{EcoAuthorityBuilder, VcBuilderTrait};
+use std::sync::Arc;
+use ymir::config::traits::{ApiConfigTrait, HostsConfigTrait};
+use ymir::config::types::HostType;
+use ymir::services::client::ClientService;
+use ymir::services::issuer::basic::config::BasicIssuerConfig;
+use ymir::services::issuer::basic::BasicIssuerService;
+use ymir::services::vault::{VaultService, VaultTrait};
+use ymir::services::verifier::basic::config::BasicVerifierConfig;
+use ymir::services::verifier::basic::BasicVerifierService;
+use ymir::services::wallet::walt_id::config::WaltIdConfig;
+use ymir::services::wallet::walt_id::WaltIdService;
+use ymir::types::dids::{DidService, DidServiceType};
 
 pub struct CoreBuilder {
     core: Core,
@@ -93,6 +93,7 @@ impl CoreBuilder {
         let issuer_config = BasicIssuerConfig::from(config.clone());
         let verifier_config = BasicVerifierConfig::from(config.clone());
         let core_config: Arc<dyn CoreConfigTrait> = Arc::new(config.clone());
+        let wallet_config = WaltIdConfig::from(config.clone());
 
         // ===== SERVICES =====
 
@@ -102,23 +103,28 @@ impl CoreBuilder {
         let client = Arc::new(ClientService::default());
 
         let gatekeeper = Arc::new(GnapService::new(gnap_config, client.clone()));
-        let issuer = Arc::new(BasicIssuerService::new(
-            issuer_config,
-            client.clone(),
-            vault.clone(),
-        ));
+        let issuer = Arc::new(BasicIssuerService::new(issuer_config, vault.clone()));
         let verifier = Arc::new(BasicVerifierService::new(client.clone(), verifier_config));
 
-        let wallet: Option<Arc<dyn WalletTrait>> = if config.is_wallet_active() {
-            let walt_config = WaltIdConfig::from(config.clone());
-            Some(Arc::new(WaltIdService::new(
-                walt_config,
-                client.clone(),
-                vault,
-            )))
-        } else {
-            None
-        };
+        let services = vec![
+            DidService::basic(
+                DidServiceType::CredentialIssuer,
+                format!(
+                    "{}{}/gate/access",
+                    config.get_host(HostType::Http),
+                    config.get_api_version()
+                ),
+            ),
+            DidService::basic(
+                DidServiceType::FederatedCatalog,
+                format!(
+                    "{}/.well-known/federated-catalog",
+                    config.get_host(HostType::Http),
+                ),
+            ),
+        ];
+
+        let wallet = Arc::new(WaltIdService::new(wallet_config, vault, services));
 
         let notifier: Option<Arc<dyn NotificationsTrait>> = if config.is_react() {
             Some(Arc::new(NotificationService::new()))

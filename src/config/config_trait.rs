@@ -37,6 +37,5 @@ pub trait CoreConfigTrait:
     + Sync
     + 'static
 {
-    fn is_wallet_active(&self) -> bool;
     fn is_react(&self) -> bool;
 }

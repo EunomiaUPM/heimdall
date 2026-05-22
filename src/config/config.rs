@@ -41,7 +41,7 @@ pub struct CoreApplicationConfig {
     connection_config: ConnectionConfig,
     api_config: ApiConfig,
     db_config: DatabaseConfig,
-    wallet_config: Option<WalletConfig>,
+    wallet_config: WalletConfig,
     did_config: DidConfig,
     issue_config: IssueConfig,
     vc_config: VcConfig,
@@ -111,9 +111,7 @@ impl VcConfigTrait for CoreApplicationConfig {
 
 impl WalletConfigTrait for CoreApplicationConfig {
     fn wallet_config(&self) -> &WalletConfig {
-        self.wallet_config
-            .as_ref()
-            .expect("Module wallet is not active")
+        &self.wallet_config
     }
 }
 
@@ -124,10 +122,6 @@ impl RoleConfigTrait for CoreApplicationConfig {
 }
 
 impl CoreConfigTrait for CoreApplicationConfig {
-    fn is_wallet_active(&self) -> bool {
-        self.wallet_config.is_some()
-    }
-
     fn is_react(&self) -> bool {
         self.is_react
     }

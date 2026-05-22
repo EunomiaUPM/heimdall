@@ -22,12 +22,11 @@ use tracing::info;
 use ymir::capabilities::DigestSRI;
 use ymir::data::entities::{issuing, vc_request};
 use ymir::errors::{BadFormat, Errors, Outcome};
+use ymir::types::crypto::Canon;
 use ymir::types::present::{Missing, Present};
 use ymir::types::vcs::vc_specs::gx_label::{CompliantCredential, GxLabelCredSubjectBuilder};
 use ymir::types::vcs::VcType;
-use ymir::utils::{
-    decode_jwt_payload, get_claim, get_from_opt, parse_from_str, parse_to_string, parse_to_value,
-};
+use ymir::utils::{decode_jwt_payload, get_claim, get_from_opt};
 
 use super::super::VcBuilderTrait;
 use super::ClearingHouseAuthorityConfig;
@@ -69,13 +68,13 @@ impl VcBuilderTrait for ClearingHouseAuthorityVcBuilder {
             .as_deref()
             .ok_or_else(|| Errors::crazy("Tried to issue a credential without any data", None))?;
 
-        let vc = parse_from_str::<GxLabelCredSubjectBuilder<Missing, Present, Present, Present>>(
-            vc_data,
-        )?;
+        let vc = serde_json::from_str::<
+            GxLabelCredSubjectBuilder<Missing, Present, Present, Present>,
+        >(vc_data)?;
 
         let cred_subj = vc.id(holder_did).build();
 
-        let credential_subject = parse_to_value(&cred_subj)?;
+        let credential_subject = serde_json::to_value(&cred_subj)?;
         self.just_build(&model, credential_subject, &self.config)
     }
 
@@ -93,7 +92,7 @@ impl VcBuilderTrait for ClearingHouseAuthorityVcBuilder {
 
         let data = Self::complete(vpt, builder)?;
 
-        parse_to_string(&data)
+        Ok(serde_json::to_string(&data)?)
     }
 
     fn validate(&self, vc_type: &str) -> Outcome<VcType> {
@@ -132,7 +131,8 @@ impl ClearingHouseAuthorityVcBuilder {
                 None,
             ))?;
 
-        let digest_sri = DigestSRI::digest(&credential)?;
+        let canon = Canon::try_from(&credential)?;
+        let digest_sri = DigestSRI::digest(&canon);
 
         Ok(CompliantCredential {
             id,

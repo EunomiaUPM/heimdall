@@ -24,7 +24,7 @@ use ymir::errors::{Errors, Outcome};
 use ymir::types::present::Missing;
 use ymir::types::vcs::vc_specs::dataspace::DataSpaceParticipantBuilder;
 use ymir::types::vcs::VcType;
-use ymir::utils::{get_from_opt, parse_from_str, parse_to_string, parse_to_value};
+use ymir::utils::get_from_opt;
 
 use super::super::VcBuilderTrait;
 use crate::config::traits::{DSConfigTrait, RoleConfigTrait};
@@ -66,11 +66,11 @@ impl VcBuilderTrait for DataSpaceAuthorityVcBuilder {
             .as_deref()
             .ok_or_else(|| Errors::crazy("Tried to issue a credential without any data", None))?;
 
-        let vc = parse_from_str::<DataSpaceParticipantBuilder<Missing>>(vc_data)?;
+        let vc = serde_json::from_str::<DataSpaceParticipantBuilder<Missing>>(vc_data)?;
 
         let cred_subj = vc.id(holder_did).build();
 
-        let credential_subject = parse_to_value(&cred_subj)?;
+        let credential_subject = serde_json::to_value(&cred_subj)?;
         self.just_build(&model, credential_subject, &self.config)
     }
 
@@ -78,7 +78,7 @@ impl VcBuilderTrait for DataSpaceAuthorityVcBuilder {
         let dataspace_id = self.config.get_ds_id().to_string();
         let nick = req_model.participant_slug.clone();
         let data = DataSpaceParticipantBuilder::new(nick, dataspace_id);
-        parse_to_string(&data)
+        Ok(serde_json::to_string(&data)?)
     }
 
     fn validate(&self, vc_type: &str) -> Outcome<VcType> {

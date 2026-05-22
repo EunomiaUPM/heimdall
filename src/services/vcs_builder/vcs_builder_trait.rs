@@ -21,11 +21,10 @@ use chrono::{Duration, Utc};
 use serde_json::Value;
 use ymir::data::entities::{issuing, vc_request};
 use ymir::errors::{BadFormat, Errors, Outcome};
-use ymir::types::vcs::claims_v1::{VCClaimsV1, VCFromClaimsV1};
-use ymir::types::vcs::claims_v2::VCClaimsV2;
-use ymir::types::vcs::vc_issuer::VCIssuer;
-use ymir::types::vcs::{VcModel, VcType, W3cDataModelVersion};
-use ymir::utils::{get_from_opt, parse_to_value};
+use ymir::types::jwt::VcJwtClaimsBuilder;
+use ymir::types::vcs::doc::VcDocumentBuilder;
+use ymir::types::vcs::{VcIssuer, VcModel, VcType};
+use ymir::utils::get_from_opt;
 
 use crate::config::traits::RoleConfigTrait;
 use crate::services::vcs_builder::BuilderConfigDefaultTrait;
@@ -49,7 +48,8 @@ pub trait VcBuilderTrait: RoleConfigTrait + Send + Sync + 'static {
                     "Unable to retrieve credential subject id",
                     None,
                 )
-            })?;
+            })?
+            .to_string();
 
         let now = Utc::now();
         let vc_type = VcType::from_str(&model.vc_type)?;
@@ -60,45 +60,24 @@ pub trait VcBuilderTrait: RoleConfigTrait + Send + Sync + 'static {
                     .get_w3c_data_model()
                     .ok_or_else(|| Errors::not_active("vc_jwt format is not active", None))?;
 
-                let vc = match w3c_data_model {
-                    W3cDataModelVersion::V1 => parse_to_value(&VCClaimsV1 {
-                        exp: None,
-                        jti: Some(model.credential_id.clone()),
-                        iat: None,
-                        iss: Some(issuer_did.clone()),
-                        sub: Some(subject_id.to_string()),
-                        vc: VCFromClaimsV1 {
-                            context: vec!["https://www.w3.org/ns/credentials/v1".to_string()],
-                            r#type: vec!["VerifiableCredential".to_string(), vc_type.to_string()],
-                            id: model.credential_id.clone(),
-                            credential_subject,
-                            issuer: VCIssuer {
-                                id: issuer_did,
-                                name: Some("HeimdallAuthority".to_string()),
-                            },
-                            valid_from: Some(now),
-                            valid_until: Some(now + Duration::days(365)),
-                        },
-                    })?,
-                    W3cDataModelVersion::V2 => parse_to_value(&VCClaimsV2 {
-                        exp: None,
-                        iat: None,
-                        jti: Some(model.credential_id.clone()),
-                        iss: Some(issuer_did.clone()),
-                        sub: Some(subject_id.to_string()),
-                        context: vec!["https://www.w3.org/ns/credentials/v2".to_string()],
-                        r#type: vec!["VerifiableCredential".to_string(), vc_type.to_string()],
-                        id: model.credential_id.clone(),
-                        credential_subject,
-                        issuer: VCIssuer {
-                            id: issuer_did,
-                            name: Some("HeimdallAuthority".to_string()),
-                        },
-                        valid_from: Some(now),
-                        valid_until: Some(now + Duration::days(365)),
-                    })?,
-                };
-                Ok(vc)
+                let doc = VcDocumentBuilder::new(&vc_type, &w3c_data_model)
+                    .id(model.credential_id.clone())
+                    .issuer(VcIssuer::new(&issuer_did, Some("HeimdallAuthority")))
+                    .credential_subject(credential_subject)
+                    .valid_from(now)
+                    .valid_until(now + Duration::days(365))
+                    .build();
+
+                let vc = VcJwtClaimsBuilder::new(w3c_data_model)
+                    .iss(issuer_did.clone())
+                    .sub(subject_id)
+                    .jti(model.credential_id.clone())
+                    .iat(now)
+                    .exp(now + Duration::days(365))
+                    .vc(doc)
+                    .build();
+
+                Ok(serde_json::to_value(&vc)?)
             }
             VcModel::SdJwtVc => Err(Errors::not_impl(
                 "Cannot issue vcs with the format 'sd_jwt' right now",

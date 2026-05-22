@@ -34,9 +34,7 @@ use ymir::types::gnap::grant_response::GrantResponse;
 use ymir::types::gnap::{ApprovedCallbackBody, RefBody, RejectedCallbackBody};
 use ymir::types::http::Body;
 use ymir::types::vcs::VcType;
-use ymir::utils::{
-    create_opaque_token, extract_gnap_token, json_headers, parse_from_slice, parse_to_value,
-};
+use ymir::utils::{create_opaque_token, extract_gnap_token, json_headers};
 
 use super::config::{GnapConfig, GnapConfigTrait};
 use crate::config::traits::RoleConfigTrait;
@@ -151,7 +149,7 @@ impl GateKeeperTrait for GnapService {
     ) -> Outcome<(GrantRequest, Interact4GR)> {
         info!("Validating vc access request");
 
-        let grant_request: GrantRequest = parse_from_slice(payload)?;
+        let grant_request: GrantRequest = serde_json::from_slice(payload)?;
 
         match grant_request.client.key.cert.as_deref() {
             Some(cert) => {
@@ -237,7 +235,7 @@ impl GateKeeperTrait for GnapService {
     ) -> Outcome<()> {
         info!("Validating continue request");
 
-        let ref_body: RefBody = parse_from_slice(payload)?;
+        let ref_body: RefBody = serde_json::from_slice(payload)?;
 
         HttpSig::verify(
             headers,
@@ -307,7 +305,7 @@ impl GateKeeperTrait for GnapService {
         req_model: &mut vc_request::Model,
         int_model: &recv_interaction::Model,
     ) -> Outcome<Value> {
-        match approve {
+        let data = match approve {
             true => {
                 info!("Approving petition to obtain a VC");
                 req_model.status = "Approved".to_string();
@@ -315,7 +313,7 @@ impl GateKeeperTrait for GnapService {
                     interact_ref: int_model.interact_ref.clone(),
                     hash: int_model.hash.clone(),
                 };
-                parse_to_value(&body)
+                serde_json::to_value(&body)?
             }
             false => {
                 info!("Rejecting petition to obtain a VC");
@@ -323,9 +321,10 @@ impl GateKeeperTrait for GnapService {
                 let body = RejectedCallbackBody {
                     rejected: "Petition was rejected".to_string(),
                 };
-                parse_to_value(&body)
+                serde_json::to_value(&body)?
             }
-        }
+        };
+        Ok(data)
     }
 
     async fn notify_minion(&self, int_model: &recv_interaction::Model, body: Value) -> Outcome<()> {

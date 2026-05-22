@@ -30,7 +30,7 @@ const INFO: &str = r"
 | | | || |___ _| |_| |  | | |/ /| | | || |____| |____
 \_| |_/\____/ \___/\_|  |_/___/ \_| |_/\_____/\_____/
 
-Starting Heimdall Dataspace Authority ⚡🛡️
+Starting Heimdall Authority ⚡🛡️
 UPM Dataspace multistack agent
 Show some love on https://github.com/EunomiaUPM/heimdall
 

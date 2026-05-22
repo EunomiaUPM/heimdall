@@ -29,7 +29,7 @@ use ymir::types::vcs::vc_specs::legal_reg_number::{
     LeiCodeBuilder, LocalRegistrationNumberBuilder, TaxIdBuilder, VatIdBuilder,
 };
 use ymir::types::vcs::VcType;
-use ymir::utils::{get_from_opt, parse_from_str, parse_to_string, parse_to_value};
+use ymir::utils::get_from_opt;
 
 use super::super::VcBuilderTrait;
 use crate::config::traits::RoleConfigTrait;
@@ -62,24 +62,25 @@ impl VcBuilderTrait for LegalAuthorityVcBuilder {
 
         let credential_subject = match vc_type {
             VcType::LeiCode => {
-                let data = parse_from_str::<LeiCodeBuilder<Missing>>(vc_data)?;
+                let data = serde_json::from_str::<LeiCodeBuilder<Missing>>(vc_data)?;
                 let cred_subj = data.id(holder_did).build();
-                parse_to_value(&cred_subj)?
+                serde_json::to_value(&cred_subj)?
             }
             VcType::LocalRegistrationNumber => {
-                let data = parse_from_str::<LocalRegistrationNumberBuilder<Missing>>(vc_data)?;
+                let data =
+                    serde_json::from_str::<LocalRegistrationNumberBuilder<Missing>>(vc_data)?;
                 let cred_subj = data.id(holder_did).build();
-                parse_to_value(&cred_subj)?
+                serde_json::to_value(&cred_subj)?
             }
             VcType::TaxId => {
-                let data = parse_from_str::<TaxIdBuilder<Missing>>(vc_data)?;
+                let data = serde_json::from_str::<TaxIdBuilder<Missing>>(vc_data)?;
                 let cred_subj = data.id(holder_did).build();
-                parse_to_value(&cred_subj)?
+                serde_json::to_value(&cred_subj)?
             }
             VcType::VatId => {
-                let data = parse_from_str::<VatIdBuilder<Missing>>(vc_data)?;
+                let data = serde_json::from_str::<VatIdBuilder<Missing>>(vc_data)?;
                 let cred_subj = data.id(holder_did).build();
-                parse_to_value(&cred_subj)?
+                serde_json::to_value(&cred_subj)?
             }
             _ => unreachable!(),
         };
@@ -157,22 +158,22 @@ impl VcBuilderTrait for LegalAuthorityVcBuilder {
                     })?,
                 );
 
-                parse_to_string(&data)
+                Ok(serde_json::to_string(&data)?)
             }
             VcType::LocalRegistrationNumber => {
                 let data = LocalRegistrationNumberBuilder::new(shitty_code);
-                parse_to_string(&data)
+                Ok(serde_json::to_string(&data)?)
             }
             VcType::TaxId => {
                 let data = TaxIdBuilder::new(shitty_code);
-                parse_to_string(&data)
+                Ok(serde_json::to_string(&data)?)
             }
             VcType::VatId => {
                 let mut data = VatIdBuilder::new(shitty_code);
                 if let Some(country) = cert_country {
                     data = data.country_code(country);
                 }
-                parse_to_string(&data)
+                Ok(serde_json::to_string(&data)?)
             }
             _ => unreachable!(),
         }

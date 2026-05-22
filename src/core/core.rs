@@ -34,7 +34,7 @@ use crate::services::repo::RepoTrait;
 use crate::services::vcs_builder::VcBuilderTrait;
 
 pub struct Core {
-    wallet: Option<Arc<dyn WalletTrait>>,
+    wallet: Arc<dyn WalletTrait>,
     notifier: Option<Arc<dyn NotificationsTrait>>,
     gatekeeper: Arc<dyn GateKeeperTrait>,
     issuer: Arc<dyn IssuerTrait>,
@@ -46,7 +46,7 @@ pub struct Core {
 
 impl Core {
     pub fn new(
-        wallet: Option<Arc<dyn WalletTrait>>,
+        wallet: Arc<dyn WalletTrait>,
         notifier: Option<Arc<dyn NotificationsTrait>>,
         gatekeeper: Arc<dyn GateKeeperTrait>,
         issuer: Arc<dyn IssuerTrait>,
@@ -113,7 +113,7 @@ impl CoreIssuerTrait for Core {
         self.vc_builder.clone()
     }
 
-    fn wallet(&self) -> Option<Arc<dyn WalletTrait>> {
+    fn wallet(&self) -> Arc<dyn WalletTrait> {
         self.wallet.clone()
     }
 }
@@ -156,10 +156,7 @@ impl CoreGatekeeperTrait for Core {
 
 impl CoreWalletTrait for Core {
     fn wallet(&self) -> Arc<dyn WalletTrait> {
-        self.wallet
-            .as_ref()
-            .cloned()
-            .expect("Wallet module is required for this operation but is not active in the current configuration")
+        self.wallet.clone()
     }
 
     fn mate(&self) -> Option<Arc<dyn MatesTrait>> {
