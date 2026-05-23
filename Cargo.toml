@@ -40,5 +40,5 @@ rustls = { version = "0.23", features = ["ring"] }
 futures-util = "0.3.32"
 tokio-stream = { version = "0.1.18", features = ["sync"] }
 reqwest = { version = "0.13.1", features = ["json"] }
-#ymir = {git = "https://github.com/EunomiaUPM/ymir.git", tag = "v0.7.1"}
-ymir = { path = "./../ymir" }
+ymir = {git = "https://github.com/EunomiaUPM/ymir.git", tag = "kk"}
+#ymir = { path = "./../ymir" }

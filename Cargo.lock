@@ -1292,7 +1292,7 @@ dependencies = [
  "clap",
  "futures-util",
  "json_to_table",
- "reqwest 0.13.1",
+ "reqwest 0.13.3",
  "rustls",
  "sea-orm",
  "sea-orm-migration",
@@ -2505,9 +2505,9 @@ dependencies = [
 
 [[package]]
 name = "reqwest"
-version = "0.13.1"
+version = "0.13.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "04e9018c9d814e5f30cc16a0f03271aeab3571e609612d9fe78c1aa8d11c2f62"
+checksum = "62e0021ea2c22aed41653bc7e1419abb2c97e038ff2c33d0e1309e49a97deec0"
 dependencies = [
  "base64",
  "bytes",
@@ -4773,6 +4773,7 @@ checksum = "cfe53a6657fd280eaa890a3bc59152892ffa3e30101319d168b781ed6529b049"
 [[package]]
 name = "ymir"
 version = "0.7.0"
+source = "git+https://github.com/EunomiaUPM/ymir.git?tag=kk#99e89ed1e42d495f2c0e02f4a81b8dfe4529b5af"
 dependencies = [
  "async-trait",
  "axum",
@@ -4787,7 +4788,7 @@ dependencies = [
  "pkcs8 0.11.0",
  "rand 0.8.5",
  "rayon",
- "reqwest 0.12.28",
+ "reqwest 0.13.3",
  "rsa",
  "sea-orm",
  "sea-orm-migration",
