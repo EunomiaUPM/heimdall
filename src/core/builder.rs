@@ -34,7 +34,7 @@ use crate::services::vcs_builder::legal_authority::{
 };
 use crate::services::vcs_builder::{EcoAuthorityBuilder, VcBuilderTrait};
 use std::sync::Arc;
-use ymir::config::traits::{ApiConfigTrait, HostsConfigTrait};
+use ymir::config::traits::{ApiConfigTrait, DidConfigTrait, HostsConfigTrait, WalletConfigTrait};
 use ymir::config::types::HostType;
 use ymir::services::client::ClientService;
 use ymir::services::issuer::basic::config::BasicIssuerConfig;
@@ -42,9 +42,13 @@ use ymir::services::issuer::basic::BasicIssuerService;
 use ymir::services::vault::{VaultService, VaultTrait};
 use ymir::services::verifier::basic::config::BasicVerifierConfig;
 use ymir::services::verifier::basic::BasicVerifierService;
+use ymir::services::wallet::fafnir::config::FafnirConfigBuilder;
+use ymir::services::wallet::fafnir::FafnirService;
 use ymir::services::wallet::walt_id::config::WaltIdConfig;
 use ymir::services::wallet::walt_id::WaltIdService;
+use ymir::services::wallet::WalletTrait;
 use ymir::types::dids::{DidService, DidServiceType};
+use ymir::types::wallet::WalletInstance;
 
 pub struct CoreBuilder {
     core: Core,
@@ -93,7 +97,6 @@ impl CoreBuilder {
         let issuer_config = BasicIssuerConfig::from(config.clone());
         let verifier_config = BasicVerifierConfig::from(config.clone());
         let core_config: Arc<dyn CoreConfigTrait> = Arc::new(config.clone());
-        let wallet_config = WaltIdConfig::from(config.clone());
 
         // ===== SERVICES =====
 
@@ -124,7 +127,27 @@ impl CoreBuilder {
             ),
         ];
 
-        let wallet = Arc::new(WaltIdService::new(wallet_config, vault, services));
+        // El backend de wallet se elige en runtime según el yaml
+        // (`wallet: Fafnir | WaltId` dentro del bloque wallet config).
+        let wallet: Arc<dyn WalletTrait> = match config.get_wallet() {
+            WalletInstance::WaltId => {
+                let walt_id_config = WaltIdConfig::from(config.clone());
+                Arc::new(WaltIdService::new(walt_id_config, vault.clone(), services))
+            }
+            WalletInstance::Fafnir => {
+                let fafnir_config = FafnirConfigBuilder::new()
+                    .hosts(config.hosts().clone())
+                    .wallet(config.wallet_config().clone())
+                    .did(config.did_config().clone())
+                    .build();
+                Arc::new(FafnirService::new(
+                    fafnir_config,
+                    client.clone(),
+                    vault.clone(),
+                    services.clone(),
+                ))
+            }
+        };
 
         let notifier: Option<Arc<dyn NotificationsTrait>> = if config.is_react() {
             Some(Arc::new(NotificationService::new()))

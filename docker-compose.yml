@@ -53,3 +53,6 @@ services:
       - start
       - --env-file
       - /app/static/environment/config/mini_basic_dataspace_authority.yaml
+  fafnir-wallet:
+    container_name: fafnir-wallet
+    image: rmenendez8/fafnir:v0.0.1
