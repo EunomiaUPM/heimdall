@@ -17,7 +17,7 @@
 
 use std::sync::Arc;
 
-use crate::core::traits::CoreTrait;
+use crate::core::modules::OrchestratorTrait;
 use crate::http::fed_catalog_router::FedCatalogRouter;
 use crate::http::{
     ApproverRouter, GateKeeperRouter, IssuerRouter, MinionRouter, ReactRouter, VerifierRouter,
@@ -34,12 +34,12 @@ use uuid::Uuid;
 use ymir::http::{HealthRouter, OpenapiRouter, WalletRouter};
 
 pub struct RainbowAuthorityRouter {
-    core: Arc<dyn CoreTrait>,
+    core: Arc<dyn OrchestratorTrait>,
     openapi: String,
 }
 
 impl RainbowAuthorityRouter {
-    pub fn new(core: Arc<dyn CoreTrait>) -> Self {
+    pub fn new(core: Arc<dyn OrchestratorTrait>) -> Self {
         let openapi = core.config().get_openapi().expect("Invalid openapi path");
         Self { core, openapi }
     }
@@ -55,13 +55,19 @@ impl RainbowAuthorityRouter {
         let minion = MinionRouter::new(self.core.clone());
         let health = HealthRouter::new();
         let openapi = OpenapiRouter::new(self.openapi.clone());
+        let react = ReactRouter::new(self.core.clone());
 
         let mut base_router = Router::new()
             .merge(wallet.well_known())
             .merge(issuer.well_known())
-            .merge(fed_catalog.well_known());
+            .merge(fed_catalog.well_known())
+            .nest_service(
+                "/admin",
+                ServeDir::new("./react/dist")
+                    .not_found_service(ServeFile::new("./react/dist/index.html")),
+            );
 
-        let mut api_router = Router::new()
+        let api_router = Router::new()
             .merge(health.router())
             .nest("/wallet", wallet.router())
             .nest("/minions", minion.router())
@@ -69,17 +75,8 @@ impl RainbowAuthorityRouter {
             .nest("/gate", gatekeeper.router())
             .nest("/issuer", issuer.router())
             .nest("/verifier", verifier.router())
-            .nest("/docs", openapi.router());
-
-        if self.core.config().is_react() {
-            let react = ReactRouter::new(self.core.clone());
-            base_router = base_router.nest_service(
-                "/admin",
-                ServeDir::new("./react/dist")
-                    .not_found_service(ServeFile::new("./react/dist/index.html")),
-            );
-            api_router = api_router.nest("/react", react.router());
-        }
+            .nest("/docs", openapi.router())
+            .nest("/react", react.router());
 
         base_router
             .nest(&api_version, api_router)

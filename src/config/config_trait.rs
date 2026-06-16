@@ -37,5 +37,4 @@ pub trait CoreConfigTrait:
     + Sync
     + 'static
 {
-    fn is_react(&self) -> bool;
 }

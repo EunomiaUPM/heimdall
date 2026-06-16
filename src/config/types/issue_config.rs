@@ -15,11 +15,10 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-use super::{ClHBuilderConfig, DsBuilderConfig};
+use super::ClHBuilderConfig;
 use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize, Serialize, Clone, Debug)]
 pub struct IssueConfig {
-    pub ds_config: Option<DsBuilderConfig>,
     pub clh_config: Option<ClHBuilderConfig>,
 }

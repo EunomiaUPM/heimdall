@@ -24,14 +24,14 @@ use axum::routing::get;
 use axum::Router;
 use futures_util::stream::Stream;
 
-use crate::core::traits::CoreReactTrait;
+use crate::core::modules::NotifierModuleTrait;
 
 pub struct ReactRouter {
-    notificator: Arc<dyn CoreReactTrait>,
+    notificator: Arc<dyn NotifierModuleTrait>,
 }
 
 impl ReactRouter {
-    pub fn new(notificator: Arc<dyn CoreReactTrait>) -> Self {
+    pub fn new(notificator: Arc<dyn NotifierModuleTrait>) -> Self {
         Self { notificator }
     }
 
@@ -42,7 +42,7 @@ impl ReactRouter {
     }
 
     async fn sse_handler(
-        State(notificator): State<Arc<dyn CoreReactTrait>>,
+        State(notificator): State<Arc<dyn NotifierModuleTrait>>,
     ) -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
         let stream = notificator.handle();
 

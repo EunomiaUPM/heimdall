@@ -23,14 +23,14 @@ use axum::{Json, Router};
 use ymir::data::entities::minions::Model;
 use ymir::errors::AppResult;
 
-use crate::core::traits::CoreFedCatalog;
+use crate::core::modules::FedCatalogModuleTrait;
 
 pub struct FedCatalogRouter {
-    gru: Arc<dyn CoreFedCatalog>,
+    gru: Arc<dyn FedCatalogModuleTrait>,
 }
 
 impl FedCatalogRouter {
-    pub fn new(gru: Arc<dyn CoreFedCatalog>) -> FedCatalogRouter {
+    pub fn new(gru: Arc<dyn FedCatalogModuleTrait>) -> FedCatalogRouter {
         FedCatalogRouter { gru }
     }
 
@@ -46,7 +46,7 @@ impl FedCatalogRouter {
             .with_state(self.gru.clone())
     }
 
-    async fn get_all(State(gru): State<Arc<dyn CoreFedCatalog>>) -> AppResult<Json<Vec<Model>>> {
+    async fn get_all(State(gru): State<Arc<dyn FedCatalogModuleTrait>>) -> AppResult<Json<Vec<Model>>> {
         Ok(Json(gru.get_all().await?))
     }
 }

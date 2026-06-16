@@ -37,16 +37,20 @@ use crate::http::RainbowAuthorityRouter;
 pub struct AuthorityApp;
 
 impl AuthorityApp {
-    pub async fn create_router(config: &CoreApplicationConfig, vault: Arc<VaultService>) -> Router {
+    pub async fn create_router(
+        config: &CoreApplicationConfig,
+        vault: Arc<VaultService>,
+    ) -> Outcome<Router> {
         let core = CoreBuilder::from_config(config.clone(), vault)
-            .await
+            .await?
             .build();
 
-        RainbowAuthorityRouter::new(Arc::new(core)).router()
+        let router = RainbowAuthorityRouter::new(Arc::new(core)).router();
+        Ok(router)
     }
 
     pub async fn run_basic(config: CoreApplicationConfig, vault: Arc<VaultService>) -> Outcome<()> {
-        let router = Self::create_router(&config, vault).await;
+        let router = Self::create_router(&config, vault).await?;
 
         let port = config.get_internal_port(HostType::Http);
         let server_message = format!("Starting Authority server in {}", port);
@@ -55,8 +59,6 @@ impl AuthorityApp {
         let listener = TcpListener::bind(format!("0.0.0.0:{}", port))
             .await
             .map_err(|e| Errors::crazy("Error with tcp listener", Some(Box::new(e))))?;
-
-        Self::spawn_auto_link(config.get_api_version(), port, false);
 
         serve(listener, router)
             .await
@@ -79,7 +81,7 @@ impl AuthorityApp {
         .await
         .map_err(|e| Errors::crazy("Errors parsing certificate stuff", Some(Box::new(e))))?;
 
-        let router = Self::create_router(config, vault).await;
+        let router = Self::create_router(config, vault).await?;
 
         let port = config.get_internal_port(HostType::Http);
         let addr_str = format!("0.0.0.0:{}", port);
@@ -87,8 +89,6 @@ impl AuthorityApp {
             .parse()
             .map_err(|e| Errors::crazy("Errors with socker address", Some(Box::new(e))))?;
         info!("Starting Authority server with TLS in {}", addr);
-
-        Self::spawn_auto_link(config.get_api_version(), port, true);
 
         axum_server::bind_rustls(addr, tls_config)
             .serve(router.into_make_service())
@@ -102,56 +102,5 @@ impl AuthorityApp {
         } else {
             Self::run_basic(config, vault).await
         }
-    }
-
-    fn spawn_auto_link(api_version: String, port: String, tls: bool) {
-        tokio::spawn(async move {
-            let scheme = if tls { "https" } else { "http" };
-            let url = format!("{}://127.0.0.1:{}{}/wallet/link", scheme, port, api_version);
-
-            let client = match reqwest::Client::builder()
-                .danger_accept_invalid_certs(true)
-                .build()
-            {
-                Ok(c) => c,
-                Err(e) => {
-                    error!("Auto wallet link: failed to build HTTP client: {}", e);
-                    return;
-                }
-            };
-
-            let max_attempts = 20;
-            for attempt in 1..=max_attempts {
-                match client.post(&url).send().await {
-                    Ok(resp) => {
-                        let status = resp.status();
-                        if status.is_success() {
-                            info!("Auto wallet link succeeded ({}) at {}", status, url);
-                        } else {
-                            let body = resp.text().await.unwrap_or_default();
-                            warn!(
-                                "Auto wallet link returned {} from {}: {}",
-                                status, url, body
-                            );
-                        }
-                        return;
-                    }
-                    Err(e) => {
-                        if attempt == max_attempts {
-                            error!(
-                                "Auto wallet link giving up after {} attempts on {}: {}",
-                                attempt, url, e
-                            );
-                            return;
-                        }
-                        debug!(
-                            "Auto wallet link attempt {}/{} on {} failed ({}); retrying...",
-                            attempt, max_attempts, url, e
-                        );
-                        tokio::time::sleep(Duration::from_millis(500)).await;
-                    }
-                }
-            }
-        });
     }
 }

@@ -23,14 +23,14 @@ use axum::{Json, Router};
 use ymir::data::entities::minions::Model;
 use ymir::errors::AppResult;
 
-use crate::core::traits::CoreMinionTrait;
+use crate::core::modules::MinionModuleTrait;
 
 pub struct MinionRouter {
-    gru: Arc<dyn CoreMinionTrait>,
+    gru: Arc<dyn MinionModuleTrait>,
 }
 
 impl MinionRouter {
-    pub fn new(gru: Arc<dyn CoreMinionTrait>) -> MinionRouter {
+    pub fn new(gru: Arc<dyn MinionModuleTrait>) -> MinionRouter {
         MinionRouter { gru }
     }
 
@@ -42,18 +42,18 @@ impl MinionRouter {
             .with_state(self.gru)
     }
 
-    async fn get_all(State(gru): State<Arc<dyn CoreMinionTrait>>) -> AppResult<Json<Vec<Model>>> {
+    async fn get_all(State(gru): State<Arc<dyn MinionModuleTrait>>) -> AppResult<Json<Vec<Model>>> {
         Ok(Json(gru.get_all().await?))
     }
 
     async fn get_by_id(
-        State(gru): State<Arc<dyn CoreMinionTrait>>,
+        State(gru): State<Arc<dyn MinionModuleTrait>>,
         Path(id): Path<String>,
     ) -> AppResult<Json<Model>> {
         Ok(Json(gru.get_by_id(id).await?))
     }
 
-    async fn get_me(State(gru): State<Arc<dyn CoreMinionTrait>>) -> AppResult<Json<Model>> {
+    async fn get_me(State(gru): State<Arc<dyn MinionModuleTrait>>) -> AppResult<Json<Model>> {
         Ok(Json(gru.get_me().await?))
     }
 }

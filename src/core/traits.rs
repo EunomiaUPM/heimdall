@@ -15,12 +15,24 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-use ymir::config::traits::HostsConfigTrait;
+use crate::services::gatekeeper::GateKeeperTrait;
+use crate::services::notifications::NotificationsTrait;
+use crate::services::repo::RepoTrait;
+use crate::services::vcs_builder::VcBuilderTrait;
+use std::sync::Arc;
 
-use crate::config::traits::RoleConfigTrait;
+pub trait HasRepo {
+    fn repo(&self) -> Arc<dyn RepoTrait>;
+}
 
-pub trait GnapConfigTrait: RoleConfigTrait + HostsConfigTrait {
-    fn get_api_path(&self) -> String;
-    fn is_cert_allowed(&self) -> bool;
-    fn auto_approve_cert(&self) -> bool;
+pub trait HasGateKeeper {
+    fn gatekeeper(&self) -> Arc<dyn GateKeeperTrait>;
+}
+
+pub trait HasVcBuilder {
+    fn vc_builder(&self) -> Arc<dyn VcBuilderTrait>;
+}
+
+pub trait HasNotifier {
+    fn notifier(&self) -> Arc<dyn NotificationsTrait>;
 }

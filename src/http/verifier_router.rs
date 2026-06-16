@@ -27,14 +27,14 @@ use ymir::types::vcs::VPDef;
 use ymir::types::verifying::VerifyPayload;
 use ymir::utils::extract_form_payload;
 
-use crate::core::traits::CoreVerifierTrait;
+use crate::core::modules::VerifierModuleTrait;
 
 pub struct VerifierRouter {
-    verifier: Arc<dyn CoreVerifierTrait>,
+    verifier: Arc<dyn VerifierModuleTrait>,
 }
 
 impl VerifierRouter {
-    pub fn new(verifier: Arc<dyn CoreVerifierTrait>) -> Self {
+    pub fn new(verifier: Arc<dyn VerifierModuleTrait>) -> Self {
         Self { verifier }
     }
     pub fn router(self) -> Router {
@@ -44,14 +44,14 @@ impl VerifierRouter {
             .with_state(self.verifier)
     }
     async fn vp_definition(
-        State(verifier): State<Arc<dyn CoreVerifierTrait>>,
+        State(verifier): State<Arc<dyn VerifierModuleTrait>>,
         Path(state): Path<String>,
     ) -> AppResult<Json<VPDef>> {
         Ok(Json(verifier.get_vp_def(state).await?))
     }
 
     async fn verify(
-        State(verifier): State<Arc<dyn CoreVerifierTrait>>,
+        State(verifier): State<Arc<dyn VerifierModuleTrait>>,
         Path(state): Path<String>,
         payload: Result<Form<VerifyPayload>, FormRejection>,
     ) -> AppResult {

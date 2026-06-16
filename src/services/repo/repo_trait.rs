@@ -17,14 +17,12 @@
 
 use std::sync::Arc;
 
-use ymir::services::repo::subtraits::{
-    IssuingTrait, MinionsTrait, RecvInteractionTrait, RecvVerificationTrait, VcRequestTrait,
-};
+use ymir::services::repo::traits::received::{RecvGrantRepoTrait, RecvInteractionRepoTrait, RecvVerificationRepoTrait};
+use ymir::services::repo::traits::shared::ParticipantRepoTrait;
 
 pub trait RepoTrait: Send + Sync + 'static {
-    fn request(&self) -> Arc<dyn VcRequestTrait>;
-    fn interaction(&self) -> Arc<dyn RecvInteractionTrait>;
-    fn verification(&self) -> Arc<dyn RecvVerificationTrait>;
-    fn minions(&self) -> Arc<dyn MinionsTrait>;
-    fn issuing(&self) -> Arc<dyn IssuingTrait>;
+    fn recv_grant(&self) -> Arc<dyn RecvGrantRepoTrait>;
+    fn recv_interaction(&self) -> Arc<dyn RecvInteractionRepoTrait>;
+    fn recv_verification(&self) -> Arc<dyn RecvVerificationRepoTrait>;
+    fn participant(&self) -> Arc<dyn ParticipantRepoTrait>;
 }

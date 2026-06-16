@@ -15,11 +15,30 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-use crate::config::types::DsBuilderConfig;
+use std::sync::Arc;
 
-pub trait DSConfigTrait {
-    fn get_ds_config(&self) -> &DsBuilderConfig;
-    fn get_ds_id(&self) -> &str {
-        &self.get_ds_config().dataspace_id
-    }
+use async_trait::async_trait;
+use ymir::modules::WalletModuleTrait;
+
+use super::{
+    ApproverModuleTrait, FedCatalogModuleTrait, GatekeeperModuleTrait, IssuerModuleTrait,
+    MinionModuleTrait, NotifierModuleTrait, VerifierModuleTrait,
+};
+use crate::config::CoreConfigTrait;
+
+#[async_trait]
+pub trait OrchestratorTrait:
+    VerifierModuleTrait
+    + IssuerModuleTrait
+    + ApproverModuleTrait
+    + GatekeeperModuleTrait
+    + FedCatalogModuleTrait
+    + WalletModuleTrait
+    + MinionModuleTrait
+    + NotifierModuleTrait
+    + Send
+    + Sync
+    + 'static
+{
+    fn config(&self) -> Arc<dyn CoreConfigTrait>;
 }

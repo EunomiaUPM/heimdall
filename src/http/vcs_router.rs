@@ -26,14 +26,14 @@ use ymir::errors::AppResult;
 use ymir::types::vcs::vc_decision_approval::VcDecisionApproval;
 use ymir::utils::extract_payload;
 
-use crate::core::traits::CoreApproverTrait;
+use crate::core::modules::ApproverModuleTrait;
 
 pub struct ApproverRouter {
-    approver: Arc<dyn CoreApproverTrait>,
+    approver: Arc<dyn ApproverModuleTrait>,
 }
 
 impl ApproverRouter {
-    pub fn new(approver: Arc<dyn CoreApproverTrait>) -> Self {
+    pub fn new(approver: Arc<dyn ApproverModuleTrait>) -> Self {
         Self { approver }
     }
     pub fn router(self) -> Router {
@@ -45,20 +45,20 @@ impl ApproverRouter {
     }
 
     async fn get_all_requests(
-        State(approver): State<Arc<dyn CoreApproverTrait>>,
+        State(approver): State<Arc<dyn ApproverModuleTrait>>,
     ) -> AppResult<Json<Vec<Model>>> {
         Ok(Json(approver.get_all().await?))
     }
 
     async fn get_one_request(
-        State(approver): State<Arc<dyn CoreApproverTrait>>,
+        State(approver): State<Arc<dyn ApproverModuleTrait>>,
         Path(id): Path<String>,
     ) -> AppResult<Json<Model>> {
         Ok(Json(approver.get_by_id(id).await?))
     }
 
     async fn manage_request(
-        State(approver): State<Arc<dyn CoreApproverTrait>>,
+        State(approver): State<Arc<dyn ApproverModuleTrait>>,
         Path(id): Path<String>,
         payload: Result<Json<VcDecisionApproval>, JsonRejection>,
     ) -> AppResult<()> {

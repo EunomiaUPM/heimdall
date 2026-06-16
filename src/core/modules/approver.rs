@@ -15,20 +15,14 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-use std::sync::Arc;
-
+use crate::core::traits::{HasGateKeeper, HasRepo};
 use async_trait::async_trait;
 use ymir::data::entities::vc_request;
 use ymir::errors::Outcome;
 use ymir::types::vcs::vc_decision_approval::VcDecisionApproval;
 
-use crate::services::gatekeeper::GateKeeperTrait;
-use crate::services::repo::RepoTrait;
-
 #[async_trait]
-pub trait CoreApproverTrait: Send + Sync + 'static {
-    fn gatekeeper(&self) -> Arc<dyn GateKeeperTrait>;
-    fn repo(&self) -> Arc<dyn RepoTrait>;
+pub trait ApproverModuleTrait: HasRepo + HasGateKeeper + Send + Sync + 'static {
     async fn get_all(&self) -> Outcome<Vec<vc_request::Model>> {
         self.repo().request().get_all(None, None).await
     }

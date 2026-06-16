@@ -18,14 +18,13 @@
 use ymir::config::traits::VcConfigTrait;
 use ymir::config::types::VcConfig;
 
-use crate::config::traits::{DSConfigTrait, IssueConfigTrait, RoleConfigTrait};
-use crate::config::types::{AuthorityRole, DsBuilderConfig};
+use crate::config::traits::RoleConfigTrait;
+use crate::config::types::AuthorityRole;
 use crate::config::CoreApplicationConfig;
 use crate::services::vcs_builder::BuilderConfigDefaultTrait;
 
 pub struct DataSpaceAuthorityConfig {
     vc_config: VcConfig,
-    ds_config: DsBuilderConfig,
     role: AuthorityRole,
 }
 
@@ -43,17 +42,10 @@ impl RoleConfigTrait for DataSpaceAuthorityConfig {
 
 impl BuilderConfigDefaultTrait for DataSpaceAuthorityConfig {}
 
-impl DSConfigTrait for DataSpaceAuthorityConfig {
-    fn get_ds_config(&self) -> &DsBuilderConfig {
-        &self.ds_config
-    }
-}
-
 impl From<CoreApplicationConfig> for DataSpaceAuthorityConfig {
     fn from(value: CoreApplicationConfig) -> Self {
         Self {
             vc_config: value.vc_config().clone(),
-            ds_config: value.get_ds_config().clone(),
             role: value.get_role().clone(),
         }
     }

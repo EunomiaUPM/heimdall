@@ -24,10 +24,9 @@ use ymir::errors::{Errors, Outcome};
 use ymir::types::present::Missing;
 use ymir::types::vcs::vc_specs::dataspace::DataSpaceParticipantBuilder;
 use ymir::types::vcs::VcType;
-use ymir::utils::get_from_opt;
 
 use super::super::VcBuilderTrait;
-use crate::config::traits::{DSConfigTrait, RoleConfigTrait};
+use crate::config::traits::RoleConfigTrait;
 use crate::config::types::AuthorityRole;
 use crate::services::vcs_builder::dataspace_authority::config::DataSpaceAuthorityConfig;
 
@@ -60,7 +59,9 @@ impl VcBuilderTrait for DataSpaceAuthorityVcBuilder {
 
         info!("Building {} credential", vc_type);
 
-        let holder_did = get_from_opt(model.holder_did.as_ref(), "holder did")?;
+        let holder_did = model.holder_did.as_ref().ok_or_else(|| {
+            Errors::missing_resource("holder did", "Missing holder did in db", None)
+        })?;
         let vc_data = model
             .credential_data
             .as_deref()
@@ -75,9 +76,7 @@ impl VcBuilderTrait for DataSpaceAuthorityVcBuilder {
     }
 
     fn gather_data(&self, req_model: &vc_request::Model) -> Outcome<String> {
-        let dataspace_id = self.config.get_ds_id().to_string();
-        let nick = req_model.participant_slug.clone();
-        let data = DataSpaceParticipantBuilder::new(nick, dataspace_id);
+        let data = DataSpaceParticipantBuilder::new(req_model.participant_slug.clone());
         Ok(serde_json::to_string(&data)?)
     }
 

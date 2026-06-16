@@ -15,7 +15,21 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-mod config;
-mod config_trait;
-pub use config::GnapConfig;
-pub use config_trait::GnapConfigTrait;
+mod approver;
+mod fed_catalog;
+mod gaia;
+mod gatekeeper;
+mod issuer;
+mod minion;
+mod orchestrator;
+mod react;
+mod verifier;
+
+pub use approver::ApproverModuleTrait;
+pub use fed_catalog::FedCatalogModuleTrait;
+pub use gatekeeper::GatekeeperModuleTrait;
+pub use issuer::IssuerModuleTrait;
+pub use minion::MinionModuleTrait;
+pub use orchestrator::OrchestratorTrait;
+pub use react::NotifierModuleTrait;
+pub use verifier::VerifierModuleTrait;

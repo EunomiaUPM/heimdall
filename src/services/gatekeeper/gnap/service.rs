@@ -15,9 +15,6 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-use std::str::FromStr;
-use std::sync::Arc;
-
 use async_trait::async_trait;
 use axum::body::Bytes;
 use axum::http::HeaderMap;
@@ -26,33 +23,112 @@ use tracing::info;
 use ymir::capabilities::HttpSig;
 use ymir::config::traits::HostsConfigTrait;
 use ymir::config::types::HostType;
+use ymir::data::entities::received::{grant, interaction};
 use ymir::data::entities::{recv_interaction, vc_request};
 use ymir::errors::{BadFormat, Errors, Outcome};
 use ymir::services::client::ClientTrait;
-use ymir::types::gnap::grant_request::{GrantRequest, Interact4GR, InteractStart, KeyProof};
+use ymir::types::gnap::grant_request::client::{KeyMaterial, KeyProof};
+use ymir::types::gnap::grant_request::interact::InteractStart;
+use ymir::types::gnap::grant_request::{
+    GrantKind, GrantRequest, GrantRequestKind, Interact4GR, InteractStart, KeyProof,
+};
 use ymir::types::gnap::grant_response::GrantResponse;
 use ymir::types::gnap::{ApprovedCallbackBody, RefBody, RejectedCallbackBody};
-use ymir::types::http::Body;
+use ymir::types::http::HttpBody;
+use ymir::types::keys::Certificate;
 use ymir::types::vcs::VcType;
-use ymir::utils::{create_opaque_token, extract_gnap_token, json_headers};
+use ymir::utils::{create_opaque_token, extract_gnap_token, http_client, json_headers};
 
-use super::config::{GnapConfig, GnapConfigTrait};
+use super::GnapConfig;
 use crate::config::traits::RoleConfigTrait;
 use crate::services::gatekeeper::GateKeeperTrait;
 
-pub struct GnapService {
+pub struct GnapGateKeeperService {
     config: GnapConfig,
-    client: Arc<dyn ClientTrait>,
 }
 
-impl GnapService {
-    pub fn new(config: GnapConfig, client: Arc<dyn ClientTrait>) -> Self {
-        GnapService { config, client }
+impl GnapGateKeeperService {
+    pub fn new(config: GnapConfig) -> Self {
+        GnapGateKeeperService { config }
     }
 }
 
 #[async_trait]
-impl GateKeeperTrait for GnapService {
+impl GateKeeperTrait for GnapGateKeeperService {
+    fn validate_grant(&self, payload: &Bytes, headers: &HeaderMap) -> Outcome<GrantRequest> {
+        info!("Validating grant request");
+        let grant_request: GrantRequest = serde_json::from_slice(payload)?;
+
+        match grant_request.client.key.proof {
+            KeyProof::HttpSig => {}
+            other => {
+                return Err(Errors::not_impl(
+                    format!("Proof method {} not implemented", other),
+                    None,
+                ))
+            }
+        }
+
+        let cert = match &grant_request.client.key.material {
+            KeyMaterial::Jwk { .. } => {
+                return Err(Errors::not_impl("jwk key material not implemented", None))
+            }
+            KeyMaterial::Cert { cert } => Certificate::try_from_pem(cert)?,
+        };
+
+        let grant_endpoint = format!(
+            "{}{}/gate/access",
+            self.config.get_host(HostType::Http),
+            self.config.get_api_path()
+        );
+
+        HttpSig::verify(headers, &cert, "POST", &grant_endpoint, payload)?;
+
+        Ok(grant_request)
+    }
+
+    fn build_grant_plan(&self, payload: GrantRequest) -> Outcome<(grant::Plan)> {
+        info!("Managing Grant Request");
+
+        let cert = match payload.client.key.material {
+            KeyMaterial::Jwk { .. } => {
+                return Err(Errors::not_impl("jwk key material not implemented", None))
+            }
+            KeyMaterial::Cert { cert } => cert,
+        };
+
+        let class_id = payload.client.class_id.ok_or_else(|| {
+            Errors::format(
+                BadFormat::Received,
+                "Missing field class_id (used for nick) in the petition",
+                None,
+            )
+        })?;
+
+        let vc_req = match payload.kind {
+            GrantRequestKind::AccessToken { .. } => {
+                return Err(Errors::format(
+                    BadFormat::Received,
+                    "Unable to issue credentials, just tokens",
+                    None,
+                ))
+            }
+            GrantRequestKind::CredentialRequest { credential_request } => credential_request,
+        };
+
+        let id = uuid::Uuid::new_v4().to_string();
+
+
+        let grant = grant::Plan {
+            id: id.clone(),
+            participant_nick: class_id,
+            vc_type_config: vc_req.access.,
+            kind: GrantKind::CredentialRequest,
+        };
+
+        Ok(grant)
+    }
+
     fn start(
         &self,
         payload: &Bytes,
@@ -142,70 +218,6 @@ impl GateKeeperTrait for GnapService {
         Ok((new_request_model, new_recv_interaction_model))
     }
 
-    fn validate_acc_req(
-        &self,
-        payload: &Bytes,
-        headers: &HeaderMap,
-    ) -> Outcome<(GrantRequest, Interact4GR)> {
-        info!("Validating vc access request");
-
-        let grant_request: GrantRequest = serde_json::from_slice(payload)?;
-
-        match grant_request.client.key.cert.as_deref() {
-            Some(cert) => {
-                let proof = KeyProof::from_str(&grant_request.client.key.proof)?;
-                match proof {
-                    KeyProof::HttpSig => {}
-                    method => {
-                        return Err(Errors::not_impl(
-                            format!("Right now we only accept httpsig, not {}", method),
-                            None,
-                        ))
-                    }
-                }
-
-                let grant_endpoint = format!(
-                    "{}{}/gate/access",
-                    self.config.get_host(HostType::Http),
-                    self.config.get_api_path()
-                );
-                HttpSig::verify(headers, "POST", &grant_endpoint, payload, &cert)?;
-
-                HttpSig::check_cert(&cert)?;
-            }
-            None => {
-                if let Some(_) = grant_request.client.key.jwk.as_ref() {
-                    return Err(Errors::not_impl(
-                        "Cannot make this flow with jwk yet, try with cert",
-                        None,
-                    ));
-                }
-                return Err(Errors::format(
-                    BadFormat::Received,
-                    "Client certificate has not arrived",
-                    None,
-                ));
-            }
-        }
-
-        let interact = grant_request.interact.as_ref().ok_or_else(|| {
-            Errors::not_impl(
-                "Only petitions with an 'interact field' are supported right now",
-                None,
-            )
-        })?;
-
-        interact.finish.uri.as_ref().ok_or_else(|| {
-            Errors::format(
-                BadFormat::Received,
-                "Interact method does not have an uri",
-                None,
-            )
-        })?;
-
-        Ok((grant_request.clone(), interact.clone()))
-    }
-
     fn validate_vc_to_issue(&self, vc_type: &VcType) -> Outcome<()> {
         info!("Validating that the requested vc can be issued");
 
@@ -286,8 +298,8 @@ impl GateKeeperTrait for GnapService {
                 interact_ref: model.interact_ref.clone(),
                 hash: model.hash.clone(),
             };
-            self.client
-                .post(&url, Some(json_headers()), Body::json(&body)?)
+            http_client()
+                .post(&url, Some(json_headers()), HttpBody::json(&body)?)
                 .await?;
 
             Ok(None)
@@ -328,9 +340,8 @@ impl GateKeeperTrait for GnapService {
     }
 
     async fn notify_minion(&self, int_model: &recv_interaction::Model, body: Value) -> Outcome<()> {
-        let res = self
-            .client
-            .post(&int_model.uri, Some(json_headers()), Body::Json(body))
+        let res = http_client()
+            .post(&int_model.uri, Some(json_headers()), HttpBody::Json(body))
             .await?;
 
         if res.status().is_success() {
@@ -361,5 +372,96 @@ impl GateKeeperTrait for GnapService {
 
     fn auto_approve_cert(&self) -> bool {
         self.config.auto_approve_cert()
+    }
+}
+
+impl GnapGateKeeperService {
+    fn validate_and_extract(payload: GrantRequest) -> Outcome<ValidatedGrant> {
+        let interact = payload.interact.ok_or_else(|| {
+            Errors::format(
+                BadFormat::Received,
+                "Petition malformed, interact field expected",
+                None,
+            )
+        })?;
+
+        if !interact.start.contains(&InteractStart::Oid4VP) {
+            return Err(Errors::format(
+                BadFormat::Received,
+                "Expected interact method oid4vp",
+                None,
+            ));
+        }
+
+        let cert = match payload.client.key.material {
+            KeyMaterial::Jwk { .. } => {
+                return Err(Errors::not_impl("jwk key material not implemented", None))
+            }
+            KeyMaterial::Cert { cert } => cert,
+        };
+
+        let class_id = payload.client.class_id.ok_or_else(|| {
+            Errors::format(
+                BadFormat::Received,
+                "Missing field class_id (used for nick) in the petition",
+                None,
+            )
+        })?;
+
+        let access_req = match payload.kind {
+            GrantRequestKind::AccessToken { .. } => {
+                return Err(Errors::format(
+                    BadFormat::Received,
+                    "Unable to issue a token, just credentials",
+                    None,
+                ))
+            }
+            GrantRequestKind::CredentialRequest { credential_request } => credential_request,
+        };
+
+        let finish = interact.finish.ok_or_else(|| {
+            Errors::format(
+                BadFormat::Received,
+                "Expected inclusion of finish indicator in request",
+                None,
+            )
+        })?;
+        let callback_uri = finish.uri.ok_or_else(|| {
+            Errors::format(
+                BadFormat::Received,
+                "Expected inclusion of a callback uri in request",
+                None,
+            )
+        })?;
+
+        if let Some(HashMethod::Other(other)) = &finish.hash_method {
+            return Err(Errors::not_impl(
+                format!("Unsupported hash method {other}"),
+                None,
+            ));
+        }
+
+        let method = match finish.method {
+            FinishMethod::Other(other) => {
+                return Err(Errors::not_impl(
+                    format!("Interact method {other} not supported"),
+                    None,
+                ))
+            }
+            supported => supported,
+        };
+
+        Ok(ValidatedGrant {
+            cert,
+            class_id,
+            interact_start: interact.start,
+            hints: interact.hints,
+            method,
+            callback_uri,
+            client_nonce: finish.nonce,
+            hash_method: finish.hash_method,
+            actions,
+            access_req,
+        })
     }
 }

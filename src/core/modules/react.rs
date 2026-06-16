@@ -15,30 +15,17 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
+use std::convert::Infallible;
+use std::pin::Pin;
 use std::sync::Arc;
 
-use async_trait::async_trait;
-use ymir::core_traits::CoreWalletTrait;
+use crate::core::traits::HasNotifier;
+use crate::services::notifications::NotificationsTrait;
+use axum::response::sse::Event;
+use futures_util::Stream;
 
-use super::{
-    CoreApproverTrait, CoreFedCatalog, CoreGatekeeperTrait, CoreIssuerTrait, CoreMinionTrait,
-    CoreReactTrait, CoreVerifierTrait,
-};
-use crate::config::CoreConfigTrait;
-
-#[async_trait]
-pub trait CoreTrait:
-    CoreVerifierTrait
-    + CoreIssuerTrait
-    + CoreApproverTrait
-    + CoreGatekeeperTrait
-    + CoreFedCatalog
-    + CoreWalletTrait
-    + CoreMinionTrait
-    + CoreReactTrait
-    + Send
-    + Sync
-    + 'static
-{
-    fn config(&self) -> Arc<dyn CoreConfigTrait>;
+pub trait NotifierModuleTrait: HasNotifier + Send + Sync + 'static {
+    fn handle(&self) -> Pin<Box<dyn Stream<Item = Result<Event, Infallible>> + Send>> {
+        self.notifier().handle()
+    }
 }

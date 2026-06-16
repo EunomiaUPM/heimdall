@@ -15,20 +15,13 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-use std::sync::Arc;
-
+use crate::core::traits::HasRepo;
 use async_trait::async_trait;
 use ymir::errors::Outcome;
-use ymir::services::issuer::IssuerTrait;
-use ymir::services::verifier::VerifierTrait;
-
-use crate::services::repo::RepoTrait;
+use ymir::modules::{HasIssuer, HasVerifier};
 
 #[async_trait]
-pub trait _GaiaCoreTrait: Send + Sync + 'static {
-    fn verifier(&self) -> Arc<dyn VerifierTrait>;
-    fn repo(&self) -> Arc<dyn RepoTrait>;
-    fn issuer(&self) -> Arc<dyn IssuerTrait>;
+pub trait _GaiaModuleTrait: HasRepo + HasVerifier + HasIssuer + Send + Sync + 'static {
     async fn manage_req(&self) -> Outcome<String> {
         let id = uuid::Uuid::new_v4().to_string();
         let model = self.verifier().start_vp(&id)?;

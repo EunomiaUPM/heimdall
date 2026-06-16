@@ -23,10 +23,10 @@ use ymir::capabilities::DigestSRI;
 use ymir::data::entities::{issuing, vc_request};
 use ymir::errors::{BadFormat, Errors, Outcome};
 use ymir::types::crypto::Canon;
+use ymir::types::jwt::{Jwt, VCJwtClaims, VPJwtClaims};
 use ymir::types::present::{Missing, Present};
 use ymir::types::vcs::vc_specs::gx_label::{CompliantCredential, GxLabelCredSubjectBuilder};
 use ymir::types::vcs::VcType;
-use ymir::utils::{decode_jwt_payload, get_claim, get_from_opt};
 
 use super::super::VcBuilderTrait;
 use super::ClearingHouseAuthorityConfig;
@@ -62,7 +62,9 @@ impl VcBuilderTrait for ClearingHouseAuthorityVcBuilder {
 
         info!("Building {} credential", vc_type);
 
-        let holder_did = get_from_opt(model.holder_did.as_ref(), "holder did")?;
+        let holder_did = model.holder_did.as_ref().ok_or_else(|| {
+            Errors::missing_resource("holder did", "Missing holder did in db", None)
+        })?;
         let vc_data = model
             .credential_data
             .as_deref()
@@ -109,33 +111,30 @@ impl VcBuilderTrait for ClearingHouseAuthorityVcBuilder {
 }
 
 impl ClearingHouseAuthorityVcBuilder {
-    fn parse_credential(credential: &Value) -> Outcome<CompliantCredential> {
-        let credential = decode_jwt_payload(credential.as_str().unwrap())?;
+    fn parse_credential(credential: &str) -> Outcome<CompliantCredential> {
+        let credential: VCJwtClaims = serde_json::from_str(credential)?;
 
-        let id = get_claim(&credential, &["jti"])?;
+        let doc = credential.vc_doc();
+        let id = &doc.id.clone();
 
         let vc_type = credential
-            .get("type")
-            .and_then(|v| v.as_array())
-            .ok_or(Errors::format(
-                BadFormat::Received,
-                "Error retrieving vc type from credential",
-                None,
-            ))?
+            .vc_doc()
+            .r#type
             .iter()
-            .find(|v| v.as_str() != Some("VerifiableCredential"))
-            .and_then(|v| v.as_str())
+            .find(|v| v.as_str() != "VerifiableCredential")
             .ok_or(Errors::format(
                 BadFormat::Received,
                 "No VC type found other than VerifiableCredential",
                 None,
-            ))?;
+            ))?
+            .clone();
 
-        let canon = Canon::try_from(&credential)?;
+        let value = serde_json::to_value(credential)?;
+        let canon = Canon::try_from(&value)?;
         let digest_sri = DigestSRI::digest(&canon);
 
         Ok(CompliantCredential {
-            id,
+            id: id.clone(),
             r#type: vc_type.to_string(),
             digest_sri,
         })
@@ -145,17 +144,10 @@ impl ClearingHouseAuthorityVcBuilder {
         vpt: &str,
         builder: GxLabelCredSubjectBuilder<Missing, Missing, Missing, Missing>,
     ) -> Outcome<GxLabelCredSubjectBuilder<Missing, Present, Present, Present>> {
-        let vp = decode_jwt_payload(vpt)?;
+        let vp = Jwt::parse(vpt)?;
+        let claims: VPJwtClaims = vp.unsafe_claims()?;
 
-        let credentials = vp
-            .get("vp")
-            .and_then(|v| v.get("verifiableCredential"))
-            .and_then(|v| v.as_array())
-            .ok_or(Errors::format(
-                BadFormat::Received,
-                "Error retrieving vcs from vp token",
-                None,
-            ))?;
+        let credentials = claims.vp.verifiable_credential;
 
         if credentials.len() != 3 {
             return Err(Errors::unauthorized(

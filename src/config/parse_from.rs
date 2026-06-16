@@ -15,45 +15,49 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-use ymir::config::traits::{
-    ApiConfigTrait, ConnectionConfigTrait, DidConfigTrait, HostsConfigTrait, VcConfigTrait,
-    VerifyReqConfigTrait, WalletConfigTrait,
-};
-use ymir::services::issuer::basic::config::{BasicIssuerConfig, BasicIssuerConfigBuilder};
-use ymir::services::verifier::basic::config::{BasicVerifierConfig, BasicVerifierConfigBuilder};
-use ymir::services::wallet::walt_id::config::{WaltIdConfig, WaltIdConfigBuilder};
-
 use crate::config::CoreApplicationConfig;
+use ymir::config::traits::{
+    ApiConfigTrait, DidConfigTrait, HostsConfigTrait, VcConfigTrait, VerifyReqConfigTrait,
+    WalletConfigTrait,
+};
+use ymir::services::issuer::basic::BasicIssuerConfig;
+use ymir::services::verifier::basic::BasicVerifierConfig;
+use ymir::services::wallet::fafnir::FafnirConfig;
+use ymir::services::wallet::walt_id::WaltIdConfig;
 
-impl From<CoreApplicationConfig> for WaltIdConfig {
-    fn from(value: CoreApplicationConfig) -> Self {
-        WaltIdConfigBuilder::new()
-            .hosts(value.hosts().clone())
-            .ssi_wallet_config(value.wallet_config().clone())
-            .did_config(value.did_config().clone())
-            .build()
+impl From<&CoreApplicationConfig> for WaltIdConfig {
+    fn from(value: &CoreApplicationConfig) -> Self {
+        WaltIdConfig::new(
+            value.hosts().clone(),
+            value.wallet_config().clone(),
+            value.did_config().clone(),
+        )
     }
 }
 
-impl From<CoreApplicationConfig> for BasicVerifierConfig {
-    fn from(value: CoreApplicationConfig) -> Self {
-        BasicVerifierConfigBuilder::new()
-            .hosts(value.hosts().clone())
-            .local(value.is_local())
-            .requested_vcs(value.get_requested_vcs().to_vec())
-            .api_path(value.get_api_version())
-            .vc_config(value.vc_config().clone())
-            .build()
+impl From<&CoreApplicationConfig> for FafnirConfig {
+    fn from(value: &CoreApplicationConfig) -> Self {
+        FafnirConfig::new(
+            value.hosts().clone(),
+            value.wallet_config().clone(),
+            value.did_config().clone(),
+        )
     }
 }
 
-impl From<CoreApplicationConfig> for BasicIssuerConfig {
-    fn from(value: CoreApplicationConfig) -> Self {
-        BasicIssuerConfigBuilder::new()
-            .hosts(value.hosts().clone())
-            .local(value.is_local())
-            .api_path(value.get_api_version())
-            .did_config(value.did_config().clone())
-            .build()
+impl From<&CoreApplicationConfig> for BasicVerifierConfig {
+    fn from(value: &CoreApplicationConfig) -> Self {
+        BasicVerifierConfig::new(
+            value.hosts().clone(),
+            value.get_api_version(),
+            value.get_requested_vcs().to_vec(),
+            value.vc_config().clone(),
+        )
+    }
+}
+
+impl From<&CoreApplicationConfig> for BasicIssuerConfig {
+    fn from(value: &CoreApplicationConfig) -> Self {
+        BasicIssuerConfig::new(value.hosts().clone(), value.get_api_version())
     }
 }

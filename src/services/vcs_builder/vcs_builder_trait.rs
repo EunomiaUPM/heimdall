@@ -24,7 +24,6 @@ use ymir::errors::{BadFormat, Errors, Outcome};
 use ymir::types::jwt::VcJwtClaimsBuilder;
 use ymir::types::vcs::doc::VcDocumentBuilder;
 use ymir::types::vcs::{VcIssuer, VcModel, VcType};
-use ymir::utils::get_from_opt;
 
 use crate::config::traits::RoleConfigTrait;
 use crate::services::vcs_builder::BuilderConfigDefaultTrait;
@@ -53,7 +52,9 @@ pub trait VcBuilderTrait: RoleConfigTrait + Send + Sync + 'static {
 
         let now = Utc::now();
         let vc_type = VcType::from_str(&model.vc_type)?;
-        let issuer_did = get_from_opt(model.issuer_did.as_ref(), "issuer did")?;
+        let issuer_did = model.issuer_did.as_ref().ok_or_else(|| {
+            Errors::missing_resource("issuer did", "Missing issued did in db", None)
+        })?;
         match config.get_vc_model() {
             VcModel::JwtVc => {
                 let w3c_data_model = config
@@ -62,7 +63,7 @@ pub trait VcBuilderTrait: RoleConfigTrait + Send + Sync + 'static {
 
                 let doc = VcDocumentBuilder::new(&vc_type, &w3c_data_model)
                     .id(model.credential_id.clone())
-                    .issuer(VcIssuer::new(&issuer_did, Some("HeimdallAuthority")))
+                    .issuer(VcIssuer::new(issuer_did, Some("HeimdallAuthority")))
                     .credential_subject(credential_subject)
                     .valid_from(now)
                     .valid_until(now + Duration::days(365))

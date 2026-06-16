@@ -29,7 +29,6 @@ use ymir::types::vcs::vc_specs::legal_reg_number::{
     LeiCodeBuilder, LocalRegistrationNumberBuilder, TaxIdBuilder, VatIdBuilder,
 };
 use ymir::types::vcs::VcType;
-use ymir::utils::get_from_opt;
 
 use super::super::VcBuilderTrait;
 use crate::config::traits::RoleConfigTrait;
@@ -57,32 +56,41 @@ impl VcBuilderTrait for LegalAuthorityVcBuilder {
         let vc_type = self.validate(&model.vc_type)?;
         info!("Building {} credential", vc_type);
 
-        let holder_did = get_from_opt(model.holder_did.as_ref(), "holder did")?;
-        let vc_data = &get_from_opt(model.credential_data.as_ref(), "credential data")?;
+        let holder_did = model.holder_did.as_ref().ok_or_else(|| {
+            Errors::missing_resource("holder did", "holder did missing in internal db", None)
+        })?;
+        let vc_data = model.credential_data.as_ref().ok_or_else(|| {
+            Errors::missing_resource("credential data", "credential data missing in db", None)
+        })?;
 
         let credential_subject = match vc_type {
             VcType::LeiCode => {
                 let data = serde_json::from_str::<LeiCodeBuilder<Missing>>(vc_data)?;
-                let cred_subj = data.id(holder_did).build();
+                let cred_subj = data.id(holder_did.clone()).build();
                 serde_json::to_value(&cred_subj)?
             }
             VcType::LocalRegistrationNumber => {
                 let data =
                     serde_json::from_str::<LocalRegistrationNumberBuilder<Missing>>(vc_data)?;
-                let cred_subj = data.id(holder_did).build();
+                let cred_subj = data.id(holder_did.clone()).build();
                 serde_json::to_value(&cred_subj)?
             }
             VcType::TaxId => {
                 let data = serde_json::from_str::<TaxIdBuilder<Missing>>(vc_data)?;
-                let cred_subj = data.id(holder_did).build();
+                let cred_subj = data.id(holder_did.clone()).build();
                 serde_json::to_value(&cred_subj)?
             }
             VcType::VatId => {
                 let data = serde_json::from_str::<VatIdBuilder<Missing>>(vc_data)?;
-                let cred_subj = data.id(holder_did).build();
+                let cred_subj = data.id(holder_did.clone()).build();
                 serde_json::to_value(&cred_subj)?
             }
-            _ => unreachable!(),
+            other => {
+                return Err(Errors::crazy(
+                    format!("Invalid vc type {} to issue", other),
+                    None,
+                ))
+            }
         };
 
         self.just_build(&model, credential_subject, &self.config)

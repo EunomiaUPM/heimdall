@@ -64,11 +64,9 @@ impl AuthorityCommands {
             }
             AuthorityCliCommands::Setup(args) => {
                 let (config, vault) = Self::bootstrap(args)?;
-                match config.is_prod() {
-                    true => vault.write_all_secrets(None).await?,
-                    false => vault.write_local_secrets(None).await?,
-                }
-                let db_connection = vault.get_db_connection(&config).await;
+                vault.write_all_secrets(None).await?;
+
+                let db_connection = vault.get_db_connection(&config).await?;
                 AuthorityMigration::run(&db_connection).await?;
             }
         }
@@ -79,9 +77,9 @@ impl AuthorityCommands {
     fn bootstrap(args: AuthCliArgs) -> Outcome<(CoreApplicationConfig, VaultService)> {
         let config = CoreApplicationConfig::load(args.env_file)?;
         let vault = if config.is_vault_real() {
-            VaultService::Real(RealVaultService::new())
+            VaultService::Real(RealVaultService::new()?)
         } else {
-            VaultService::Fake(FakeVaultService::new())
+            VaultService::Fake(FakeVaultService::new()?)
         };
         let table = json_to_table::json_to_table(
             &serde_json::to_value(&config)

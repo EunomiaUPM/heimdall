@@ -121,8 +121,4 @@ impl RoleConfigTrait for CoreApplicationConfig {
     }
 }
 
-impl CoreConfigTrait for CoreApplicationConfig {
-    fn is_react(&self) -> bool {
-        self.is_react
-    }
-}
+impl CoreConfigTrait for CoreApplicationConfig {}

@@ -17,16 +17,19 @@
 
 use std::sync::Arc;
 
-use ymir::core_traits::CoreWalletTrait;
+use ymir::modules::{HasWallet, WalletModuleTrait};
 use ymir::services::issuer::IssuerTrait;
 use ymir::services::repo::subtraits::{MatesTrait, MinionsTrait};
 use ymir::services::verifier::VerifierTrait;
 use ymir::services::wallet::WalletTrait;
 
 use crate::config::CoreConfigTrait;
+use crate::core::modules::{
+    ApproverModuleTrait, FedCatalogModuleTrait, GatekeeperModuleTrait, IssuerModuleTrait,
+    MinionModuleTrait, NotifierModuleTrait, OrchestratorTrait, VerifierModuleTrait,
+};
 use crate::core::traits::{
-    CoreApproverTrait, CoreFedCatalog, CoreGatekeeperTrait, CoreIssuerTrait, CoreMinionTrait,
-    CoreReactTrait, CoreTrait, CoreVerifierTrait,
+    HasGateKeeper, HasIssuer, HasNotifier, HasRepo, HasVcBuilder, HasVerifier,
 };
 use crate::services::gatekeeper::GateKeeperTrait;
 use crate::services::notifications::NotificationsTrait;
@@ -35,7 +38,7 @@ use crate::services::vcs_builder::VcBuilderTrait;
 
 pub struct Core {
     wallet: Arc<dyn WalletTrait>,
-    notifier: Option<Arc<dyn NotificationsTrait>>,
+    notifier: Arc<dyn NotificationsTrait>,
     gatekeeper: Arc<dyn GateKeeperTrait>,
     issuer: Arc<dyn IssuerTrait>,
     verifier: Arc<dyn VerifierTrait>,
@@ -47,7 +50,7 @@ pub struct Core {
 impl Core {
     pub fn new(
         wallet: Arc<dyn WalletTrait>,
-        notifier: Option<Arc<dyn NotificationsTrait>>,
+        notifier: Arc<dyn NotificationsTrait>,
         gatekeeper: Arc<dyn GateKeeperTrait>,
         issuer: Arc<dyn IssuerTrait>,
         verifier: Arc<dyn VerifierTrait>,
@@ -68,102 +71,67 @@ impl Core {
     }
 }
 
-impl CoreFedCatalog for Core {
+impl HasVerifier for Core {
+    fn verifier(&self) -> Arc<dyn VerifierTrait> {
+        self.verifier.clone()
+    }
+}
+
+impl HasRepo for Core {
     fn repo(&self) -> Arc<dyn RepoTrait> {
         self.repo.clone()
     }
 }
 
-impl CoreTrait for Core {
-    fn config(&self) -> Arc<dyn CoreConfigTrait> {
-        self.config.clone()
+impl HasIssuer for Core {
+    fn issuer(&self) -> Arc<dyn IssuerTrait> {
+        self.issuer.clone()
     }
 }
 
-impl CoreReactTrait for Core {
+impl HasVcBuilder for Core {
+    fn vc_builder(&self) -> Arc<dyn VcBuilderTrait> {
+        self.vc_builder.clone()
+    }
+}
+
+impl HasWallet for Core {
+    fn wallet(&self) -> Arc<dyn WalletTrait> {
+        self.wallet.clone()
+    }
+}
+
+impl HasGateKeeper for Core {
+    fn gatekeeper(&self) -> Arc<dyn GateKeeperTrait> {
+        self.gatekeeper.clone()
+    }
+}
+
+impl HasNotifier for Core {
     fn notifier(&self) -> Arc<dyn NotificationsTrait> {
-        self.notifier.as_ref().cloned().expect("Notifier module is required for this operation but is not active in the current configuration")
+        self.notifier.clone()
     }
 }
 
-impl CoreMinionTrait for Core {
-    fn repo(&self) -> Arc<dyn RepoTrait> {
-        self.repo.clone()
-    }
-}
-
-impl CoreVerifierTrait for Core {
-    fn verifier(&self) -> Arc<dyn VerifierTrait> {
-        self.verifier.clone()
-    }
-
-    fn repo(&self) -> Arc<dyn RepoTrait> {
-        self.repo.clone()
-    }
-}
-
-impl CoreIssuerTrait for Core {
-    fn issuer(&self) -> Arc<dyn IssuerTrait> {
-        self.issuer.clone()
-    }
-    fn repo(&self) -> Arc<dyn RepoTrait> {
-        self.repo.clone()
-    }
-    fn vc_builder(&self) -> Arc<dyn VcBuilderTrait> {
-        self.vc_builder.clone()
-    }
-
-    fn wallet(&self) -> Arc<dyn WalletTrait> {
-        self.wallet.clone()
-    }
-}
-
-impl CoreApproverTrait for Core {
-    fn gatekeeper(&self) -> Arc<dyn GateKeeperTrait> {
-        self.gatekeeper.clone()
-    }
-
-    fn repo(&self) -> Arc<dyn RepoTrait> {
-        self.repo.clone()
-    }
-}
-
-impl CoreGatekeeperTrait for Core {
-    fn gatekeeper(&self) -> Arc<dyn GateKeeperTrait> {
-        self.gatekeeper.clone()
-    }
-
-    fn verifier(&self) -> Arc<dyn VerifierTrait> {
-        self.verifier.clone()
-    }
-
-    fn issuer(&self) -> Arc<dyn IssuerTrait> {
-        self.issuer.clone()
-    }
-
-    fn repo(&self) -> Arc<dyn RepoTrait> {
-        self.repo.clone()
-    }
-
-    fn vc_builder(&self) -> Arc<dyn VcBuilderTrait> {
-        self.vc_builder.clone()
-    }
-
-    fn notifier(&self) -> Option<Arc<dyn NotificationsTrait>> {
-        self.notifier.as_ref().cloned()
-    }
-}
-
-impl CoreWalletTrait for Core {
-    fn wallet(&self) -> Arc<dyn WalletTrait> {
-        self.wallet.clone()
-    }
-
+impl WalletModuleTrait for Core {
     fn mate(&self) -> Option<Arc<dyn MatesTrait>> {
         None
     }
 
     fn minion(&self) -> Option<Arc<dyn MinionsTrait>> {
-        Some(self.repo.minions().clone())
+        Some(self.repo.minions())
+    }
+}
+
+impl VerifierModuleTrait for Core {}
+impl IssuerModuleTrait for Core {}
+impl ApproverModuleTrait for Core {}
+impl GatekeeperModuleTrait for Core {}
+impl FedCatalogModuleTrait for Core {}
+impl MinionModuleTrait for Core {}
+impl NotifierModuleTrait for Core {}
+impl OrchestratorTrait for Core {
+    fn config(&self) -> Arc<dyn CoreConfigTrait> {
+        self.config.clone()
     }
 }

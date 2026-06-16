@@ -26,14 +26,14 @@ use axum::{Json, Router};
 use ymir::errors::AppResult;
 use ymir::types::gnap::CredentialResponse;
 
-use crate::core::traits::CoreGatekeeperTrait;
+use crate::core::modules::GatekeeperModuleTrait;
 
 pub struct GateKeeperRouter {
-    gatekeeper: Arc<dyn CoreGatekeeperTrait>,
+    gatekeeper: Arc<dyn GatekeeperModuleTrait>,
 }
 
 impl GateKeeperRouter {
-    pub fn new(gatekeeper: Arc<dyn CoreGatekeeperTrait>) -> Self {
+    pub fn new(gatekeeper: Arc<dyn GatekeeperModuleTrait>) -> Self {
         Self { gatekeeper }
     }
 
@@ -45,12 +45,12 @@ impl GateKeeperRouter {
     }
 
     async fn access_req(
-        State(gatekeeper): State<Arc<dyn CoreGatekeeperTrait>>,
+        State(gatekeeper): State<Arc<dyn GatekeeperModuleTrait>>,
         headers: HeaderMap,
         payload: Bytes,
     ) -> AppResult {
         Ok(gatekeeper
-            .manage_req(payload, headers)
+            .manage_grant_req(payload, headers)
             .await
             .map(Json)
             .map_err(|e| (StatusCode::BAD_REQUEST, Json(e)))
@@ -58,7 +58,7 @@ impl GateKeeperRouter {
     }
 
     async fn continue_req(
-        State(authority): State<Arc<dyn CoreGatekeeperTrait>>,
+        State(authority): State<Arc<dyn GatekeeperModuleTrait>>,
         headers: HeaderMap,
         Path(id): Path<String>,
         payload: Bytes,

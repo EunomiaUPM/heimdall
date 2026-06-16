@@ -18,7 +18,6 @@
 use ymir::config::traits::{ApiConfigTrait, HostsConfigTrait, VerifyReqConfigTrait};
 use ymir::config::types::CommonHostsConfig;
 
-use super::GnapConfigTrait;
 use crate::config::traits::RoleConfigTrait;
 use crate::config::types::AuthorityRole;
 use crate::config::CoreApplicationConfig;
@@ -31,8 +30,8 @@ pub struct GnapConfig {
     auto_approve_cert: bool,
 }
 
-impl From<CoreApplicationConfig> for GnapConfig {
-    fn from(config: CoreApplicationConfig) -> GnapConfig {
+impl From<&CoreApplicationConfig> for GnapConfig {
+    fn from(config: &CoreApplicationConfig) -> GnapConfig {
         GnapConfig {
             hosts: config.hosts().clone(),
             role: config.get_role().clone(),
@@ -55,14 +54,14 @@ impl HostsConfigTrait for GnapConfig {
     }
 }
 
-impl GnapConfigTrait for GnapConfig {
-    fn get_api_path(&self) -> String {
+impl GnapConfig {
+    pub fn get_api_path(&self) -> String {
         self.api_path.clone()
     }
-    fn is_cert_allowed(&self) -> bool {
+    pub fn is_cert_allowed(&self) -> bool {
         self.is_cert_allowed
     }
-    fn auto_approve_cert(&self) -> bool {
+    pub fn auto_approve_cert(&self) -> bool {
         self.auto_approve_cert
     }
 }

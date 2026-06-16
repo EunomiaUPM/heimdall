@@ -15,26 +15,23 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-use std::sync::Arc;
-
-use async_trait::async_trait;
-use ymir::errors::Outcome;
-use ymir::services::issuer::IssuerTrait;
-use ymir::services::wallet::WalletTrait;
-use ymir::types::issuing::{
-    AuthServerMetadata, CredentialRequest, GiveVC, IssuerMetadata, IssuingToken, TokenRequest,
-    VCCredOffer, WellKnownJwks,
-};
-
+use crate::core::traits::{HasRepo, HasVcBuilder};
 use crate::services::repo::RepoTrait;
 use crate::services::vcs_builder::VcBuilderTrait;
+use async_trait::async_trait;
+use serde_json::Value;
+use ymir::errors::Outcome;
+use ymir::modules::{HasIssuer, HasWallet};
+use ymir::services::issuer::IssuerTrait;
+use ymir::types::issuing::{
+    AuthServerMetadata, CredentialRequest, GiveVC, IssuerMetadata, IssuingToken, TokenRequest,
+    VCCredOffer,
+};
 
 #[async_trait]
-pub trait CoreIssuerTrait: Send + Sync + 'static {
-    fn issuer(&self) -> Arc<dyn IssuerTrait>;
-    fn repo(&self) -> Arc<dyn RepoTrait>;
-    fn vc_builder(&self) -> Arc<dyn VcBuilderTrait>;
-    fn wallet(&self) -> Arc<dyn WalletTrait>;
+pub trait IssuerModuleTrait:
+    HasIssuer + HasRepo + HasVcBuilder + HasWallet + Send + Sync + 'static
+{
     async fn get_cred_offer_data(&self, id: &str) -> Outcome<VCCredOffer> {
         let model = self.repo().issuing().get_by_id(&id).await?;
         self.issuer().get_cred_offer_data(&model)
@@ -49,7 +46,7 @@ pub trait CoreIssuerTrait: Send + Sync + 'static {
         self.issuer().get_oauth_server_data(None, Some(&vcs))
     }
 
-    async fn jwks(&self) -> Outcome<WellKnownJwks> {
+    async fn jwks(&self) -> Outcome<Value> {
         self.issuer().get_jwks_data().await
     }
 
@@ -68,15 +65,12 @@ pub trait CoreIssuerTrait: Send + Sync + 'static {
     async fn get_credential(&self, payload: CredentialRequest, token: String) -> Outcome<GiveVC> {
         let mut iss_model = self.repo().issuing().get_by_token(&token).await?;
 
-        let did = self.wallet().get_did().await?;
-        let sig_ctx = self.issuer().get_sig_context(&did).await?;
-
         self.issuer()
-            .validate_cred_req(&mut iss_model, &payload, &token, &did)
+            .validate_cred_req(&mut iss_model, &payload, &token)
             .await?;
 
         let claims = self.vc_builder().build_vc(&iss_model)?;
-        let data = self.issuer().issue_cred(&claims, &sig_ctx).await?;
+        let data = self.issuer().issue_cred(&claims).await?;
 
         let mut req_model = self.repo().request().get_by_id(&iss_model.id).await?;
         let int_model = self.repo().interaction().get_by_id(&iss_model.id).await?;

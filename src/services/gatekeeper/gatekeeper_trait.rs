@@ -14,15 +14,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
-
+use std::format;
 use async_trait::async_trait;
 use axum::body::Bytes;
 use axum::http::HeaderMap;
 use serde_json::Value;
+use tracing::info;
+use ymir::capabilities::HttpSig;
+use ymir::config::types::HostType;
 use ymir::data::entities::{recv_interaction, vc_request};
-use ymir::errors::Outcome;
+use ymir::errors::{Errors, Outcome};
 use ymir::types::gnap::grant_request::{GrantRequest, Interact4GR};
+use ymir::types::gnap::grant_request::client::{KeyMaterial, KeyProof};
 use ymir::types::gnap::grant_response::GrantResponse;
+use ymir::types::keys::Certificate;
 use ymir::types::vcs::VcType;
 
 #[async_trait]
@@ -54,4 +59,5 @@ pub trait GateKeeperTrait: Send + Sync + 'static {
     async fn notify_minion(&self, int_model: &recv_interaction::Model, body: Value) -> Outcome<()>;
     fn manage_cert(&self, model: &recv_interaction::Model) -> Outcome<GrantResponse>;
     fn auto_approve_cert(&self) -> bool;
+    fn validate_grant(&self, payload: &Bytes, headers: &HeaderMap) -> Outcome<GrantRequest>;
 }
