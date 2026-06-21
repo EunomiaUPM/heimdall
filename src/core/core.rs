@@ -16,25 +16,22 @@
  */
 
 use std::sync::Arc;
-
-use ymir::modules::{HasWallet, WalletModuleTrait};
+use ymir::modules::WalletModuleTrait;
 use ymir::services::issuer::IssuerTrait;
-use ymir::services::repo::subtraits::{MatesTrait, MinionsTrait};
 use ymir::services::verifier::VerifierTrait;
 use ymir::services::wallet::WalletTrait;
-
+use ymir::services::{HasIssuer, HasVerifier, HasWallet};
+use ymir::services::repo::traits::shared::ParticipantRepoTrait;
 use crate::config::CoreConfigTrait;
-use crate::core::modules::{
-    ApproverModuleTrait, FedCatalogModuleTrait, GatekeeperModuleTrait, IssuerModuleTrait,
-    MinionModuleTrait, NotifierModuleTrait, OrchestratorTrait, VerifierModuleTrait,
-};
-use crate::core::traits::{
-    HasGateKeeper, HasIssuer, HasNotifier, HasRepo, HasVcBuilder, HasVerifier,
+use crate::modules::{
+    ApproverModule, FedCatalogModule, FrontendNotifierModule, GatekeeperModule, IssuerModule,
+    OrchestratorTrait, ParticipantModule, VerifierModule,
 };
 use crate::services::gatekeeper::GateKeeperTrait;
 use crate::services::notifications::NotificationsTrait;
 use crate::services::repo::RepoTrait;
 use crate::services::vcs_builder::VcBuilderTrait;
+use crate::services::{HasGateKeeper, HasNotifier, HasRepo, HasVcBuilder};
 
 pub struct Core {
     wallet: Arc<dyn WalletTrait>,
@@ -108,28 +105,25 @@ impl HasGateKeeper for Core {
 }
 
 impl HasNotifier for Core {
-    fn notifier(&self) -> Arc<dyn NotificationsTrait> {
+    fn frontend_notifier(&self) -> Arc<dyn NotificationsTrait> {
         self.notifier.clone()
     }
 }
 
 impl WalletModuleTrait for Core {
-    fn mate(&self) -> Option<Arc<dyn MatesTrait>> {
-        None
-    }
 
-    fn minion(&self) -> Option<Arc<dyn MinionsTrait>> {
-        Some(self.repo.minions())
+    fn participant(&self) -> Arc<dyn ParticipantRepoTrait> {
+        self.repo.participant()
     }
 }
 
-impl VerifierModuleTrait for Core {}
-impl IssuerModuleTrait for Core {}
-impl ApproverModuleTrait for Core {}
-impl GatekeeperModuleTrait for Core {}
-impl FedCatalogModuleTrait for Core {}
-impl MinionModuleTrait for Core {}
-impl NotifierModuleTrait for Core {}
+impl VerifierModule for Core {}
+impl IssuerModule for Core {}
+impl ApproverModule for Core {}
+impl GatekeeperModule for Core {}
+impl FedCatalogModule for Core {}
+impl ParticipantModule for Core {}
+impl FrontendNotifierModule for Core {}
 impl OrchestratorTrait for Core {
     fn config(&self) -> Arc<dyn CoreConfigTrait> {
         self.config.clone()

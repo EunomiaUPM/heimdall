@@ -15,15 +15,21 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-use std::sync::Arc;
+use crate::services::HasRepo;
+use crate::services::repo::RepoTrait;
+use async_trait::async_trait;
+use ymir::data::entities::shared::participant::Model;
+use ymir::errors::Outcome;
 
-use ymir::services::repo::traits::received::{RecvGrantRepoTrait, RecvInteractionRepoTrait, RecvVerificationRepoTrait};
-use ymir::services::repo::traits::shared::{IssuanceRepoTrait, ParticipantRepoTrait};
-
-pub trait RepoTrait: Send + Sync + 'static {
-    fn recv_grant(&self) -> Arc<dyn RecvGrantRepoTrait>;
-    fn recv_interaction(&self) -> Arc<dyn RecvInteractionRepoTrait>;
-    fn recv_verification(&self) -> Arc<dyn RecvVerificationRepoTrait>;
-    fn participant(&self) -> Arc<dyn ParticipantRepoTrait>;
-    fn issuance(&self) -> Arc<dyn IssuanceRepoTrait>;
+#[async_trait]
+pub trait ParticipantModule: HasRepo + Send + Sync + 'static {
+    async fn get_all(&self) -> Outcome<Vec<Model>> {
+        self.repo().participant().get_all(None, None).await
+    }
+    async fn get_by_id(&self, id: String) -> Outcome<Model> {
+        self.repo().participant().get_by_id(&id).await
+    }
+    async fn get_me(&self) -> Outcome<Model> {
+        self.repo().participant().get_me().await
+    }
 }

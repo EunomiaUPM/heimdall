@@ -15,15 +15,30 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-use crate::core::traits::HasRepo;
-use crate::services::repo::RepoTrait;
+use std::sync::Arc;
+
 use async_trait::async_trait;
-use ymir::data::entities::minions::Model;
-use ymir::errors::Outcome;
+use ymir::modules::WalletModuleTrait;
+
+use crate::modules::{
+    ApproverModule, FedCatalogModule, GatekeeperModule, IssuerModule,
+    ParticipantModule, FrontendNotifierModule, VerifierModule,
+};
+use crate::config::CoreConfigTrait;
 
 #[async_trait]
-pub trait FedCatalogModuleTrait: HasRepo + Send + Sync + 'static {
-    async fn get_all(&self) -> Outcome<Vec<Model>> {
-        self.repo().minions().get_all(None, None).await
-    }
+pub trait OrchestratorTrait:
+VerifierModule
+    + IssuerModule
+    + ApproverModule
+    + GatekeeperModule
+    + FedCatalogModule
+    + WalletModuleTrait
+    + ParticipantModule
+    + FrontendNotifierModule
+    + Send
+    + Sync
+    + 'static
+{
+    fn config(&self) -> Arc<dyn CoreConfigTrait>;
 }

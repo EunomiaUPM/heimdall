@@ -14,50 +14,41 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
-use std::format;
+
+use crate::types::GrantResponseManager;
 use async_trait::async_trait;
 use axum::body::Bytes;
 use axum::http::HeaderMap;
-use serde_json::Value;
-use tracing::info;
-use ymir::capabilities::HttpSig;
-use ymir::config::types::HostType;
-use ymir::data::entities::{recv_interaction, vc_request};
-use ymir::errors::{Errors, Outcome};
-use ymir::types::gnap::grant_request::{GrantRequest, Interact4GR};
-use ymir::types::gnap::grant_request::client::{KeyMaterial, KeyProof};
-use ymir::types::gnap::grant_response::GrantResponse;
-use ymir::types::keys::Certificate;
-use ymir::types::vcs::VcType;
+use ymir::data::entities::received::{grant, interaction};
+use ymir::data::entities::shared::participant;
+use ymir::errors::Outcome;
+use ymir::types::gnap::grant_request::client::Client;
+use ymir::types::gnap::grant_request::interact::InteractRequest;
+use ymir::types::gnap::grant_request::GrantRequest;
+use ymir::types::gnap::InteractionFinishResponse;
 
 #[async_trait]
 pub trait GateKeeperTrait: Send + Sync + 'static {
-    fn start(
+    fn build_grant_plan(&self, class_id: Option<String>) -> Outcome<grant::Plan>;
+    fn build_interaction_plan(
         &self,
-        grant_request: &Bytes,
-        headers: &HeaderMap,
-    ) -> Outcome<(vc_request::NewModel, recv_interaction::NewModel)>;
-    fn validate_acc_req(
-        &self,
-        payload: &Bytes,
-        headers: &HeaderMap,
-    ) -> Outcome<(GrantRequest, Interact4GR)>;
-    fn validate_vc_to_issue(&self, vc_type: &VcType) -> Outcome<()>;
+        id: &str,
+        interact: Option<InteractRequest>,
+        client: Client,
+    ) -> Outcome<interaction::Plan>;
+    fn build_minion_plan(&self, holder: &str, nick: &str, base_url: &str) -> participant::Plan;
+    fn validate_grant(&self, payload: &Bytes, headers: &HeaderMap) -> Outcome<GrantRequest>;
+
     fn validate_cont_req(
         &self,
-        int_model: &recv_interaction::Model,
+        interaction: &interaction::Model,
         payload: &Bytes,
         headers: &HeaderMap,
     ) -> Outcome<()>;
-    async fn end_verification(&self, model: &recv_interaction::Model) -> Outcome<Option<String>>;
-    async fn apprv_dny_req(
+    fn manage_grant(&self, interact: Option<&InteractRequest>) -> GrantResponseManager;
+    async fn finish_interaction(
         &self,
-        approve: bool,
-        req_model: &mut vc_request::Model,
-        int_model: &recv_interaction::Model,
-    ) -> Outcome<Value>;
-    async fn notify_minion(&self, int_model: &recv_interaction::Model, body: Value) -> Outcome<()>;
-    fn manage_cert(&self, model: &recv_interaction::Model) -> Outcome<GrantResponse>;
-    fn auto_approve_cert(&self) -> bool;
-    fn validate_grant(&self, payload: &Bytes, headers: &HeaderMap) -> Outcome<GrantRequest>;
+        interaction: &interaction::Model,
+        verification_result: Outcome<()>,
+    ) -> Outcome<InteractionFinishResponse>;
 }

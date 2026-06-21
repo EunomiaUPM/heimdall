@@ -17,8 +17,7 @@
 
 use crate::config::CoreApplicationConfig;
 use ymir::config::traits::{
-    ApiConfigTrait, DidConfigTrait, HostsConfigTrait, VcConfigTrait, VerifyReqConfigTrait,
-    WalletConfigTrait,
+    ApiConfigTrait, DidConfigTrait, HostsConfigTrait, VerifyReqConfigTrait, WalletConfigTrait,
 };
 use ymir::services::issuer::basic::BasicIssuerConfig;
 use ymir::services::verifier::basic::BasicVerifierConfig;
@@ -51,7 +50,6 @@ impl From<&CoreApplicationConfig> for BasicVerifierConfig {
             value.hosts().clone(),
             value.get_api_version(),
             value.get_requested_vcs().to_vec(),
-            value.vc_config().clone(),
         )
     }
 }

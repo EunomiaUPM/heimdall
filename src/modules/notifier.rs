@@ -15,21 +15,16 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-mod approver;
-mod fed_catalog;
-mod gaia;
-mod gatekeeper;
-mod issuer;
-mod minion;
-mod orchestrator;
-mod react;
-mod verifier;
+use std::convert::Infallible;
+use std::pin::Pin;
 
-pub use approver::ApproverModuleTrait;
-pub use fed_catalog::FedCatalogModuleTrait;
-pub use gatekeeper::GatekeeperModuleTrait;
-pub use issuer::IssuerModuleTrait;
-pub use minion::MinionModuleTrait;
-pub use orchestrator::OrchestratorTrait;
-pub use react::NotifierModuleTrait;
-pub use verifier::VerifierModuleTrait;
+use crate::services::notifications::NotificationsTrait;
+use crate::services::HasNotifier;
+use axum::response::sse::Event;
+use futures_util::Stream;
+
+pub trait FrontendNotifierModule: HasNotifier + Send + Sync + 'static {
+    fn handle(&self) -> Pin<Box<dyn Stream<Item = Result<Event, Infallible>> + Send>> {
+        self.frontend_notifier().handle()
+    }
+}

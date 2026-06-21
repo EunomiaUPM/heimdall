@@ -22,11 +22,11 @@ use serde::{Deserialize, Serialize};
 use tracing::debug;
 use ymir::config::traits::{
     ApiConfigTrait, ConnectionConfigTrait, DatabaseConfigTrait, DidConfigTrait, HostsConfigTrait,
-    VcConfigTrait, VerifyReqConfigTrait, WalletConfigTrait,
+    VerifyReqConfigTrait, WalletConfigTrait,
 };
 use ymir::config::types::{
-    ApiConfig, CommonHostsConfig, ConnectionConfig, DatabaseConfig, DidConfig, VcConfig,
-    VerifyReqConfig, WalletConfig,
+    ApiConfig, CommonHostsConfig, ConnectionConfig, DatabaseConfig, DidConfig, VerifyReqConfig,
+    WalletConfig,
 };
 use ymir::errors::{Errors, Outcome};
 use ymir::utils::read;
@@ -44,7 +44,6 @@ pub struct CoreApplicationConfig {
     wallet_config: WalletConfig,
     did_config: DidConfig,
     issue_config: IssueConfig,
-    vc_config: VcConfig,
     verify_req_config: VerifyReqConfig,
     role: AuthorityRole,
     is_react: bool,
@@ -100,12 +99,6 @@ impl IssueConfigTrait for CoreApplicationConfig {
 impl VerifyReqConfigTrait for CoreApplicationConfig {
     fn verify_req_config(&self) -> &VerifyReqConfig {
         &self.verify_req_config
-    }
-}
-
-impl VcConfigTrait for CoreApplicationConfig {
-    fn vc_config(&self) -> &VcConfig {
-        &self.vc_config
     }
 }
 

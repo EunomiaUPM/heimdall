@@ -19,3 +19,5 @@ pub mod gatekeeper;
 pub mod notifications;
 pub mod repo;
 pub mod vcs_builder;
+mod has_service_trait;
+pub use has_service_trait::*;

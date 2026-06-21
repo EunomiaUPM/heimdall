@@ -15,35 +15,46 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-use crate::core::traits::HasRepo;
+use crate::services::{HasGateKeeper, HasRepo};
 use async_trait::async_trait;
 use ymir::errors::Outcome;
-use ymir::modules::HasVerifier;
 use ymir::services::verifier::VerifierTrait;
+use ymir::services::HasVerifier;
+use ymir::types::gnap::InteractionFinishResponse;
 use ymir::types::vcs::VPDef;
 use ymir::types::verifying::VerifyPayload;
 
 #[async_trait]
-pub trait VerifierModuleTrait: HasVerifier + HasRepo + Send + Sync + 'static {
+pub trait VerifierModule: HasGateKeeper + HasVerifier + HasRepo + Send + Sync + 'static {
     async fn get_vp_def(&self, state: String) -> Outcome<VPDef> {
         let verification = self.repo().recv_verification().get_by_state(&state).await?;
         self.verifier().generate_vpd(&verification)
     }
-    async fn verify(&self, state: String, payload: VerifyPayload) -> Outcome<Option<String>> {
+    async fn verify(
+        &self,
+        state: String,
+        payload: VerifyPayload,
+    ) -> Outcome<InteractionFinishResponse> {
         let mut verification = self.repo().recv_verification().get_by_state(&state).await?;
         let result = self
             .verifier()
             .verify_all(&mut verification, &payload.vp_token)
             .await;
 
-        self.repo().recv_verification().update(verification).await?;
-        result?;
+        let verification = self.repo().recv_verification().update(verification).await?;
+
+        let mut issuance = self.repo().issuance().get_by_id(&verification.id).await?;
+        issuance.build_ctx.holder_did = verification.holder;
+        issuance.build_ctx.vcs = verification.vcs;
+        let _issuance = self.repo().issuance().update(issuance).await?;
 
         let interaction = self
             .repo()
             .recv_interaction()
             .get_by_id(&verification.id)
             .await?;
-        self.gatekeeper().finish_interaction(&interaction).await // TODO
+        self.gatekeeper()
+            .finish_interaction(&interaction, result)
+            .await
     }
 }

@@ -34,5 +34,5 @@ pub trait HasVcBuilder {
 }
 
 pub trait HasNotifier {
-    fn notifier(&self) -> Arc<dyn NotificationsTrait>;
+    fn frontend_notifier(&self) -> Arc<dyn NotificationsTrait>;
 }

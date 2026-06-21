@@ -20,18 +20,19 @@ use std::sync::Arc;
 use axum::extract::State;
 use axum::routing::get;
 use axum::{Json, Router};
-use ymir::data::entities::minions::Model;
+use ymir::data::entities::shared::participant;
 use ymir::errors::AppResult;
 
-use crate::core::modules::FedCatalogModuleTrait;
+use crate::modules::FedCatalogModule;
 
+// THIS IS A MOCK
 pub struct FedCatalogRouter {
-    gru: Arc<dyn FedCatalogModuleTrait>,
+    federator: Arc<dyn FedCatalogModule>,
 }
 
 impl FedCatalogRouter {
-    pub fn new(gru: Arc<dyn FedCatalogModuleTrait>) -> FedCatalogRouter {
-        FedCatalogRouter { gru }
+    pub fn new(federator: Arc<dyn FedCatalogModule>) -> FedCatalogRouter {
+        FedCatalogRouter { federator }
     }
 
     // pub fn router(self) -> Router {
@@ -43,10 +44,10 @@ impl FedCatalogRouter {
     pub fn well_known(&self) -> Router {
         Router::new()
             .route("/.well-known/federated-catalog", get(Self::get_all))
-            .with_state(self.gru.clone())
+            .with_state(self.federator.clone())
     }
 
-    async fn get_all(State(gru): State<Arc<dyn FedCatalogModuleTrait>>) -> AppResult<Json<Vec<Model>>> {
-        Ok(Json(gru.get_all().await?))
+    async fn get_all(State(federator): State<Arc<dyn FedCatalogModule>>) -> AppResult<Json<Vec<participant::Model>>> {
+        Ok(Json(federator.get_all().await?))
     }
 }

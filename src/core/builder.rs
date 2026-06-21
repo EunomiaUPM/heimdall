@@ -46,6 +46,7 @@ use ymir::services::wallet::walt_id::WaltIdConfig;
 use ymir::services::wallet::walt_id::WaltIdService;
 use ymir::services::wallet::WalletTrait;
 use ymir::types::dids::{DidService, DidServiceType};
+use ymir::types::participants::ParticipantType;
 use ymir::types::wallet::WalletInstance;
 
 pub struct CoreBuilder {
@@ -144,14 +145,25 @@ impl CoreBuilder {
         match config.get_wallet() {
             WalletInstance::WaltId => {
                 let walt_id_config = WaltIdConfig::from(config);
-                let wallet = WaltIdService::new(walt_id_config, vault.clone(), services).await?;
+                let wallet = WaltIdService::new(
+                    walt_id_config,
+                    vault.clone(),
+                    services,
+                    ParticipantType::Authority,
+                )
+                .await?;
 
                 Ok(Arc::new(wallet))
             }
             WalletInstance::Fafnir => {
                 let fafnir_config = FafnirConfig::from(config);
-                let fafnir =
-                    FafnirService::new(fafnir_config, vault.clone(), services.clone()).await?;
+                let fafnir = FafnirService::new(
+                    fafnir_config,
+                    vault.clone(),
+                    services.clone(),
+                    ParticipantType::Authority,
+                )
+                .await?;
                 Ok(Arc::new(fafnir))
             }
         }

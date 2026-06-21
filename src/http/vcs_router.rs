@@ -19,21 +19,24 @@ use std::sync::Arc;
 
 use axum::extract::rejection::JsonRejection;
 use axum::extract::{Path, State};
+use axum::http::StatusCode;
+use axum::response::IntoResponse;
 use axum::routing::{get, post};
 use axum::{Json, Router};
-use ymir::data::entities::vc_request::Model;
+use ymir::data::entities::received::grant::Model;
 use ymir::errors::AppResult;
+use ymir::types::gnap::InteractionFinishResponse;
 use ymir::types::vcs::vc_decision_approval::VcDecisionApproval;
 use ymir::utils::extract_payload;
 
-use crate::core::modules::ApproverModuleTrait;
+use crate::modules::ApproverModule;
 
 pub struct ApproverRouter {
-    approver: Arc<dyn ApproverModuleTrait>,
+    approver: Arc<dyn ApproverModule>,
 }
 
 impl ApproverRouter {
-    pub fn new(approver: Arc<dyn ApproverModuleTrait>) -> Self {
+    pub fn new(approver: Arc<dyn ApproverModule>) -> Self {
         Self { approver }
     }
     pub fn router(self) -> Router {
@@ -45,24 +48,33 @@ impl ApproverRouter {
     }
 
     async fn get_all_requests(
-        State(approver): State<Arc<dyn ApproverModuleTrait>>,
+        State(approver): State<Arc<dyn ApproverModule>>,
     ) -> AppResult<Json<Vec<Model>>> {
         Ok(Json(approver.get_all().await?))
     }
 
     async fn get_one_request(
-        State(approver): State<Arc<dyn ApproverModuleTrait>>,
+        State(approver): State<Arc<dyn ApproverModule>>,
         Path(id): Path<String>,
     ) -> AppResult<Json<Model>> {
         Ok(Json(approver.get_by_id(id).await?))
     }
 
     async fn manage_request(
-        State(approver): State<Arc<dyn ApproverModuleTrait>>,
+        State(approver): State<Arc<dyn ApproverModule>>,
         Path(id): Path<String>,
         payload: Result<Json<VcDecisionApproval>, JsonRejection>,
-    ) -> AppResult<()> {
+    ) -> AppResult {
         let payload = extract_payload(payload)?;
-        approver.manage_req(id, payload).await
+        Ok(match approver.manage_req(id, payload).await? {
+            InteractionFinishResponse::Success(Some(uri)) => (StatusCode::OK, uri).into_response(),
+            InteractionFinishResponse::Success(None) => StatusCode::OK.into_response(),
+            InteractionFinishResponse::Failure(Some(uri)) => {
+                (StatusCode::UNPROCESSABLE_ENTITY, uri).into_response()
+            }
+            InteractionFinishResponse::Failure(None) => {
+                StatusCode::UNPROCESSABLE_ENTITY.into_response()
+            }
+        })
     }
 }

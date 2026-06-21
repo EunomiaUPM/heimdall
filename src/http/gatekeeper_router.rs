@@ -17,6 +17,7 @@
 
 use std::sync::Arc;
 
+use crate::modules::GatekeeperModule;
 use axum::body::Bytes;
 use axum::extract::{Path, State};
 use axum::http::{HeaderMap, StatusCode};
@@ -24,16 +25,14 @@ use axum::response::IntoResponse;
 use axum::routing::post;
 use axum::{Json, Router};
 use ymir::errors::AppResult;
-use ymir::types::gnap::CredentialResponse;
-
-use crate::core::modules::GatekeeperModuleTrait;
+use ymir::types::gnap::grant_response::GrantResponse;
 
 pub struct GateKeeperRouter {
-    gatekeeper: Arc<dyn GatekeeperModuleTrait>,
+    gatekeeper: Arc<dyn GatekeeperModule>,
 }
 
 impl GateKeeperRouter {
-    pub fn new(gatekeeper: Arc<dyn GatekeeperModuleTrait>) -> Self {
+    pub fn new(gatekeeper: Arc<dyn GatekeeperModule>) -> Self {
         Self { gatekeeper }
     }
 
@@ -45,24 +44,35 @@ impl GateKeeperRouter {
     }
 
     async fn access_req(
-        State(gatekeeper): State<Arc<dyn GatekeeperModuleTrait>>,
+        State(gatekeeper): State<Arc<dyn GatekeeperModule>>,
         headers: HeaderMap,
         payload: Bytes,
     ) -> AppResult {
-        Ok(gatekeeper
-            .manage_grant_req(payload, headers)
-            .await
-            .map(Json)
-            .map_err(|e| (StatusCode::BAD_REQUEST, Json(e)))
-            .into_response())
+        let response = gatekeeper.manage_grant_req(payload, headers).await;
+
+        let status = match &response {
+            GrantResponse::Error(_) => StatusCode::BAD_REQUEST,
+            GrantResponse::Processing { .. } => StatusCode::ACCEPTED,
+            _ => StatusCode::OK,
+        };
+
+        Ok((status, Json(response)).into_response())
     }
 
     async fn continue_req(
-        State(authority): State<Arc<dyn GatekeeperModuleTrait>>,
+        State(gatekeeper): State<Arc<dyn GatekeeperModule>>,
         headers: HeaderMap,
         Path(id): Path<String>,
         payload: Bytes,
-    ) -> AppResult<Json<CredentialResponse>> {
-        Ok(Json(authority.manage_cont_req(id, payload, headers).await?))
+    ) -> AppResult {
+        let response = gatekeeper.manage_cont_req(id, payload, headers).await;
+
+        let status = match &response {
+            GrantResponse::Error(_) => StatusCode::BAD_REQUEST,
+            GrantResponse::Processing { .. } => StatusCode::ACCEPTED,
+            _ => StatusCode::OK,
+        };
+
+        Ok((status, Json(response)).into_response())
     }
 }

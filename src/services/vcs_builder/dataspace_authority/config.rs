@@ -15,23 +15,13 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-use ymir::config::traits::VcConfigTrait;
-use ymir::config::types::VcConfig;
-
 use crate::config::traits::RoleConfigTrait;
 use crate::config::types::AuthorityRole;
 use crate::config::CoreApplicationConfig;
 use crate::services::vcs_builder::BuilderConfigDefaultTrait;
 
 pub struct DataSpaceAuthorityConfig {
-    vc_config: VcConfig,
     role: AuthorityRole,
-}
-
-impl VcConfigTrait for DataSpaceAuthorityConfig {
-    fn vc_config(&self) -> &VcConfig {
-        &self.vc_config
-    }
 }
 
 impl RoleConfigTrait for DataSpaceAuthorityConfig {
@@ -45,7 +35,6 @@ impl BuilderConfigDefaultTrait for DataSpaceAuthorityConfig {}
 impl From<CoreApplicationConfig> for DataSpaceAuthorityConfig {
     fn from(value: CoreApplicationConfig) -> Self {
         Self {
-            vc_config: value.vc_config().clone(),
             role: value.get_role().clone(),
         }
     }

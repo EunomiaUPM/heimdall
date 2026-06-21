@@ -17,9 +17,8 @@
 
 mod builder;
 mod core;
-pub mod modules;
-mod traits;
+mod orchestrator;
 
 pub use core::Core;
-
 pub use builder::CoreBuilder;
+pub use orchestrator::OrchestratorTrait;

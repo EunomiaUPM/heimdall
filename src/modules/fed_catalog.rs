@@ -15,17 +15,14 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-use std::convert::Infallible;
-use std::pin::Pin;
-use std::sync::Arc;
+use crate::services::HasRepo;
+use async_trait::async_trait;
+use ymir::data::entities::shared::participant::Model;
+use ymir::errors::Outcome;
 
-use crate::core::traits::HasNotifier;
-use crate::services::notifications::NotificationsTrait;
-use axum::response::sse::Event;
-use futures_util::Stream;
-
-pub trait NotifierModuleTrait: HasNotifier + Send + Sync + 'static {
-    fn handle(&self) -> Pin<Box<dyn Stream<Item = Result<Event, Infallible>> + Send>> {
-        self.notifier().handle()
+#[async_trait]
+pub trait FedCatalogModule: HasRepo + Send + Sync + 'static {
+    async fn get_all(&self) -> Outcome<Vec<Model>> {
+        self.repo().participant().get_all(None, None).await
     }
 }

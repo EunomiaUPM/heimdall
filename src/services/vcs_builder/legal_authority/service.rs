@@ -15,25 +15,23 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-use std::str::FromStr;
-
 use base64::engine::general_purpose::STANDARD;
 use base64::Engine;
-use serde_json::Value;
-use tracing::info;
 use x509_parser::parse_x509_certificate;
-use ymir::data::entities::{issuing, vc_request};
+use x509_parser::prelude::X509Certificate;
+use ymir::data::entities::shared::issuance;
 use ymir::errors::{BadFormat, Errors, Outcome};
-use ymir::types::present::Missing;
-use ymir::types::vcs::vc_specs::legal_reg_number::{
-    LeiCodeBuilder, LocalRegistrationNumberBuilder, TaxIdBuilder, VatIdBuilder,
-};
-use ymir::types::vcs::VcType;
-
+use ymir::types::jwt::VCJwtClaims;
+use ymir::types::vcs::{VcType, VcTypeConfig};
+use ymir::types::vcs::vc_specs::legal_reg_number::{LeiCode, LocalRegistrationNumber, TaxId, VatId};
 use super::super::VcBuilderTrait;
 use crate::config::traits::RoleConfigTrait;
 use crate::config::types::AuthorityRole;
 use crate::services::vcs_builder::legal_authority::config::LegalAuthorityConfig;
+use crate::types::need_field_for_vc;
+
+const COUNTRY_OID: &str = "2.5.4.6";
+const ORG_ID_OID: &str = "2.5.4.97";
 
 pub struct LegalAuthorityVcBuilder {
     config: LegalAuthorityConfig,
@@ -52,154 +50,161 @@ impl RoleConfigTrait for LegalAuthorityVcBuilder {
 }
 
 impl VcBuilderTrait for LegalAuthorityVcBuilder {
-    fn build_vc(&self, model: &issuing::Model) -> Outcome<Value> {
-        let vc_type = self.validate(&model.vc_type)?;
-        info!("Building {} credential", vc_type);
+    fn build_vc(&self, issuance: &issuance::Model, vc_config: VcTypeConfig) -> Outcome<VCJwtClaims> {
+        let holder_did = need_field_for_vc(issuance.build_ctx.holder_did.as_deref())?;
 
-        let holder_did = model.holder_did.as_ref().ok_or_else(|| {
-            Errors::missing_resource("holder did", "holder did missing in internal db", None)
-        })?;
-        let vc_data = model.credential_data.as_ref().ok_or_else(|| {
-            Errors::missing_resource("credential data", "credential data missing in db", None)
-        })?;
+        let role = self.config.get_role();
+        if !role.available_credentials().contains(vc_config.vc_type()) {
+            return Err(Errors::forbidden(
+                format!("As a {} we cannot issue {}", role, vc_config),
+                None,
+            ));
+        }
 
-        let credential_subject = match vc_type {
+        let (code, country) = self.get_gaia_x_code(issuance, vc_config.vc_type())?;
+        let credential_subject = match vc_config.vc_type() {
             VcType::LeiCode => {
-                let data = serde_json::from_str::<LeiCodeBuilder<Missing>>(vc_data)?;
-                let cred_subj = data.id(holder_did.clone()).build();
-                serde_json::to_value(&cred_subj)?
+                let v = LeiCode {
+                    id: holder_did.to_string(),
+                    lei_code: code,
+                    subdivision_country_code: None,
+                    country_code: country,
+                };
+                serde_json::to_value(&v)?
             }
             VcType::LocalRegistrationNumber => {
-                let data =
-                    serde_json::from_str::<LocalRegistrationNumberBuilder<Missing>>(vc_data)?;
-                let cred_subj = data.id(holder_did.clone()).build();
-                serde_json::to_value(&cred_subj)?
+                let v = LocalRegistrationNumber {
+                    id: holder_did.to_string(),
+                    local: code,
+                };
+                serde_json::to_value(&v)?
+
             }
             VcType::TaxId => {
-                let data = serde_json::from_str::<TaxIdBuilder<Missing>>(vc_data)?;
-                let cred_subj = data.id(holder_did.clone()).build();
-                serde_json::to_value(&cred_subj)?
+                let v = TaxId {
+                    id: holder_did.to_string(),
+                    tax_id: code,
+                };
+                serde_json::to_value(&v)?
             }
             VcType::VatId => {
-                let data = serde_json::from_str::<VatIdBuilder<Missing>>(vc_data)?;
-                let cred_subj = data.id(holder_did.clone()).build();
-                serde_json::to_value(&cred_subj)?
+                let v = VatId {
+                    id: holder_did.to_string(),
+                    vat_id: code,
+                    country_code: Some(country),
+                };
+                serde_json::to_value(&v)?
             }
-            other => {
-                return Err(Errors::crazy(
-                    format!("Invalid vc type {} to issue", other),
+            VcType::Eori => return Err(Errors::not_impl("EORI is not impl yet", None)),
+            VcType::Euid => return Err(Errors::not_impl("EUID is not impl yet", None)),
+            _ => {
+                return Err(Errors::forbidden(
+                    format!("As a {} we cannot issue {}", role, vc_config),
                     None,
-                ))
+                ));
             }
         };
 
-        self.just_build(&model, credential_subject, &self.config)
+        self.just_build(issuance, credential_subject, vc_config)
     }
+}
 
-    fn gather_data(&self, req_model: &vc_request::Model) -> Outcome<String> {
-        info!("Gathering data to issue vc");
-
-        let cert_bytes = STANDARD.decode(&req_model.cert).map_err(|e| {
+impl LegalAuthorityVcBuilder {
+    /// Returns the Gaia-X-formatted identifier for the requested VC type, extracted
+    /// from the X.509 certificate stored in the issuance context.
+    ///
+    /// Output format per VC type:
+    /// - `LeiCode`: the 20-char ISO 17442 LEI (no prefix, no country).
+    /// - `VatId`:   `<country><number>` e.g. `FR12345678901`.
+    /// - `TaxId`:   `<country><number>` (accepts TIN or VAT in the cert).
+    /// - `LocalRegistrationNumber`: `<country><number>`.
+    fn get_gaia_x_code(
+        &self,
+        issuance: &issuance::Model,
+        vc_type: &VcType,
+    ) -> Outcome<(String, String)> {
+        let cert_b64 = need_field_for_vc(issuance.build_ctx.cert.as_ref())?;
+        let cert_bytes = STANDARD.decode(cert_b64).map_err(|e| {
             Errors::format(
                 BadFormat::Received,
-                "Unable to decode certificate",
+                "Unable to decode certificate (expected base64)",
                 Some(Box::new(e)),
             )
         })?;
         let (_, cert) = parse_x509_certificate(&cert_bytes)
-            .map_err(|e| Errors::parse("Unable to parse x509 cert", Some(Box::new(e))))?;
+            .map_err(|e| Errors::parse("Unable to parse X.509 cert", Some(Box::new(e))))?;
 
-        let vc_type = self.validate(&req_model.vc_type)?;
+        let cert_country = Self::find_subject_attr(&cert, COUNTRY_OID)?;
+        let org_id_raw = Self::find_subject_attr(&cert, ORG_ID_OID)?;
 
-        let cert_country = cert
-            .subject
-            .iter_attributes()
-            .find(|attr| attr.attr_type().to_id_string() == "2.5.4.6")
-            .and_then(|attr| attr.attr_value().as_str().ok())
-            .map(|s| s.to_string());
+        let allowed_prefixes: &[&str] = match vc_type {
+            VcType::LeiCode => &["LEI"],
+            VcType::VatId => &["VAT"],
+            VcType::TaxId => &["TIN", "VAT"],
+            VcType::LocalRegistrationNumber => &["NTR"],
+            _ => {
+                return Err(Errors::not_impl(
+                    format!("VC type {vc_type} cannot be derived from certificate"),
+                    None,
+                ));
+            }
+        };
 
-        let oid_attr = cert
-            .subject
-            .iter_attributes()
-            .find(|attr| attr.attr_type().to_id_string() == "2.5.4.97")
+        // ETSI EN 319 412-1: <3-letter-prefix><2-letter-country>-<identifier>
+        let etsi_part = org_id_raw
+            .split('+')
+            .find(|part| {
+                allowed_prefixes.iter().any(|p| {
+                    part.len() >= 6
+                        && part.starts_with(p)
+                        && part.chars().nth(5) == Some('-')
+                })
+            })
             .ok_or_else(|| {
                 Errors::format(
                     BadFormat::Received,
-                    "No organizational identifier found in certificate",
+                    format!(
+                        "Certificate organizationIdentifier does not contain a {vc_type} \
+                     value (expected one of prefixes {allowed_prefixes:?})"
+                    ),
                     None,
                 )
             })?;
 
-        let org_id_str = oid_attr.attr_value().as_str().map_err(|_| {
-            Errors::format(
+        // Cross-validate country between subject C= and prefix
+        let prefix_country = &etsi_part[3..5];
+        if prefix_country != cert_country {
+            return Err(Errors::format(
                 BadFormat::Received,
-                "Unable to parse organization identifier",
+                format!(
+                    "Country mismatch: cert country '{cert_country}' vs prefix country '{prefix_country}'"
+                ),
                 None,
-            )
-        })?;
+            ));
+        }
 
-        let prefix = match vc_type {
-            VcType::LeiCode => "LEI",
-            VcType::LocalRegistrationNumber | VcType::TaxId => "NTR",
-            VcType::VatId => "VAT",
-            _ => unreachable!(),
+        let identifier = etsi_part.split_once('-').map(|(_, id)| id).unwrap_or("");
+
+        let code = match vc_type {
+            VcType::LeiCode => identifier.to_string(),
+            _ => format!("{prefix_country}{identifier}"),
         };
 
-        let shitty_code = org_id_str
-            .split('+')
-            .find(|part| part.starts_with(prefix))
+        Ok((code, cert_country))
+    }
+
+    fn find_subject_attr(cert: &X509Certificate, oid: &str) -> Outcome<String> {
+        cert.subject
+            .iter_attributes()
+            .find(|attr| attr.attr_type().to_id_string() == oid)
+            .and_then(|attr| attr.attr_value().as_str().ok())
+            .map(|s| s.to_string())
             .ok_or_else(|| {
                 Errors::format(
                     BadFormat::Received,
-                    format!("No matching code found in cert for {:?}", prefix),
+                    format!("Certificate missing required subject attribute {oid}"),
                     None,
                 )
-            })?
-            .to_string();
-
-        match vc_type {
-            VcType::LeiCode => {
-                let data = LeiCodeBuilder::new(
-                    shitty_code,
-                    cert_country.ok_or_else(|| {
-                        Errors::format(BadFormat::Received, "No country code", None)
-                    })?,
-                );
-
-                Ok(serde_json::to_string(&data)?)
-            }
-            VcType::LocalRegistrationNumber => {
-                let data = LocalRegistrationNumberBuilder::new(shitty_code);
-                Ok(serde_json::to_string(&data)?)
-            }
-            VcType::TaxId => {
-                let data = TaxIdBuilder::new(shitty_code);
-                Ok(serde_json::to_string(&data)?)
-            }
-            VcType::VatId => {
-                let mut data = VatIdBuilder::new(shitty_code);
-                if let Some(country) = cert_country {
-                    data = data.country_code(country);
-                }
-                Ok(serde_json::to_string(&data)?)
-            }
-            _ => unreachable!(),
-        }
-    }
-
-    fn validate(&self, vc_type: &str) -> Outcome<VcType> {
-        let vc_type = VcType::from_str(vc_type)?;
-
-        match &vc_type {
-            VcType::Eori => Err(Errors::not_impl("EORI is not impl yet", None)),
-            VcType::Euid => Err(Errors::not_impl("EUID is not impl yet", None)),
-            VcType::LeiCode | VcType::LocalRegistrationNumber | VcType::TaxId | VcType::VatId => {
-                Ok(vc_type)
-            }
-            vc_type => Err(Errors::unauthorized(
-                format!("Unauthorized to issue vc_type {}", vc_type.to_string()),
-                None,
-            )),
-        }
+            })
     }
 }

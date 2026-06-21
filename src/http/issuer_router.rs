@@ -23,24 +23,23 @@ use axum::extract::{Query, State};
 use axum::http::HeaderMap;
 use axum::routing::{get, post};
 use axum::{Form, Json, Router};
-use serde_json::Value;
 use ymir::errors::AppResult;
 use ymir::types::issuing::{
     AuthServerMetadata, CredentialRequest, GiveVC, IssuerMetadata, IssuingToken, TokenRequest,
-    VCCredOffer,
+    VcCredOffer,
 };
 use ymir::utils::{
     extract_bearer_token, extract_form_payload, extract_payload, extract_query_param,
 };
 
-use crate::core::modules::IssuerModuleTrait;
+use crate::modules::IssuerModule;
 
 pub struct IssuerRouter {
-    issuer: Arc<dyn IssuerModuleTrait>,
+    issuer: Arc<dyn IssuerModule>,
 }
 
 impl IssuerRouter {
-    pub fn new(issuer: Arc<dyn IssuerModuleTrait>) -> Self {
+    pub fn new(issuer: Arc<dyn IssuerModule>) -> Self {
         Self { issuer }
     }
 
@@ -55,7 +54,7 @@ impl IssuerRouter {
                 "/.well-known/oauth-authorization-server",
                 get(Self::get_oauth_server),
             )
-            .route("/jwks", get(Self::get_jwks))
+            // .route("/jwks", get(Self::get_jwks))
             .route("/token", post(Self::get_token))
             .route("/credential", post(Self::post_credential))
             .with_state(self.issuer)
@@ -75,31 +74,31 @@ impl IssuerRouter {
     }
 
     async fn cred_offer(
-        State(issuer): State<Arc<dyn IssuerModuleTrait>>,
+        State(issuer): State<Arc<dyn IssuerModule>>,
         Query(params): Query<HashMap<String, String>>,
-    ) -> AppResult<Json<VCCredOffer>> {
+    ) -> AppResult<Json<VcCredOffer>> {
         let id = extract_query_param(&params, "id")?;
         Ok(Json(issuer.get_cred_offer_data(&id).await?))
     }
 
     async fn get_issuer(
-        State(issuer): State<Arc<dyn IssuerModuleTrait>>,
+        State(issuer): State<Arc<dyn IssuerModule>>,
     ) -> AppResult<Json<IssuerMetadata>> {
         Ok(Json(issuer.issuer_metadata()))
     }
 
     async fn get_oauth_server(
-        State(issuer): State<Arc<dyn IssuerModuleTrait>>,
+        State(issuer): State<Arc<dyn IssuerModule>>,
     ) -> AppResult<Json<AuthServerMetadata>> {
         Ok(Json(issuer.oauth_server_metadata()))
     }
 
-    async fn get_jwks(State(issuer): State<Arc<dyn IssuerModuleTrait>>) -> AppResult<Json<Value>> {
-        Ok(Json(issuer.jwks().await?))
-    }
+    // async fn get_jwks(State(issuer): State<Arc<dyn IssuerModule>>) -> AppResult<Json<Value>> {
+    //     Ok(Json(issuer.jwks().await?))
+    // }
 
     async fn get_token(
-        State(issuer): State<Arc<dyn IssuerModuleTrait>>,
+        State(issuer): State<Arc<dyn IssuerModule>>,
         payload: Result<Form<TokenRequest>, FormRejection>,
     ) -> AppResult<Json<IssuingToken>> {
         let payload = extract_form_payload(payload)?;
@@ -107,7 +106,7 @@ impl IssuerRouter {
     }
 
     async fn post_credential(
-        State(authority): State<Arc<dyn IssuerModuleTrait>>,
+        State(authority): State<Arc<dyn IssuerModule>>,
         headers: HeaderMap,
         payload: Result<Json<CredentialRequest>, JsonRejection>,
     ) -> AppResult<Json<GiveVC>> {

@@ -17,10 +17,10 @@
 
 use std::sync::Arc;
 
-use crate::core::modules::OrchestratorTrait;
+use crate::modules::OrchestratorTrait;
 use crate::http::fed_catalog_router::FedCatalogRouter;
 use crate::http::{
-    ApproverRouter, GateKeeperRouter, IssuerRouter, MinionRouter, ReactRouter, VerifierRouter,
+    ApproverRouter, GateKeeperRouter, IssuerRouter, ParticipantRouter, ReactRouter, VerifierRouter,
 };
 use axum::extract::Request;
 use axum::http::StatusCode;
@@ -52,7 +52,7 @@ impl RainbowAuthorityRouter {
         let verifier = VerifierRouter::new(self.core.clone());
         let approver = ApproverRouter::new(self.core.clone());
         let fed_catalog = FedCatalogRouter::new(self.core.clone());
-        let minion = MinionRouter::new(self.core.clone());
+        let minion = ParticipantRouter::new(self.core.clone());
         let health = HealthRouter::new();
         let openapi = OpenapiRouter::new(self.openapi.clone());
         let react = ReactRouter::new(self.core.clone());

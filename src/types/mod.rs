@@ -14,31 +14,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
+use ymir::errors::{Errors, Outcome};
 
-use std::sync::Arc;
+pub enum GrantResponseManager {
+    Approved,
+    Pending,
+    Processing,
+}
 
-use async_trait::async_trait;
-use ymir::modules::WalletModuleTrait;
-
-use super::{
-    ApproverModuleTrait, FedCatalogModuleTrait, GatekeeperModuleTrait, IssuerModuleTrait,
-    MinionModuleTrait, NotifierModuleTrait, VerifierModuleTrait,
-};
-use crate::config::CoreConfigTrait;
-
-#[async_trait]
-pub trait OrchestratorTrait:
-    VerifierModuleTrait
-    + IssuerModuleTrait
-    + ApproverModuleTrait
-    + GatekeeperModuleTrait
-    + FedCatalogModuleTrait
-    + WalletModuleTrait
-    + MinionModuleTrait
-    + NotifierModuleTrait
-    + Send
-    + Sync
-    + 'static
-{
-    fn config(&self) -> Arc<dyn CoreConfigTrait>;
+pub fn need_field_for_vc<T>(opt: Option<T>) -> Outcome<T> {
+    opt.ok_or_else(|| {
+        Errors::unauthorized(
+            "The authentication process is insufficient to receive this credential",
+            None,
+        )
+    })
 }

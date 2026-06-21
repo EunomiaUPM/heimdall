@@ -25,7 +25,7 @@ use futures_util::StreamExt;
 use tokio::sync::broadcast;
 use tokio::sync::broadcast::Sender;
 use tokio_stream::wrappers::BroadcastStream;
-use ymir::data::entities::vc_request::Model;
+use ymir::data::entities::received::grant::Model;
 
 use super::NotificationEvent;
 use super::NotificationsTrait;
@@ -49,7 +49,8 @@ impl NotificationsTrait for NotificationService {
             title: "New Petition".to_string(),
             message: format!(
                 "{} requests a {} credential",
-                model.participant_slug, model.vc_type
+                model.participant_nick,
+                model.vc_type_config.clone().unwrap().first().unwrap() // TODO
             ),
             level: "info".to_string(),
             created_at: chrono::Utc::now().to_rfc3339(),

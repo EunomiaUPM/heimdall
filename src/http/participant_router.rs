@@ -20,18 +20,18 @@ use std::sync::Arc;
 use axum::extract::{Path, State};
 use axum::routing::get;
 use axum::{Json, Router};
-use ymir::data::entities::minions::Model;
+use ymir::data::entities::shared::participant::Model;
 use ymir::errors::AppResult;
 
-use crate::core::modules::MinionModuleTrait;
+use crate::modules::ParticipantModule;
 
-pub struct MinionRouter {
-    gru: Arc<dyn MinionModuleTrait>,
+pub struct ParticipantRouter {
+    participant: Arc<dyn ParticipantModule>,
 }
 
-impl MinionRouter {
-    pub fn new(gru: Arc<dyn MinionModuleTrait>) -> MinionRouter {
-        MinionRouter { gru }
+impl ParticipantRouter {
+    pub fn new(participant: Arc<dyn ParticipantModule>) -> ParticipantRouter {
+        ParticipantRouter { participant }
     }
 
     pub fn router(self) -> Router {
@@ -39,21 +39,21 @@ impl MinionRouter {
             .route("/all", get(Self::get_all))
             .route("/{id}", get(Self::get_by_id))
             .route("/myself", get(Self::get_me))
-            .with_state(self.gru)
+            .with_state(self.participant)
     }
 
-    async fn get_all(State(gru): State<Arc<dyn MinionModuleTrait>>) -> AppResult<Json<Vec<Model>>> {
-        Ok(Json(gru.get_all().await?))
+    async fn get_all(State(participant): State<Arc<dyn ParticipantModule>>) -> AppResult<Json<Vec<Model>>> {
+        Ok(Json(participant.get_all().await?))
     }
 
     async fn get_by_id(
-        State(gru): State<Arc<dyn MinionModuleTrait>>,
+        State(participant): State<Arc<dyn ParticipantModule>>,
         Path(id): Path<String>,
     ) -> AppResult<Json<Model>> {
-        Ok(Json(gru.get_by_id(id).await?))
+        Ok(Json(participant.get_by_id(id).await?))
     }
 
-    async fn get_me(State(gru): State<Arc<dyn MinionModuleTrait>>) -> AppResult<Json<Model>> {
-        Ok(Json(gru.get_me().await?))
+    async fn get_me(State(participant): State<Arc<dyn ParticipantModule>>) -> AppResult<Json<Model>> {
+        Ok(Json(participant.get_me().await?))
     }
 }

@@ -15,21 +15,20 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-use crate::core::traits::HasRepo;
-use crate::services::repo::RepoTrait;
-use async_trait::async_trait;
-use ymir::data::entities::minions::Model;
-use ymir::errors::Outcome;
+mod approver;
+mod fed_catalog;
+mod gaia;
+mod gatekeeper;
+mod issuer;
+mod participants;
+mod notifier;
+mod verifier;
 
-#[async_trait]
-pub trait MinionModuleTrait: HasRepo + Send + Sync + 'static {
-    async fn get_all(&self) -> Outcome<Vec<Model>> {
-        self.repo().minions().get_all(None, None).await
-    }
-    async fn get_by_id(&self, id: String) -> Outcome<Model> {
-        self.repo().minions().get_by_id(&id).await
-    }
-    async fn get_me(&self) -> Outcome<Model> {
-        self.repo().minions().get_me().await
-    }
-}
+pub use approver::ApproverModule;
+pub use fed_catalog::FedCatalogModule;
+pub use gatekeeper::GatekeeperModule;
+pub use issuer::IssuerModule;
+pub use participants::ParticipantModule;
+pub use crate::core::OrchestratorTrait;
+pub use notifier::FrontendNotifierModule;
+pub use verifier::VerifierModule;
