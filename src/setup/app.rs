@@ -17,13 +17,12 @@
 
 use std::net::SocketAddr;
 use std::sync::Arc;
-use std::time::Duration;
 
 use axum::{serve, Router};
 use axum_server::tls_rustls::RustlsConfig;
 use tokio::net::TcpListener;
-use tracing::{debug, error, info, warn};
-use ymir::config::traits::{ApiConfigTrait, ConnectionConfigTrait, HostsConfigTrait};
+use tracing::info;
+use ymir::config::traits::{ConnectionConfigTrait, HostsConfigTrait};
 use ymir::config::types::HostType;
 use ymir::errors::{Errors, Outcome};
 use ymir::services::vault::{VaultService, VaultTrait};

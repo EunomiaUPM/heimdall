@@ -21,7 +21,10 @@ use chrono::Utc;
 use ymir::errors::{Errors, Outcome};
 use ymir::services::{HasIssuer, HasWallet};
 use ymir::types::gnap::GrantStatus;
-use ymir::types::issuing::{AuthServerMetadata, CredentialRequest, GiveVC, IssuedCredential, IssuerMetadata, IssuingToken, OidcGrantType, TokenRequest, VcCredOffer};
+use ymir::types::issuance::{
+    AuthServerMetadata, CredentialRequest, GiveVC, IssuerMetadata, IssuingToken, OidcGrantType,
+    TokenRequest, VcBody, VcCredOffer,
+};
 use ymir::utils::require_field;
 
 #[async_trait]
@@ -53,7 +56,7 @@ pub trait IssuerModule:
                     .issuance()
                     .get_by_pre_auth_code(&payload.pre_authorized_code)
                     .await
-                    .map_err(|e| Errors::forbidden("pre_auth_code does not match", None))?;
+                    .map_err(|_| Errors::forbidden("pre_auth_code does not match", None))?;
                 Ok(self.issuer().get_token(&model))
             }
             OidcGrantType::AuthorizationCode
@@ -74,12 +77,11 @@ pub trait IssuerModule:
         issuance.build_ctx.holder_did = Some(holder_did);
 
         let claims = self.vc_builder().build_vc(&issuance, vc_config)?;
-        let vc_jwt = self.issuer().issue_cred(&claims).await?;
+        let vc_jwt = self.issuer().sign_claims(&claims).await?;
 
         issuance.credential = Some(vc_jwt.clone());
-        
-        let issuance = self.repo().issuance().update(issuance).await?;
 
+        let issuance = self.repo().issuance().update(issuance).await?;
 
         let mut grant = self.repo().recv_grant().get_by_id(&issuance.id).await?;
         let interaction = self
@@ -100,7 +102,6 @@ pub trait IssuerModule:
         grant.ended_at = Some(Utc::now());
         self.repo().recv_grant().update(grant).await?;
 
-        Ok(GiveVC::synchronous(vec![IssuedCredential::jwt(vc_jwt)]))
-
+        Ok(GiveVC::synchronous(vec![VcBody::jwt(vc_jwt)]))
     }
 }

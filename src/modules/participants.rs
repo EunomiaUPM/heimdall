@@ -16,7 +16,6 @@
  */
 
 use crate::services::HasRepo;
-use crate::services::repo::RepoTrait;
 use async_trait::async_trait;
 use ymir::data::entities::shared::participant::Model;
 use ymir::errors::Outcome;

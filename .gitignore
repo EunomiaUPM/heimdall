@@ -1,7 +1,9 @@
 # COMMON
 /target/
 /.idea/
-/gui
+/.claude
+/.codegraph
+
 # VAULT
 vault/**
 !vault/**/

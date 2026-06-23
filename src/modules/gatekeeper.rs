@@ -15,21 +15,16 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-use crate::services::gatekeeper::GateKeeperTrait;
-use crate::services::notifications::NotificationsTrait;
-use crate::services::repo::RepoTrait;
 use crate::services::{HasGateKeeper, HasNotifier, HasRepo, HasVcBuilder};
 use crate::types::GrantResponseManager;
 use async_trait::async_trait;
 use axum::body::Bytes;
 use axum::http::HeaderMap;
 use ymir::errors::Outcome;
-use ymir::services::issuer::IssuerTrait;
-use ymir::services::verifier::VerifierTrait;
 use ymir::services::{HasIssuer, HasVerifier};
 use ymir::types::gnap::grant_response::{ErrorResponse, GrantResponse};
 use ymir::types::gnap::GrantStatus;
-use ymir::types::issuing::VcTransmissionOffer;
+use ymir::types::issuance::VcTransmissionOffer;
 use ymir::utils::errors_to_error_code;
 
 #[async_trait]

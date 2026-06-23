@@ -17,7 +17,6 @@
 
 use crate::services::HasRepo;
 use async_trait::async_trait;
-use ymir::errors::Outcome;
 use ymir::services::{HasIssuer, HasVerifier};
 
 #[async_trait]

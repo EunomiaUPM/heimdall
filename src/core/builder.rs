@@ -37,10 +37,9 @@ use std::sync::Arc;
 use ymir::config::traits::{ApiConfigTrait, HostsConfigTrait, WalletConfigTrait};
 use ymir::config::types::HostType;
 use ymir::errors::Outcome;
-use ymir::services::issuer::basic::{BasicIssuerConfig, BasicIssuerService};
+use ymir::services::issuer::oid4vci_1_0;
 use ymir::services::vault::{VaultService, VaultTrait};
-use ymir::services::verifier::basic::BasicVerifierConfig;
-use ymir::services::verifier::basic::BasicVerifierService;
+use ymir::services::verifier::oid4vp_draft20;
 use ymir::services::wallet::fafnir::{FafnirConfig, FafnirService};
 use ymir::services::wallet::walt_id::WaltIdConfig;
 use ymir::services::wallet::walt_id::WaltIdService;
@@ -61,8 +60,8 @@ impl CoreBuilder {
         // ===== CONFIG DERIVATIONS =====
 
         let gnap_config = GnapConfig::from(&config);
-        let issuer_config = BasicIssuerConfig::from(&config);
-        let verifier_config = BasicVerifierConfig::from(&config);
+        let issuer_config = oid4vci_1_0::IssuerConfig::from(&config);
+        let verifier_config = oid4vp_draft20::VerifierConfig::from(&config);
 
         // ===== SERVICES =====
         let db_connection = vault.get_db_connection(&config).await?;
@@ -73,12 +72,12 @@ impl CoreBuilder {
         let identity = wallet.get_identity()?;
 
         let gatekeeper = Arc::new(GnapGateKeeperService::new(gnap_config));
-        let issuer = Arc::new(BasicIssuerService::new(
+        let issuer = Arc::new(oid4vci_1_0::IssuerService::new(
             issuer_config,
             vault.clone(),
             identity,
         ));
-        let verifier = Arc::new(BasicVerifierService::new(verifier_config));
+        let verifier = Arc::new(oid4vp_draft20::VerifierService::new(verifier_config));
         let notifier = Arc::new(NotificationService::new());
 
         let core_config: Arc<dyn CoreConfigTrait> = Arc::new(config);

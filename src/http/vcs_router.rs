@@ -26,7 +26,7 @@ use axum::{Json, Router};
 use ymir::data::entities::received::grant::Model;
 use ymir::errors::AppResult;
 use ymir::types::gnap::InteractionFinishResponse;
-use ymir::types::vcs::vc_decision_approval::VcDecisionApproval;
+use ymir::types::gnap::VcDecisionApproval;
 use ymir::utils::extract_payload;
 
 use crate::modules::ApproverModule;

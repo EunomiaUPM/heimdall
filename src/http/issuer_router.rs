@@ -24,7 +24,7 @@ use axum::http::HeaderMap;
 use axum::routing::{get, post};
 use axum::{Form, Json, Router};
 use ymir::errors::AppResult;
-use ymir::types::issuing::{
+use ymir::types::issuance::{
     AuthServerMetadata, CredentialRequest, GiveVC, IssuerMetadata, IssuingToken, TokenRequest,
     VcCredOffer,
 };

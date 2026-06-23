@@ -18,22 +18,19 @@
 use async_trait::async_trait;
 use axum::body::Bytes;
 use axum::http::HeaderMap;
-use serde_json::Value;
-use std::str::FromStr;
 use tracing::info;
 use ymir::capabilities::HttpSig;
 use ymir::config::traits::HostsConfigTrait;
 use ymir::config::types::HostType;
 use ymir::data::entities::received::{grant, interaction};
-use ymir::data::entities::shared::{issuance, participant};
+use ymir::data::entities::shared::participant;
 use ymir::errors::{BadFormat, Errors, Outcome};
 use ymir::services::client::ClientTrait;
 use ymir::types::gnap::grant_request::client::{Client, KeyMaterial, KeyProof};
 use ymir::types::gnap::grant_request::interact::{
     FinishMethod, HashMethod, InteractRequest, InteractStart,
 };
-use ymir::types::gnap::grant_request::{GrantKind, GrantRequest, GrantRequestKind};
-use ymir::types::gnap::grant_response::GrantResponse;
+use ymir::types::gnap::grant_request::{GrantKind, GrantRequest};
 use ymir::types::gnap::{
     ApprovedCallbackBody, CallbackBody, ContinueRequest, InteractionFinishResponse,
     RejectedCallbackBody,
@@ -41,13 +38,11 @@ use ymir::types::gnap::{
 use ymir::types::http::HttpBody;
 use ymir::types::keys::{Certificate, DbKeySource, KeySource, PublicKey};
 use ymir::types::participants::ParticipantType;
-use ymir::types::vcs::{BuildCtx, VcType, VcTypeConfig};
 use ymir::utils::{
     create_opaque_token, extract_gnap_token, http_client, json_headers, trim_4_base,
 };
 
 use super::GnapConfig;
-use crate::config::traits::RoleConfigTrait;
 use crate::services::gatekeeper::GateKeeperTrait;
 use crate::types::GrantResponseManager;
 

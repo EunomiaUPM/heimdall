@@ -15,8 +15,6 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-use std::str::FromStr;
-
 use chrono::{Duration, Utc};
 use serde_json::Value;
 use ymir::data::entities::shared::issuance;
@@ -50,9 +48,9 @@ pub trait VcBuilderTrait: RoleConfigTrait + Send + Sync + 'static {
         let now = Utc::now();
 
         let doc = VcDocumentBuilder::new(vc_config.vc_type(), W3cDataModelVersion::default())
-            .id(issuance.credential_id.clone())
+            .id(&issuance.credential_id)
             .issuer(VcIssuer::new(
-                issuance.issuer_did.clone(),
+                &issuance.issuer_did,
                 Some("HeimdallAuthority"),
             ))
             .credential_subject(credential_subject)
@@ -61,9 +59,9 @@ pub trait VcBuilderTrait: RoleConfigTrait + Send + Sync + 'static {
             .build();
 
         let vc = VcJwtClaimsBuilder::new(W3cDataModelVersion::default())
-            .iss(issuance.issuer_did.clone().clone())
+            .iss(&issuance.issuer_did)
             .sub(subject_id)
-            .jti(issuance.credential_id.clone())
+            .jti(&issuance.credential_id)
             .iat(now)
             .exp(now + Duration::days(365))
             .vc(doc)

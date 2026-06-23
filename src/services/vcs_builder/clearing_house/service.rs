@@ -80,13 +80,12 @@ impl VcBuilderTrait for ClearingHouseAuthorityVcBuilder {
         for vc in vcs {
             let parsed = Self::parse_credential(vc)?;
 
-            if let Ok(t) = VcType::from_str(&parsed.credential_type) {
-                match t {
-                    VcType::LegalPerson => has_legal_person = true,
-                    VcType::TermsAndConditions => has_terms = true,
-                    t if t.is_legal_registration_number() => has_registration = true,
-                    _ => {}
-                }
+            let Ok(t) = VcType::from_str(&parsed.credential_type);
+            match t {
+                VcType::LegalPerson => has_legal_person = true,
+                VcType::TermsAndConditions => has_terms = true,
+                t if t.is_legal_registration_number() => has_registration = true,
+                _ => {}
             }
 
             compliant_credentials.push(parsed);

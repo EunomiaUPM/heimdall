@@ -17,11 +17,11 @@
 
 use std::sync::Arc;
 
-use crate::modules::OrchestratorTrait;
 use crate::http::fed_catalog_router::FedCatalogRouter;
 use crate::http::{
     ApproverRouter, GateKeeperRouter, IssuerRouter, ParticipantRouter, ReactRouter, VerifierRouter,
 };
+use crate::modules::OrchestratorTrait;
 use axum::extract::Request;
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
@@ -57,7 +57,7 @@ impl RainbowAuthorityRouter {
         let openapi = OpenapiRouter::new(self.openapi.clone());
         let react = ReactRouter::new(self.core.clone());
 
-        let mut base_router = Router::new()
+        let base_router = Router::new()
             .merge(wallet.well_known())
             .merge(issuer.well_known())
             .merge(fed_catalog.well_known())

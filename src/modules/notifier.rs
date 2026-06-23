@@ -18,7 +18,6 @@
 use std::convert::Infallible;
 use std::pin::Pin;
 
-use crate::services::notifications::NotificationsTrait;
 use crate::services::HasNotifier;
 use axum::response::sse::Event;
 use futures_util::Stream;

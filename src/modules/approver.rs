@@ -22,7 +22,7 @@ use ymir::data::entities::received::grant::Model;
 use ymir::errors::{Errors, Outcome};
 use ymir::types::gnap::grant_request::GrantKind;
 use ymir::types::gnap::{GrantStatus, InteractionFinishResponse};
-use ymir::types::vcs::vc_decision_approval::VcDecisionApproval;
+use ymir::types::gnap::VcDecisionApproval;
 
 #[async_trait]
 pub trait ApproverModule: HasRepo + HasGateKeeper + Send + Sync + 'static {
