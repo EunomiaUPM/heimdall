@@ -37,11 +37,11 @@ pub trait IssuerModule:
     }
     fn issuer_metadata(&self) -> IssuerMetadata {
         let vcs = self.vc_builder().get_role().available_credentials();
-        self.issuer().get_issuer_metadata(None, &vcs)
+        self.issuer().get_issuer_metadata(&vcs)
     }
 
     fn oauth_server_metadata(&self) -> AuthServerMetadata {
-        self.issuer().get_oauth_server_data(None)
+        self.issuer().get_oauth_server_data()
     }
 
     // async fn jwks(&self) -> Outcome<Value> {

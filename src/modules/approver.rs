@@ -21,8 +21,8 @@ use chrono::Utc;
 use ymir::data::entities::received::grant::Model;
 use ymir::errors::{Errors, Outcome};
 use ymir::types::gnap::grant_request::GrantKind;
-use ymir::types::gnap::{GrantStatus, InteractionFinishResponse};
 use ymir::types::gnap::VcDecisionApproval;
+use ymir::types::gnap::{GrantStatus, InteractionFinishResponse};
 
 #[async_trait]
 pub trait ApproverModule: HasRepo + HasGateKeeper + Send + Sync + 'static {
@@ -47,13 +47,16 @@ pub trait ApproverModule: HasRepo + HasGateKeeper + Send + Sync + 'static {
         };
         self.repo().recv_grant().update(grant).await?;
 
-        self.gatekeeper().finish_interaction(&interaction, result).await
+        self.gatekeeper()
+            .finish_interaction(&interaction, result)
+            .await
     }
     // =================================== GETTERS FOR FRONTEND ====================================
     async fn get_all(&self) -> Outcome<Vec<Model>> {
         self.repo()
             .recv_grant()
-            .get_by_type(GrantKind::CredentialRequest).await
+            .get_by_type(GrantKind::CredentialRequest)
+            .await
     }
     async fn get_by_id(&self, id: String) -> Outcome<Model> {
         self.repo().recv_grant().get_by_id(&id).await

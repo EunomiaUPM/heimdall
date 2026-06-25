@@ -36,13 +36,12 @@ use crate::services::vcs_builder::{EcoAuthorityBuilder, VcBuilderTrait};
 use std::sync::Arc;
 use ymir::config::traits::{ApiConfigTrait, HostsConfigTrait, WalletConfigTrait};
 use ymir::config::types::HostType;
-use ymir::errors::Outcome;
+use ymir::data::entities::shared::participant;
+use ymir::errors::{Errors, Outcome};
 use ymir::services::issuer::oid4vci_1_0;
 use ymir::services::vault::{VaultService, VaultTrait};
 use ymir::services::verifier::oid4vp_draft20;
 use ymir::services::wallet::fafnir::{FafnirConfig, FafnirService};
-use ymir::services::wallet::walt_id::WaltIdConfig;
-use ymir::services::wallet::walt_id::WaltIdService;
 use ymir::services::wallet::WalletTrait;
 use ymir::types::dids::{DidService, DidServiceType};
 use ymir::types::participants::ParticipantType;
@@ -69,13 +68,27 @@ impl CoreBuilder {
 
         let vc_builder = Self::vc_builder(&config);
         let wallet = Self::wallet(&config, vault.clone()).await?;
-        let identity = wallet.get_identity()?;
+        let arc_identity = wallet.get_identity();
+
+        let identity = arc_identity.read().await;
+        let participant_id = identity.did().id().to_string();
+
+        let myself = participant::Plan {
+            participant_id,
+            participant_nick: "Myself".to_string(),
+            participant_type: ParticipantType::Authority,
+            base_url: config.get_host(HostType::Http),
+            token: None,
+            extra_fields: None,
+            is_me: true,
+        };
+        repo.participant().force_update(myself).await?;
 
         let gatekeeper = Arc::new(GnapGateKeeperService::new(gnap_config));
         let issuer = Arc::new(oid4vci_1_0::IssuerService::new(
             issuer_config,
             vault.clone(),
-            identity,
+            arc_identity.clone(),
         ));
         let verifier = Arc::new(oid4vp_draft20::VerifierService::new(verifier_config));
         let notifier = Arc::new(NotificationService::new());
@@ -143,26 +156,22 @@ impl CoreBuilder {
         let services = Self::authority_services(config);
         match config.get_wallet() {
             WalletInstance::WaltId => {
-                let walt_id_config = WaltIdConfig::from(config);
-                let wallet = WaltIdService::new(
-                    walt_id_config,
-                    vault.clone(),
-                    services,
-                    ParticipantType::Authority,
-                )
-                .await?;
-
-                Ok(Arc::new(wallet))
+                Err(Errors::not_impl("Waltid is a legacy option", None))
+                // let walt_id_config = WaltIdConfig::from(config);
+                // let wallet = WaltIdService::new(
+                //     walt_id_config,
+                //     vault.clone(),
+                //     services,
+                //     ParticipantType::Authority,
+                // )
+                // .await?;
+                //
+                // Ok(Arc::new(wallet))
             }
             WalletInstance::Fafnir => {
                 let fafnir_config = FafnirConfig::from(config);
-                let fafnir = FafnirService::new(
-                    fafnir_config,
-                    vault.clone(),
-                    services.clone(),
-                    ParticipantType::Authority,
-                )
-                .await?;
+                let fafnir =
+                    FafnirService::new(fafnir_config, vault.clone(), services.clone()).await?;
                 Ok(Arc::new(fafnir))
             }
         }

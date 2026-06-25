@@ -17,7 +17,9 @@
 
 use std::sync::Arc;
 
-use ymir::services::repo::traits::received::{RecvGrantRepoTrait, RecvInteractionRepoTrait, RecvVerificationRepoTrait};
+use ymir::services::repo::traits::received::{
+    RecvGrantRepoTrait, RecvInteractionRepoTrait, RecvVerificationRepoTrait,
+};
 use ymir::services::repo::traits::shared::{IssuanceRepoTrait, ParticipantRepoTrait};
 
 pub trait RepoTrait: Send + Sync + 'static {

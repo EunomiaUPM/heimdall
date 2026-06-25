@@ -15,13 +15,6 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-use std::sync::Arc;
-use ymir::modules::WalletModuleTrait;
-use ymir::services::issuer::IssuerTrait;
-use ymir::services::verifier::VerifierTrait;
-use ymir::services::wallet::WalletTrait;
-use ymir::services::{HasIssuer, HasVerifier, HasWallet};
-use ymir::services::repo::traits::shared::ParticipantRepoTrait;
 use crate::config::CoreConfigTrait;
 use crate::modules::{
     ApproverModule, FedCatalogModule, FrontendNotifierModule, GatekeeperModule, IssuerModule,
@@ -32,6 +25,12 @@ use crate::services::notifications::NotificationsTrait;
 use crate::services::repo::RepoTrait;
 use crate::services::vcs_builder::VcBuilderTrait;
 use crate::services::{HasGateKeeper, HasNotifier, HasRepo, HasVcBuilder};
+use std::sync::Arc;
+use ymir::modules::WalletModuleTrait;
+use ymir::services::issuer::IssuerTrait;
+use ymir::services::verifier::VerifierTrait;
+use ymir::services::wallet::WalletTrait;
+use ymir::services::{HasIssuer, HasVerifier, HasWallet};
 
 pub struct Core {
     wallet: Arc<dyn WalletTrait>,
@@ -110,12 +109,7 @@ impl HasNotifier for Core {
     }
 }
 
-impl WalletModuleTrait for Core {
-
-    fn participant(&self) -> Arc<dyn ParticipantRepoTrait> {
-        self.repo.participant()
-    }
-}
+impl WalletModuleTrait for Core {}
 
 impl VerifierModule for Core {}
 impl IssuerModule for Core {}

@@ -25,7 +25,6 @@ pub struct ClearingHouseAuthorityConfig {
     role: AuthorityRole,
 }
 
-
 impl RoleConfigTrait for ClearingHouseAuthorityConfig {
     fn get_role(&self) -> &AuthorityRole {
         &self.role

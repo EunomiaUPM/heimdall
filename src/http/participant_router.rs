@@ -42,7 +42,9 @@ impl ParticipantRouter {
             .with_state(self.participant)
     }
 
-    async fn get_all(State(participant): State<Arc<dyn ParticipantModule>>) -> AppResult<Json<Vec<Model>>> {
+    async fn get_all(
+        State(participant): State<Arc<dyn ParticipantModule>>,
+    ) -> AppResult<Json<Vec<Model>>> {
         Ok(Json(participant.get_all().await?))
     }
 
@@ -53,7 +55,9 @@ impl ParticipantRouter {
         Ok(Json(participant.get_by_id(id).await?))
     }
 
-    async fn get_me(State(participant): State<Arc<dyn ParticipantModule>>) -> AppResult<Json<Model>> {
+    async fn get_me(
+        State(participant): State<Arc<dyn ParticipantModule>>,
+    ) -> AppResult<Json<Model>> {
         Ok(Json(participant.get_me().await?))
     }
 }

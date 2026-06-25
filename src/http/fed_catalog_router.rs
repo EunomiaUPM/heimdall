@@ -47,7 +47,9 @@ impl FedCatalogRouter {
             .with_state(self.federator.clone())
     }
 
-    async fn get_all(State(federator): State<Arc<dyn FedCatalogModule>>) -> AppResult<Json<Vec<participant::Model>>> {
+    async fn get_all(
+        State(federator): State<Arc<dyn FedCatalogModule>>,
+    ) -> AppResult<Json<Vec<participant::Model>>> {
         Ok(Json(federator.get_all().await?))
     }
 }

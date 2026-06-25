@@ -15,6 +15,11 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
+use super::super::VcBuilderTrait;
+use crate::config::traits::RoleConfigTrait;
+use crate::config::types::AuthorityRole;
+use crate::services::vcs_builder::legal_authority::config::LegalAuthorityConfig;
+use crate::types::need_field_for_vc;
 use base64::engine::general_purpose::STANDARD;
 use base64::Engine;
 use x509_parser::parse_x509_certificate;
@@ -22,13 +27,10 @@ use x509_parser::prelude::X509Certificate;
 use ymir::data::entities::shared::issuance;
 use ymir::errors::{BadFormat, Errors, Outcome};
 use ymir::types::jwt::VCJwtClaims;
+use ymir::types::vcs::vc_specs::legal_reg_number::{
+    LeiCode, LocalRegistrationNumber, TaxId, VatId,
+};
 use ymir::types::vcs::{VcType, VcTypeConfig};
-use ymir::types::vcs::vc_specs::legal_reg_number::{LeiCode, LocalRegistrationNumber, TaxId, VatId};
-use super::super::VcBuilderTrait;
-use crate::config::traits::RoleConfigTrait;
-use crate::config::types::AuthorityRole;
-use crate::services::vcs_builder::legal_authority::config::LegalAuthorityConfig;
-use crate::types::need_field_for_vc;
 
 const COUNTRY_OID: &str = "2.5.4.6";
 const ORG_ID_OID: &str = "2.5.4.97";
@@ -50,7 +52,11 @@ impl RoleConfigTrait for LegalAuthorityVcBuilder {
 }
 
 impl VcBuilderTrait for LegalAuthorityVcBuilder {
-    fn build_vc(&self, issuance: &issuance::Model, vc_config: VcTypeConfig) -> Outcome<VCJwtClaims> {
+    fn build_vc(
+        &self,
+        issuance: &issuance::Model,
+        vc_config: VcTypeConfig,
+    ) -> Outcome<VCJwtClaims> {
         let holder_did = need_field_for_vc(issuance.build_ctx.holder_did.as_deref())?;
 
         let role = self.config.get_role();
@@ -78,7 +84,6 @@ impl VcBuilderTrait for LegalAuthorityVcBuilder {
                     local: code,
                 };
                 serde_json::to_value(&v)?
-
             }
             VcType::TaxId => {
                 let v = TaxId {
@@ -155,9 +160,7 @@ impl LegalAuthorityVcBuilder {
             .split('+')
             .find(|part| {
                 allowed_prefixes.iter().any(|p| {
-                    part.len() >= 6
-                        && part.starts_with(p)
-                        && part.chars().nth(5) == Some('-')
+                    part.len() >= 6 && part.starts_with(p) && part.chars().nth(5) == Some('-')
                 })
             })
             .ok_or_else(|| {

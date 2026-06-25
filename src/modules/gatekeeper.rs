@@ -82,7 +82,7 @@ pub trait GatekeeperModule:
             grant_request.kind,
             grant_request.client.clone(),
             &available_vcs,
-        )?;
+        ).await?;
 
         let mut grant = self.repo().recv_grant().create(grant).await?;
         let issuance = self.repo().issuance().create(issuance).await?;
@@ -99,9 +99,7 @@ pub trait GatekeeperModule:
 
                 let cred_offer = self.issuer().get_cred_offer_data(&issuance);
                 let vc_transmission_offer = VcTransmissionOffer::ByValue(cred_offer);
-                let uri = self
-                    .issuer()
-                    .generate_issuing_uri(vc_transmission_offer, None)?;
+                let uri = self.issuer().generate_issuing_uri(vc_transmission_offer)?;
 
                 Ok(GrantResponse::vc_approved(uri, issuance.vc_type_config))
             }
@@ -158,9 +156,7 @@ pub trait GatekeeperModule:
 
         let cred_offer = self.issuer().get_cred_offer_data(&issuance);
         let vc_transmission_offer = VcTransmissionOffer::ByValue(cred_offer);
-        let uri = self
-            .issuer()
-            .generate_issuing_uri(vc_transmission_offer, None)?;
+        let uri = self.issuer().generate_issuing_uri(vc_transmission_offer)?;
 
         Ok(GrantResponse::vc_approved(uri, issuance.vc_type_config))
     }

@@ -19,5 +19,5 @@ mod config;
 mod service;
 // mod service_xxx;
 
-pub use service::GnapGateKeeperService;
 pub use config::GnapConfig;
+pub use service::GnapGateKeeperService;

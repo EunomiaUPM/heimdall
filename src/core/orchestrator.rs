@@ -20,15 +20,15 @@ use std::sync::Arc;
 use async_trait::async_trait;
 use ymir::modules::WalletModuleTrait;
 
-use crate::modules::{
-    ApproverModule, FedCatalogModule, GatekeeperModule, IssuerModule,
-    ParticipantModule, FrontendNotifierModule, VerifierModule,
-};
 use crate::config::CoreConfigTrait;
+use crate::modules::{
+    ApproverModule, FedCatalogModule, FrontendNotifierModule, GatekeeperModule, IssuerModule,
+    ParticipantModule, VerifierModule,
+};
 
 #[async_trait]
 pub trait OrchestratorTrait:
-VerifierModule
+    VerifierModule
     + IssuerModule
     + ApproverModule
     + GatekeeperModule
