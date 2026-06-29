@@ -19,16 +19,16 @@ const WalletOidc4vp = () => {
     setResponse(null);
     setError(null);
     try {
-      const res = await fetch(`${apiUrl}/wallet/oidc4vp`, {
+      const res = await fetch(`${apiUrl}/wallet/oid4vp`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ uri }),
       });
-      if (!res.ok) throw new Error(`Failed to process OIDC4VP: ${res.statusText}`);
+      if (!res.ok) throw new Error(`Failed to process OID4VP: ${res.statusText}`);
       setResponse({ success: true });
       setUri('');
     } catch (err) {
-      console.error('Error processing OIDC4VP:', err);
+      console.error('Error processing OID4VP:', err);
       setError(err.message);
     } finally {
       setLoading(false);
@@ -37,12 +37,12 @@ const WalletOidc4vp = () => {
 
   return (
     <div className="max-w-2xl mx-auto py-8">
-      <PageSection title="Verification Presentation (OIDC4VP)">
+      <PageSection title="Verification Presentation (OID4VP)">
         <div className="bg-white/5 border border-white/10 rounded-2xl p-10 backdrop-blur-md shadow-2xl space-y-8">
           <div className="text-center space-y-2">
             <ShieldCheck className="h-12 w-12 text-primary mx-auto mb-2" />
             <p className="text-sm text-muted-foreground">
-              Enter an OIDC4VP request URI to present your identity credentials.
+              Enter an OID4VP request URI to present your identity credentials.
             </p>
           </div>
 

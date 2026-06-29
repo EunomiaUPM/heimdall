@@ -21,8 +21,9 @@ use axum::extract::rejection::JsonRejection;
 use axum::extract::{Path, State};
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
-use axum::routing::{get, post};
+use axum::routing::get;
 use axum::{Json, Router};
+use serde_json::Value;
 use ymir::data::entities::received::grant::Model;
 use ymir::errors::AppResult;
 use ymir::types::gnap::InteractionFinishResponse;
@@ -42,8 +43,11 @@ impl ApproverRouter {
     pub fn router(self) -> Router {
         Router::new()
             .route("/all", get(Self::get_all_requests))
-            .route("/{id}", get(Self::get_one_request))
-            .route("/{id}", post(Self::manage_request))
+            .route(
+                "/{id}",
+                get(Self::get_one_request).post(Self::manage_request),
+            )
+            .route("/{id}/details", get(Self::get_one_with_details))
             .with_state(self.approver)
     }
 
@@ -59,14 +63,20 @@ impl ApproverRouter {
     ) -> AppResult<Json<Model>> {
         Ok(Json(approver.get_by_id(id).await?))
     }
+    async fn get_one_with_details(
+        State(gatekeeper): State<Arc<dyn ApproverModule>>,
+        Path(id): Path<String>,
+    ) -> AppResult<Json<Value>> {
+        Ok(Json(gatekeeper.get_by_id_with_details(id).await?))
+    }
 
     async fn manage_request(
-        State(approver): State<Arc<dyn ApproverModule>>,
+        State(gatekeeper): State<Arc<dyn ApproverModule>>,
         Path(id): Path<String>,
         payload: Result<Json<VcDecisionApproval>, JsonRejection>,
     ) -> AppResult {
         let payload = extract_payload(payload)?;
-        Ok(match approver.manage_req(id, payload).await? {
+        Ok(match gatekeeper.manage_req(id, payload).await? {
             InteractionFinishResponse::Success(Some(uri)) => (StatusCode::OK, uri).into_response(),
             InteractionFinishResponse::Success(None) => StatusCode::OK.into_response(),
             InteractionFinishResponse::Failure(Some(uri)) => {

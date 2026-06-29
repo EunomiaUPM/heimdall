@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowRight, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import { VITE_API_SERVER_URL as apiUrl } from '@/lib/api';
-import { formatIdentifier } from '@/lib/utils';
+import { formatIdentifier, getFriendlyVCType } from '@/lib/utils';
 import {
   Table,
   TableBody,
@@ -11,7 +11,6 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -21,25 +20,10 @@ import { PageHeader } from '@/components/layout/PageHeader';
 import { PageSection } from '@/components/layout/PageSection';
 import { FormatDate } from '@/components/ui/format-date';
 
-const getIdentityProofDisplay = (methods) => {
-  if (!methods || methods.length === 0) return '—';
-  if (methods.length === 1 && methods[0] === '') return 'Certificate';
-  if (methods.includes('oidc4vp')) return 'Verifiable Credential';
-  return methods.join(', ');
-};
-
 const Requests = () => {
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [filters, setFilters] = useState({
-    id: '',
-    slug: '',
-    vcType: '',
-    interactMethod: '',
-    status: '',
-    createdAt: '',
-  });
   const [sortConfig, setSortConfig] = useState(null);
   const navigate = useNavigate();
 
@@ -50,7 +34,7 @@ const Requests = () => {
       const response = await fetch(`${apiUrl}/approver/all`);
       if (!response.ok) throw new Error('Failed to fetch requests');
       const data = await response.json();
-      setRequests(data);
+      setRequests(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error('Error fetching requests:', err);
       setError(err);
@@ -79,32 +63,16 @@ const Requests = () => {
     );
   };
 
-  const filteredRequests = useMemo(
-    () =>
-      requests.filter(
-        (r) =>
-          (r.id || '').toLowerCase().includes(filters.id.toLowerCase()) &&
-          (r.participant_slug || '').toLowerCase().includes(filters.slug.toLowerCase()) &&
-          (r.vc_type || '').toLowerCase().includes(filters.vcType.toLowerCase()) &&
-          getIdentityProofDisplay(r.interact_method)
-            .toLowerCase()
-            .includes(filters.interactMethod.toLowerCase()) &&
-          (r.status || '').toLowerCase().includes(filters.status.toLowerCase()) &&
-          (r.created_at || '').toLowerCase().includes(filters.createdAt.toLowerCase()),
-      ),
-    [requests, filters],
-  );
-
   const sortedRequests = useMemo(() => {
-    if (!sortConfig) return filteredRequests;
-    return [...filteredRequests].sort((a, b) => {
+    if (!sortConfig) return requests;
+    return [...requests].sort((a, b) => {
       const aVal = (a[sortConfig.key] ?? '').toString().toLowerCase();
       const bVal = (b[sortConfig.key] ?? '').toString().toLowerCase();
       if (aVal < bVal) return sortConfig.direction === 'asc' ? -1 : 1;
       if (aVal > bVal) return sortConfig.direction === 'asc' ? 1 : -1;
       return 0;
     });
-  }, [filteredRequests, sortConfig]);
+  }, [requests, sortConfig]);
 
   if (loading) {
     return (
@@ -140,23 +108,12 @@ const Requests = () => {
                   Request ID {getSortIcon('id')}
                 </TableHead>
                 <TableHead
-                  onClick={() => handleSort('participant_slug')}
+                  onClick={() => handleSort('participant_nick')}
                   className="cursor-pointer text-white/80"
                 >
-                  Alias {getSortIcon('participant_slug')}
+                  Alias {getSortIcon('participant_nick')}
                 </TableHead>
-                <TableHead
-                  onClick={() => handleSort('vc_type')}
-                  className="cursor-pointer text-white/80"
-                >
-                  VC Type {getSortIcon('vc_type')}
-                </TableHead>
-                <TableHead
-                  onClick={() => handleSort('interact_method')}
-                  className="cursor-pointer text-white/80"
-                >
-                  Identity Proof {getSortIcon('interact_method')}
-                </TableHead>
+                <TableHead className="text-white/80">VC Types</TableHead>
                 <TableHead
                   onClick={() => handleSort('status')}
                   className="cursor-pointer text-white/80"
@@ -171,65 +128,6 @@ const Requests = () => {
                 </TableHead>
                 <TableHead className="text-white/80">Actions</TableHead>
               </TableRow>
-              <TableRow className="bg-background-200/20 hover:bg-background-200/20 border-none">
-                <TableHead className="p-2">
-                  <Input
-                    placeholder="Filter…"
-                    value={filters.id}
-                    onChange={(e) => setFilters((f) => ({ ...f, id: e.target.value }))}
-                    onClick={(e) => e.stopPropagation()}
-                    className="h-8"
-                  />
-                </TableHead>
-                <TableHead className="p-2">
-                  <Input
-                    placeholder="Filter…"
-                    value={filters.slug}
-                    onChange={(e) => setFilters((f) => ({ ...f, slug: e.target.value }))}
-                    onClick={(e) => e.stopPropagation()}
-                    className="h-8"
-                  />
-                </TableHead>
-                <TableHead className="p-2">
-                  <Input
-                    placeholder="Filter…"
-                    value={filters.vcType}
-                    onChange={(e) => setFilters((f) => ({ ...f, vcType: e.target.value }))}
-                    onClick={(e) => e.stopPropagation()}
-                    className="h-8"
-                  />
-                </TableHead>
-                <TableHead className="p-2">
-                  <Input
-                    placeholder="Filter…"
-                    value={filters.interactMethod}
-                    onChange={(e) =>
-                      setFilters((f) => ({ ...f, interactMethod: e.target.value }))
-                    }
-                    onClick={(e) => e.stopPropagation()}
-                    className="h-8"
-                  />
-                </TableHead>
-                <TableHead className="p-2">
-                  <Input
-                    placeholder="Filter…"
-                    value={filters.status}
-                    onChange={(e) => setFilters((f) => ({ ...f, status: e.target.value }))}
-                    onClick={(e) => e.stopPropagation()}
-                    className="h-8"
-                  />
-                </TableHead>
-                <TableHead className="p-2">
-                  <Input
-                    placeholder="Filter…"
-                    value={filters.createdAt}
-                    onChange={(e) => setFilters((f) => ({ ...f, createdAt: e.target.value }))}
-                    onClick={(e) => e.stopPropagation()}
-                    className="h-8"
-                  />
-                </TableHead>
-                <TableHead />
-              </TableRow>
             </TableHeader>
             <TableBody>
               {sortedRequests.map((r) => (
@@ -241,12 +139,19 @@ const Requests = () => {
                   <TableCell>
                     <Badge variant="info">{formatIdentifier(r.id)}</Badge>
                   </TableCell>
-                  <TableCell className="capitalize">{r.participant_slug || '—'}</TableCell>
+                  <TableCell className="capitalize">{r.participant_nick || '—'}</TableCell>
                   <TableCell>
-                    <Badge variant="info">{r.vc_type}</Badge>
-                  </TableCell>
-                  <TableCell className="text-white/80">
-                    {getIdentityProofDisplay(r.interact_method)}
+                    {(r.vc_type_config ?? []).length === 0 ? (
+                      <span className="text-muted-foreground">—</span>
+                    ) : (
+                      <div className="flex flex-wrap gap-1">
+                        {r.vc_type_config.map((cfg, idx) => (
+                          <Badge key={idx} variant="info">
+                            {getFriendlyVCType(cfg)}
+                          </Badge>
+                        ))}
+                      </div>
+                    )}
                   </TableCell>
                   <TableCell>
                     <Badge variant="status" state={r.status}>
@@ -272,9 +177,9 @@ const Requests = () => {
               ))}
             </TableBody>
           </Table>
-          {sortedRequests.length === 0 && requests.length > 0 && (
+          {sortedRequests.length === 0 && (
             <div className="p-8 text-center text-muted-foreground italic text-sm">
-              No requests match the current filters
+              No requests yet
             </div>
           )}
         </div>

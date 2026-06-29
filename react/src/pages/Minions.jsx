@@ -11,7 +11,6 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -26,14 +25,6 @@ const Minions = () => {
   const [minions, setMinions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [filters, setFilters] = useState({
-    id: '',
-    slug: '',
-    type: '',
-    issuedVC: '',
-    savedAt: '',
-    isMe: '',
-  });
   const [sortConfig, setSortConfig] = useState(null);
   const navigate = useNavigate();
 
@@ -44,7 +35,7 @@ const Minions = () => {
       const response = await fetch(`${apiUrl}/minions/all`);
       if (!response.ok) throw new Error('Failed to fetch minions');
       const data = await response.json();
-      setMinions(data);
+      setMinions(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error('Error fetching minions:', err);
       setError(err);
@@ -73,33 +64,16 @@ const Minions = () => {
     );
   };
 
-  const filteredMinions = useMemo(
-    () =>
-      minions.filter((m) => {
-        const issuedVCText = m.is_vc_issued ? 'issued' : 'pending';
-        const isMeText = m.is_me ? 'yes' : 'no';
-        return (
-          (m.participant_id || '').toLowerCase().includes(filters.id.toLowerCase()) &&
-          (m.participant_slug || '').toLowerCase().includes(filters.slug.toLowerCase()) &&
-          (m.participant_type || '').toLowerCase().includes(filters.type.toLowerCase()) &&
-          issuedVCText.includes(filters.issuedVC.toLowerCase()) &&
-          (m.saved_at || '').toLowerCase().includes(filters.savedAt.toLowerCase()) &&
-          isMeText.includes(filters.isMe.toLowerCase())
-        );
-      }),
-    [minions, filters],
-  );
-
   const sortedMinions = useMemo(() => {
-    if (!sortConfig) return filteredMinions;
-    return [...filteredMinions].sort((a, b) => {
+    if (!sortConfig) return minions;
+    return [...minions].sort((a, b) => {
       const aVal = (a[sortConfig.key] ?? '').toString().toLowerCase();
       const bVal = (b[sortConfig.key] ?? '').toString().toLowerCase();
       if (aVal < bVal) return sortConfig.direction === 'asc' ? -1 : 1;
       if (aVal > bVal) return sortConfig.direction === 'asc' ? 1 : -1;
       return 0;
     });
-  }, [filteredMinions, sortConfig]);
+  }, [minions, sortConfig]);
 
   const myAgent = minions.find((m) => m.is_me);
 
@@ -140,7 +114,7 @@ const Minions = () => {
                     My Local Agent
                   </p>
                   <CardTitle className="text-2xl">
-                    {myAgent.participant_slug || 'Unnamed Agent'}
+                    {myAgent.participant_nick || 'Unnamed Agent'}
                   </CardTitle>
                 </div>
                 <Badge variant="status" state="active">
@@ -193,10 +167,10 @@ const Minions = () => {
                   Participant DID {getSortIcon('participant_id')}
                 </TableHead>
                 <TableHead
-                  onClick={() => handleSort('participant_slug')}
+                  onClick={() => handleSort('participant_nick')}
                   className="cursor-pointer text-white/80"
                 >
-                  Alias {getSortIcon('participant_slug')}
+                  Alias {getSortIcon('participant_nick')}
                 </TableHead>
                 <TableHead
                   onClick={() => handleSort('participant_type')}
@@ -205,66 +179,12 @@ const Minions = () => {
                   Role {getSortIcon('participant_type')}
                 </TableHead>
                 <TableHead
-                  onClick={() => handleSort('is_vc_issued')}
-                  className="cursor-pointer text-white/80"
-                >
-                  Verifiable Credential {getSortIcon('is_vc_issued')}
-                </TableHead>
-                <TableHead
                   onClick={() => handleSort('saved_at')}
                   className="cursor-pointer text-white/80"
                 >
                   Added on {getSortIcon('saved_at')}
                 </TableHead>
                 <TableHead className="text-white/80">Actions</TableHead>
-              </TableRow>
-              <TableRow className="bg-background-200/20 hover:bg-background-200/20 border-none">
-                <TableHead className="p-2">
-                  <Input
-                    placeholder="Filter…"
-                    value={filters.id}
-                    onChange={(e) => setFilters((f) => ({ ...f, id: e.target.value }))}
-                    onClick={(e) => e.stopPropagation()}
-                    className="h-8"
-                  />
-                </TableHead>
-                <TableHead className="p-2">
-                  <Input
-                    placeholder="Filter…"
-                    value={filters.slug}
-                    onChange={(e) => setFilters((f) => ({ ...f, slug: e.target.value }))}
-                    onClick={(e) => e.stopPropagation()}
-                    className="h-8"
-                  />
-                </TableHead>
-                <TableHead className="p-2">
-                  <Input
-                    placeholder="Filter…"
-                    value={filters.type}
-                    onChange={(e) => setFilters((f) => ({ ...f, type: e.target.value }))}
-                    onClick={(e) => e.stopPropagation()}
-                    className="h-8"
-                  />
-                </TableHead>
-                <TableHead className="p-2">
-                  <Input
-                    placeholder="Filter…"
-                    value={filters.issuedVC}
-                    onChange={(e) => setFilters((f) => ({ ...f, issuedVC: e.target.value }))}
-                    onClick={(e) => e.stopPropagation()}
-                    className="h-8"
-                  />
-                </TableHead>
-                <TableHead className="p-2">
-                  <Input
-                    placeholder="Filter…"
-                    value={filters.savedAt}
-                    onChange={(e) => setFilters((f) => ({ ...f, savedAt: e.target.value }))}
-                    onClick={(e) => e.stopPropagation()}
-                    className="h-8"
-                  />
-                </TableHead>
-                <TableHead />
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -287,11 +207,11 @@ const Minions = () => {
                             : 'bg-background-200 text-muted-foreground',
                         )}
                       >
-                        {(m.participant_slug || 'U').charAt(0).toUpperCase()}
+                        {(m.participant_nick || 'U').charAt(0).toUpperCase()}
                       </div>
                       <div className="flex items-baseline gap-2">
                         <span className="font-medium capitalize">
-                          {m.participant_slug || 'Unknown'}
+                          {m.participant_nick || 'Unknown'}
                         </span>
                         {m.is_me && <Badge size="sm">IT'S ME</Badge>}
                       </div>
@@ -301,20 +221,6 @@ const Minions = () => {
                     <Badge variant="role" dsrole={m.participant_type}>
                       {m.participant_type}
                     </Badge>
-                  </TableCell>
-                  <TableCell>
-                    {m.is_me ? (
-                      ''
-                    ) : (
-                      <span
-                        className={cn(
-                          'font-medium',
-                          m.is_vc_issued ? 'text-success-400' : 'text-warn-400',
-                        )}
-                      >
-                        {m.is_vc_issued ? 'Issued' : 'Pending'}
-                      </span>
-                    )}
                   </TableCell>
                   <TableCell className="text-muted-foreground">
                     <FormatDate date={m.saved_at} />
@@ -335,9 +241,9 @@ const Minions = () => {
               ))}
             </TableBody>
           </Table>
-          {sortedMinions.length === 0 && minions.length > 0 && (
+          {sortedMinions.length === 0 && (
             <div className="p-8 text-center text-muted-foreground italic text-sm">
-              No participants match the current filters
+              No participants yet
             </div>
           )}
         </div>

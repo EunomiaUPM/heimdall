@@ -18,6 +18,7 @@
 use crate::services::{HasGateKeeper, HasRepo};
 use async_trait::async_trait;
 use chrono::Utc;
+use serde_json::{json, Value};
 use ymir::data::entities::received::grant::Model;
 use ymir::errors::{Errors, Outcome};
 use ymir::types::gnap::grant_request::GrantKind;
@@ -55,10 +56,23 @@ pub trait ApproverModule: HasRepo + HasGateKeeper + Send + Sync + 'static {
     async fn get_all(&self) -> Outcome<Vec<Model>> {
         self.repo()
             .recv_grant()
-            .get_by_type(GrantKind::CredentialRequest)
+            .filter_by_type(GrantKind::CredentialRequest)
             .await
     }
     async fn get_by_id(&self, id: String) -> Outcome<Model> {
         self.repo().recv_grant().get_by_id(&id).await
+    }
+
+    async fn get_by_id_with_details(&self, id: String) -> Outcome<Value> {
+        let grant = self.repo().recv_grant().get_by_id(&id).await?;
+        let issuance = self.repo().issuance().get_by_id(&id).await?;
+        let interaction = self.repo().recv_interaction().get_by_id(&id).await.ok();
+        let verification = self.repo().recv_verification().get_by_id(&id).await.ok();
+        Ok(json!({
+            "grant": grant,
+            "issuance": issuance,
+            "interaction": interaction,
+            "verification": verification,
+        }))
     }
 }

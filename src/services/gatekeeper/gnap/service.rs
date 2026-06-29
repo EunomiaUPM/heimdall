@@ -71,7 +71,7 @@ impl GateKeeperTrait for GnapGateKeeperService {
             id: uuid::Uuid::new_v4().to_string(),
             participant_nick: class_id,
             vc_type_config: None,
-            kind: GrantKind::AccessToken,
+            kind: GrantKind::CredentialRequest,
         })
     }
 
