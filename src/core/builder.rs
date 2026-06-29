@@ -171,7 +171,7 @@ impl CoreBuilder {
             WalletInstance::Fafnir => {
                 let fafnir_config = FafnirConfig::from(config);
                 let fafnir =
-                    FafnirService::new(fafnir_config, vault.clone(), services.clone()).await?;
+                    FafnirService::new(fafnir_config, vault.clone(), services).await?;
                 Ok(Arc::new(fafnir))
             }
         }

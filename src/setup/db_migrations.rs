@@ -15,6 +15,7 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
+use sea_orm::sea_query::{Alias, DynIden, IntoIden};
 use sea_orm::DatabaseConnection;
 use sea_orm_migration::{MigrationTrait, MigratorTrait};
 use ymir::errors::{Errors, Outcome};
@@ -31,11 +32,15 @@ impl MigratorTrait for AuthorityMigration {
         migrations.append(&mut authority);
         migrations
     }
+
+    fn migration_table_name() -> DynIden {
+        Alias::new("seaql_heimdall_migrations").into_iden()
+    }
 }
 
 impl AuthorityMigration {
     pub async fn run(db_connection: &DatabaseConnection) -> Outcome<()> {
-        Self::refresh(db_connection)
+        Self::up(db_connection, None)
             .await
             .map_err(|e| Errors::db("Error migrating data", Some(Box::new(e))))
     }

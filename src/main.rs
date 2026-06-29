@@ -50,6 +50,8 @@ async fn main() -> Outcome<()> {
         })?;
     tracing_subscriber::fmt().with_env_filter(filter).init();
     info!("{}", INFO);
-    AuthorityCommands::init_command_line().await?;
-    Ok(())
+    AuthorityCommands::init_command_line().await.map_err(|e| {
+        e.log();
+        e
+    })
 }

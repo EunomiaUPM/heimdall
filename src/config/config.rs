@@ -46,7 +46,6 @@ pub struct CoreApplicationConfig {
     issue_config: IssueConfig,
     verify_req_config: VerifyReqConfig,
     role: AuthorityRole,
-    is_react: bool,
 }
 
 impl CoreApplicationConfig {

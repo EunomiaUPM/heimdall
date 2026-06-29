@@ -17,7 +17,6 @@
 
 use sea_orm_migration::{MigrationTrait, MigratorTrait};
 use ymir::data::migrations::received;
-use ymir::data::migrations::sent;
 use ymir::data::migrations::shared;
 
 pub struct Migrator;
@@ -30,7 +29,6 @@ impl MigratorTrait for Migrator {
             Box::new(shared::issuance::Migration),
         ];
         m.extend(received::get_recv_migrations());
-        m.extend(sent::get_sent_migrations());
         m
     }
 }

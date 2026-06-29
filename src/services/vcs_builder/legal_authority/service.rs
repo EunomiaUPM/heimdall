@@ -23,7 +23,7 @@ use crate::types::need_field_for_vc;
 use base64::engine::general_purpose::STANDARD;
 use base64::Engine;
 use x509_parser::parse_x509_certificate;
-use x509_parser::prelude::X509Certificate;
+use x509_parser::prelude::{AttributeTypeAndValue, X509Certificate};
 use ymir::data::entities::shared::issuance;
 use ymir::errors::{BadFormat, Errors, Outcome};
 use ymir::types::jwt::VCJwtClaims;
@@ -155,7 +155,6 @@ impl LegalAuthorityVcBuilder {
             }
         };
 
-        // ETSI EN 319 412-1: <3-letter-prefix><2-letter-country>-<identifier>
         let etsi_part = org_id_raw
             .split('+')
             .find(|part| {
@@ -174,7 +173,6 @@ impl LegalAuthorityVcBuilder {
                 )
             })?;
 
-        // Cross-validate country between subject C= and prefix
         let prefix_country = &etsi_part[3..5];
         if prefix_country != cert_country {
             return Err(Errors::format(
@@ -200,8 +198,7 @@ impl LegalAuthorityVcBuilder {
         cert.subject
             .iter_attributes()
             .find(|attr| attr.attr_type().to_id_string() == oid)
-            .and_then(|attr| attr.attr_value().as_str().ok())
-            .map(|s| s.to_string())
+            .and_then(Self::attr_value_as_string)
             .ok_or_else(|| {
                 Errors::format(
                     BadFormat::Received,
@@ -209,5 +206,13 @@ impl LegalAuthorityVcBuilder {
                     None,
                 )
             })
+    }
+
+    fn attr_value_as_string(av: &AttributeTypeAndValue) -> Option<String> {
+        let any = av.attr_value();
+        if let Ok(s) = any.as_str() {
+            return Some(s.to_string());
+        }
+        Some(String::from_utf8_lossy(any.data).to_string())
     }
 }

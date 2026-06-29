@@ -72,7 +72,7 @@ pub trait GatekeeperModule:
     ) -> Outcome<GrantResponse> {
         let grant_request = self.gatekeeper().validate_grant(&payload, &headers)?;
 
-        let grant = self
+        let mut grant = self
             .gatekeeper()
             .build_grant_plan(grant_request.client.class_id.clone())?;
         let available_vcs = self.vc_builder().get_role().available_credentials();
@@ -83,6 +83,8 @@ pub trait GatekeeperModule:
             grant_request.client.clone(),
             &available_vcs,
         ).await?;
+
+        grant.vc_type_config = Some(issuance.vc_type_config.clone());
 
         let mut grant = self.repo().recv_grant().create(grant).await?;
         let issuance = self.repo().issuance().create(issuance).await?;
@@ -95,7 +97,15 @@ pub trait GatekeeperModule:
         match response {
             GrantResponseManager::Approved => {
                 grant.status = GrantStatus::Approved;
-                let _grant = self.repo().recv_grant().update(grant).await?;
+                let grant = self.repo().recv_grant().update(grant).await?;
+                
+                let interaction = self.gatekeeper().build_interaction_plan(
+                    &grant.id,
+                    grant_request.interact,
+                    grant_request.client,
+                )?;
+
+                self.repo().recv_interaction().create(interaction).await?;
 
                 let cred_offer = self.issuer().get_cred_offer_data(&issuance);
                 let vc_transmission_offer = VcTransmissionOffer::ByValue(cred_offer);
