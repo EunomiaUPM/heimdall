@@ -6,6 +6,54 @@ services:
     image: "postgres"
     restart: always
     env_file:
-      - ./static/environment/envs/db.env.example
+      - static/envs/db.env.example
     ports:
       - "1450:5432"
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U mini_heimdall" ]
+      interval: 10s
+      retries: 10
+
+  fafnir-setup:
+    container_name: "fafnir-setup"
+    image: "rmenendez8/fafnir:v0.2.0"
+    depends_on:
+      heimdall-db:
+        condition: service_healthy
+    volumes:
+      - ./static/fafnir/config.yaml:/app/static/fafnir/config.yaml
+      - ./vault/secrets/db.json.example:/app/vault/secrets/db.json.example
+    env_file:
+      - static/fafnir/env.example
+    environment:
+      RUST_BACKTRACE: 1
+    command:
+      - setup
+      - --env-file
+      - /app/static/fafnir/config.yaml
+
+  fafnir-wallet:
+    container_name: "fafnir-wallet"
+    image: "rmenendez8/fafnir:v0.2.0"
+    restart: always
+    depends_on:
+      fafnir-setup:
+        condition: service_completed_successfully
+    volumes:
+      - ./static/fafnir/config.yaml:/app/static/fafnir/config.yaml
+      - ./vault/secrets/db.json.example:/app/vault/secrets/db.json.example
+    env_file:
+      - static/fafnir/env.example
+    environment:
+      RUST_BACKTRACE: 1
+    ports:
+      - "7000:7001"
+    command:
+      - start
+      - --env-file
+      - /app/static/fafnir/config.yaml
+    healthcheck:
+      test: [ "CMD", "wget", "-q", "--spider", "http://localhost:7001/readiness" ]
+      interval: 10s
+      timeout: 2s
+      retries: 10

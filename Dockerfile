@@ -38,7 +38,7 @@ FROM debian:bookworm-slim AS final
 ARG APP_NAME
 ENV APP_NAME=${APP_NAME}
 RUN apt-get update && \
-    apt-get install -y libssl3 ca-certificates && \
+    apt-get install -y libssl3 ca-certificates wget && \
     rm -rf /var/lib/apt/lists/*
 ARG UID=10001
 RUN adduser \

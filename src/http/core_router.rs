@@ -58,6 +58,7 @@ impl RainbowAuthorityRouter {
         let react = ReactRouter::new(self.core.clone());
 
         let base_router = Router::new()
+            .merge(health.router())
             .merge(wallet.well_known())
             .merge(issuer.well_known())
             .merge(fed_catalog.well_known())
@@ -68,7 +69,6 @@ impl RainbowAuthorityRouter {
             );
 
         let api_router = Router::new()
-            .merge(health.router())
             .nest("/wallet", wallet.router())
             .nest("/minions", minion.router())
             .nest("/approver", approver.router())

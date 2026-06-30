@@ -1,4 +1,106 @@
+name: mini-heimdall
+
 services:
+  heimdall-db:
+    container_name: heimdall-db
+    image: postgres
+    restart: always
+    env_file:
+      - static/envs/db.env
+    ports:
+      - "1450:5432"
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U mini_heimdall" ]
+      interval: 10s
+      retries: 10
+
+  fafnir-setup:
+    container_name: "fafnir-setup"
+    image: "rmenendez8/fafnir:v0.2.0"
+    restart: "no"
+    depends_on:
+      heimdall-db:
+        condition: service_healthy
+    volumes:
+      - ./static/fafnir/config.yaml:/app/static/fafnir/config.yaml
+      - ./vault/secrets/db.json:/app/vault/secrets/db.json
+    env_file:
+      - static/fafnir/env
+    environment:
+      RUST_BACKTRACE: 1
+    command:
+      - setup
+      - --env-file
+      - /app/static/fafnir/config.yaml
+
+  fafnir-wallet:
+    container_name: "fafnir-wallet"
+    image: "rmenendez8/fafnir:v0.2.0"
+    restart: always
+    depends_on:
+      fafnir-setup:
+        condition: service_completed_successfully
+    volumes:
+      - ./static/fafnir/config.yaml:/app/static/fafnir/config.yaml
+    env_file:
+      - static/fafnir/env
+    environment:
+      RUST_BACKTRACE: 1
+    command:
+      - start
+      - --env-file
+      - /app/static/fafnir/config.yaml
+    healthcheck:
+      test: [ "CMD", "wget", "-q", "--spider", "http://localhost:7000/readiness" ]
+      interval: 30s
+      timeout: 2s
+      retries: 10
+
+  heimdall-setup:
+    container_name: heimdall-setup
+    image: rmenendez8/heimdall:v2.1.0
+    restart: "no"
+    depends_on:
+      heimdall-db:
+        condition: service_healthy
+    volumes:
+      - ./static:/app/static
+      - ./vault:/app/vault
+    env_file:
+      - static/envs/heimdall.env
+    environment:
+      RUST_BACKTRACE: 1
+    command:
+      - setup
+      - --env-file
+      - /app/static/config/mini_eco_authority.yaml
+
+  heimdall:
+    container_name: heimdall
+    image: rmenendez8/heimdall:v2.1.0
+    restart: always
+    depends_on:
+      heimdall-setup:
+        condition: service_completed_successfully
+      fafnir-wallet:
+        condition: service_healthy
+    volumes:
+      - ./static:/app/static
+      - ./vault:/app/vault
+    env_file:
+      - static/envs/heimdall.env
+    environment:
+      RUST_BACKTRACE: 1
+    command:
+      - start
+      - --env-file
+      - /app/static/config/mini_eco_authority.yaml
+    healthcheck:
+      test: [ "CMD", "wget", "-q", "--spider", "http://localhost:1500/readiness" ]
+      interval: 30s
+      timeout: 2s
+      retries: 10
+
   heimdall-vault:
     image: hashicorp/vault:1.21
     container_name: heimdall-vault
@@ -29,56 +131,6 @@ services:
         }
     command: server
 
-  heimdall-db:
-    container_name: heimdall-db
-    image: postgres
-    restart: always
-    env_file:
-      - ./static/environment/envs/db.env
-
-  heimdall-setup:
-    container_name: heimdall-setup
-    image: rmenendez8/heimdall:v2.0.0
-    # build:
-    #   context: .
-    #   dockerfile: Dockerfile
-    volumes:
-      - ./static:/app/static
-      - ./vault:/app/vault
-    depends_on:
-      - heimdall-db
-      - heimdall-vault
-    env_file:
-      - ./static/environment/envs/heimdall.env
-    environment:
-      RUST_BACKTRACE: 1
-    command:
-      - setup
-      - --env-file
-      - /app/static/environment/config/prod/eco_authority.yaml
-    restart: "no"
-
-  heimdall:
-    container_name: heimdall
-    image: rmenendez8/heimdall:v2.0.0
-    # build:
-    #   context: .
-    #   dockerfile: Dockerfile
-    volumes:
-      - ./static:/app/static
-      - ./vault:/app/vault
-    depends_on:
-      heimdall-setup:
-        condition: service_completed_successfully
-    env_file:
-      - ./static/environment/envs/heimdall.env
-    environment:
-      RUST_BACKTRACE: 1
-    command:
-      - start
-      - --env-file
-      - /app/static/environment/config/prod/eco_authority.yaml
-
   keycloak:
     container_name: keycloak
     image: quay.io/keycloak/keycloak:19.0.3
@@ -89,18 +141,23 @@ services:
       - "./vault/config/:/etc/x509/https:ro"
       - "./react/keycloak-theme/heimdall:/opt/keycloak/themes/heimdall"
     env_file:
-      - ./static/environment/envs/keycloak.env
+      - static/envs/keycloak.env
     depends_on:
-      - keycloak_postgres
+      keycloak_postgres:
+        condition: service_healthy
     command:
       - start
+    healthcheck:
+      test: [ "CMD-SHELL", "exec 3<>/dev/tcp/localhost/9000 && echo -e 'GET /health/ready HTTP/1.1\\r\\nHost: localhost\\r\\n\\r\\n' >&3 && cat <&3 | grep -q '200 OK'" ]
+      interval: 20s
+      retries: 15
 
   keycloak_postgres:
     container_name: keycloak_postgres
     image: postgres:15
     restart: always
     env_file:
-      - ./static/environment/envs/keycloak.db.env
+      - static/envs/keycloak.db.env
     volumes:
       - ./keycloak:/var/lib/postgresql/data
 
@@ -113,7 +170,7 @@ services:
       - ./vault/config:/certs:ro
       - ./react/proxy-templates:/templates:ro
     env_file:
-      - ./static/environment/envs/proxy.env
+      - static/envs/proxy.env
     command:
       - --skip-auth-route=^/\.well-known.*
       - --skip-auth-route=^/api/v1/issuer.*
