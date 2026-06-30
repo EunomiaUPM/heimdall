@@ -22,11 +22,11 @@ use serde::{Deserialize, Serialize};
 use tracing::debug;
 use ymir::config::traits::{
     ApiConfigTrait, ConnectionConfigTrait, DatabaseConfigTrait, DidConfigTrait, HostsConfigTrait,
-    VcConfigTrait, VerifyReqConfigTrait, WalletConfigTrait,
+    VerifyReqConfigTrait, WalletConfigTrait,
 };
 use ymir::config::types::{
-    ApiConfig, CommonHostsConfig, ConnectionConfig, DatabaseConfig, DidConfig, VcConfig,
-    VerifyReqConfig, WalletConfig,
+    ApiConfig, CommonHostsConfig, ConnectionConfig, DatabaseConfig, DidConfig, VerifyReqConfig,
+    WalletConfig,
 };
 use ymir::errors::{Errors, Outcome};
 use ymir::utils::read;
@@ -41,13 +41,11 @@ pub struct CoreApplicationConfig {
     connection_config: ConnectionConfig,
     api_config: ApiConfig,
     db_config: DatabaseConfig,
-    wallet_config: Option<WalletConfig>,
+    wallet_config: WalletConfig,
     did_config: DidConfig,
     issue_config: IssueConfig,
-    vc_config: VcConfig,
     verify_req_config: VerifyReqConfig,
     role: AuthorityRole,
-    is_react: bool,
 }
 
 impl CoreApplicationConfig {
@@ -103,17 +101,9 @@ impl VerifyReqConfigTrait for CoreApplicationConfig {
     }
 }
 
-impl VcConfigTrait for CoreApplicationConfig {
-    fn vc_config(&self) -> &VcConfig {
-        &self.vc_config
-    }
-}
-
 impl WalletConfigTrait for CoreApplicationConfig {
     fn wallet_config(&self) -> &WalletConfig {
-        self.wallet_config
-            .as_ref()
-            .expect("Module wallet is not active")
+        &self.wallet_config
     }
 }
 
@@ -123,12 +113,4 @@ impl RoleConfigTrait for CoreApplicationConfig {
     }
 }
 
-impl CoreConfigTrait for CoreApplicationConfig {
-    fn is_wallet_active(&self) -> bool {
-        self.wallet_config.is_some()
-    }
-
-    fn is_react(&self) -> bool {
-        self.is_react
-    }
-}
+impl CoreConfigTrait for CoreApplicationConfig {}

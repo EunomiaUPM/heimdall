@@ -14,25 +14,21 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
-
-use std::str::FromStr;
-
 use serde_json::Value;
-use tracing::info;
+use std::str::FromStr;
 use ymir::capabilities::DigestSRI;
-use ymir::data::entities::{issuing, vc_request};
-use ymir::errors::{BadFormat, Errors, Outcome};
-use ymir::types::present::{Missing, Present};
-use ymir::types::vcs::vc_specs::gx_label::{CompliantCredential, GxLabelCredSubjectBuilder};
-use ymir::types::vcs::VcType;
-use ymir::utils::{
-    decode_jwt_payload, get_claim, get_from_opt, parse_from_str, parse_to_string, parse_to_value,
-};
+use ymir::data::entities::shared::issuance;
+use ymir::errors::{Errors, Outcome};
+use ymir::types::crypto::Canon;
+use ymir::types::jwt::{Jwt, VCJwtClaims};
+use ymir::types::vcs::vc_specs::gx_label::{CompliantCredential, GxLabelCredSubject};
+use ymir::types::vcs::{VcType, VcTypeConfig};
 
 use super::super::VcBuilderTrait;
 use super::ClearingHouseAuthorityConfig;
 use crate::config::traits::{ClHConfigTrait, RoleConfigTrait};
 use crate::config::types::AuthorityRole;
+use crate::types::need_field_for_vc;
 
 pub struct ClearingHouseAuthorityVcBuilder {
     config: ClearingHouseAuthorityConfig,
@@ -51,126 +47,99 @@ impl RoleConfigTrait for ClearingHouseAuthorityVcBuilder {
 }
 
 impl VcBuilderTrait for ClearingHouseAuthorityVcBuilder {
-    fn build_vc(&self, model: &issuing::Model) -> Outcome<Value> {
-        let vc_type = VcType::from_str(&model.vc_type)?;
+    fn build_vc(
+        &self,
+        issuance: &issuance::Model,
+        vc_config: VcTypeConfig,
+    ) -> Outcome<VCJwtClaims> {
+        let holder_did = need_field_for_vc(issuance.build_ctx.holder_did.as_deref())?;
 
-        if !matches!(vc_type, VcType::GxLabel) {
+        let role = self.config.get_role();
+        if !role.available_credentials().contains(vc_config.vc_type()) {
             return Err(Errors::unauthorized(
-                format!("Cannot issue vc type: {}", vc_type),
+                format!("As a {} we cannot issue {}", role, vc_config),
                 None,
             ));
         }
 
-        info!("Building {} credential", vc_type);
-
-        let holder_did = get_from_opt(model.holder_did.as_ref(), "holder did")?;
-        let vc_data = model
-            .credential_data
-            .as_deref()
-            .ok_or_else(|| Errors::crazy("Tried to issue a credential without any data", None))?;
-
-        let vc = parse_from_str::<GxLabelCredSubjectBuilder<Missing, Present, Present, Present>>(
-            vc_data,
-        )?;
-
-        let cred_subj = vc.id(holder_did).build();
-
-        let credential_subject = parse_to_value(&cred_subj)?;
-        self.just_build(&model, credential_subject, &self.config)
-    }
-
-    fn gather_data(&self, req_model: &vc_request::Model) -> Outcome<String> {
-        let builder = GxLabelCredSubjectBuilder::new(
-            self.config.get_label_level(),
-            self.config.get_engine_version(),
-            self.config.get_rules_version(),
-            self.config.get_validated_criteria(),
-        );
-
-        let vpt = req_model.vpt.as_ref().ok_or_else(|| {
-            Errors::unauthorized("Authentication has not been completed yet", None)
-        })?;
-
-        let data = Self::complete(vpt, builder)?;
-
-        parse_to_string(&data)
-    }
-
-    fn validate(&self, vc_type: &str) -> Outcome<VcType> {
-        let vc_type = VcType::from_str(vc_type)?;
-
-        match &vc_type {
-            VcType::GxLabel => Ok(vc_type),
-            vc_type => Err(Errors::unauthorized(
-                format!("Unauthorized to issue vc_type {}", vc_type.to_string()),
+        let vcs = &issuance.build_ctx.vcs;
+        if vcs.len() != 3 {
+            return Err(Errors::unauthorized(
+                "Not enough credentials were presented",
                 None,
-            )),
+            ));
         }
+
+        let vcs = &issuance.build_ctx.vcs;
+        let mut compliant_credentials = Vec::with_capacity(vcs.len());
+
+        let mut has_legal_person = false;
+        let mut has_terms = false;
+        let mut has_registration = false;
+
+        for vc in vcs {
+            let parsed = Self::parse_credential(vc)?;
+
+            let Ok(t) = VcType::from_str(&parsed.credential_type);
+            match t {
+                VcType::LegalPerson => has_legal_person = true,
+                VcType::TermsAndConditions => has_terms = true,
+                t if t.is_legal_registration_number() => has_registration = true,
+                _ => {}
+            }
+
+            compliant_credentials.push(parsed);
+        }
+
+        if !has_legal_person {
+            return Err(Errors::forbidden(
+                "Missing required credential: LegalPerson",
+                None,
+            ));
+        }
+        if !has_terms {
+            return Err(Errors::forbidden(
+                "Missing required credential: TermsAndConditions",
+                None,
+            ));
+        }
+        if !has_registration {
+            return Err(Errors::forbidden(
+                "Missing required credential: any LegalRegistrationNumber (VatID, LeiCode, TaxID, ...)",
+                None,
+            ));
+        }
+
+        let cred_subj = GxLabelCredSubject {
+            id: holder_did.to_string(),
+            label_level: self.config.get_label_level().to_string(),
+            engine_version: self.config.get_engine_version().to_string(),
+            rules_version: self.config.get_rules_version().to_string(),
+            compliant_credentials,
+            validated_criteria: vec![self.config.get_validated_criteria().to_string()],
+        };
+
+        let credential_subject = serde_json::to_value(&cred_subj)?;
+        self.just_build(&issuance, credential_subject, vc_config)
     }
 }
 
 impl ClearingHouseAuthorityVcBuilder {
-    fn parse_credential(credential: &Value) -> Outcome<CompliantCredential> {
-        let credential = decode_jwt_payload(credential.as_str().unwrap())?;
+    fn parse_credential(credential: &str) -> Outcome<CompliantCredential> {
+        let jwt = Jwt::parse(credential)?;
+        let claims_value: Value = jwt.unsafe_claims()?;
+        let claims: VCJwtClaims = serde_json::from_value(claims_value.clone())?;
+        let doc = &claims.vc_doc().r#type;
 
-        let id = get_claim(&credential, &["jti"])?;
-
-        let vc_type = credential
-            .get("type")
-            .and_then(|v| v.as_array())
-            .ok_or(Errors::format(
-                BadFormat::Received,
-                "Error retrieving vc type from credential",
-                None,
-            ))?
+        let vc_type = doc
             .iter()
-            .find(|v| v.as_str() != Some("VerifiableCredential"))
-            .and_then(|v| v.as_str())
-            .ok_or(Errors::format(
-                BadFormat::Received,
-                "No VC type found other than VerifiableCredential",
-                None,
-            ))?;
+            .find(|t| t.as_str() != "VerifiableCredential")
+            .ok_or_else(|| Errors::unauthorized("Credential type missing", None))?;
 
-        let digest_sri = DigestSRI::digest(&credential)?;
-
+        let canon = Canon::try_from(&claims_value)?;
         Ok(CompliantCredential {
-            id,
-            r#type: vc_type.to_string(),
-            digest_sri,
+            credential_type: vc_type.clone(),
+            digest_sri: DigestSRI::digest(&canon),
         })
-    }
-
-    pub fn complete(
-        vpt: &str,
-        builder: GxLabelCredSubjectBuilder<Missing, Missing, Missing, Missing>,
-    ) -> Outcome<GxLabelCredSubjectBuilder<Missing, Present, Present, Present>> {
-        let vp = decode_jwt_payload(vpt)?;
-
-        let credentials = vp
-            .get("vp")
-            .and_then(|v| v.get("verifiableCredential"))
-            .and_then(|v| v.as_array())
-            .ok_or(Errors::format(
-                BadFormat::Received,
-                "Error retrieving vcs from vp token",
-                None,
-            ))?;
-
-        if credentials.len() != 3 {
-            return Err(Errors::unauthorized(
-                "Did not send the correct amount of credentials",
-                None,
-            ));
-        }
-
-        let legal_person = Self::parse_credential(&credentials[0])?;
-        let reg_number = Self::parse_credential(&credentials[1])?;
-        let terms_cons = Self::parse_credential(&credentials[2])?;
-
-        Ok(builder
-            .legal_person(legal_person)
-            .reg_number(reg_number)
-            .terms_cons(terms_cons))
     }
 }

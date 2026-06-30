@@ -16,21 +16,19 @@
  */
 
 use sea_orm_migration::{MigrationTrait, MigratorTrait};
-use ymir::data::migrations::{
-    m20250403_094651_issuing, m20250403_094651_minions, m20250403_094651_recv_interaction,
-    m20250403_094651_recv_verification, m20250403_094651_vc_request,
-};
+use ymir::data::migrations::received;
+use ymir::data::migrations::shared;
 
 pub struct Migrator;
 #[async_trait::async_trait]
 impl MigratorTrait for Migrator {
     fn migrations() -> Vec<Box<dyn MigrationTrait>> {
-        vec![
-            Box::new(m20250403_094651_vc_request::Migration),
-            Box::new(m20250403_094651_recv_interaction::Migration),
-            Box::new(m20250403_094651_recv_verification::Migration),
-            Box::new(m20250403_094651_issuing::Migration),
-            Box::new(m20250403_094651_minions::Migration),
-        ]
+        let mut m = vec![
+            // Shared: picks individuales
+            Box::new(shared::participant::Migration) as Box<dyn MigrationTrait>,
+            Box::new(shared::issuance::Migration),
+        ];
+        m.extend(received::get_recv_migrations());
+        m
     }
 }

@@ -15,9 +15,24 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-use serde::{Deserialize, Serialize};
+use crate::services::gatekeeper::GateKeeperTrait;
+use crate::services::notifications::NotificationsTrait;
+use crate::services::repo::RepoTrait;
+use crate::services::vcs_builder::VcBuilderTrait;
+use std::sync::Arc;
 
-#[derive(Deserialize, Serialize, Clone, Debug)]
-pub struct DsBuilderConfig {
-    pub dataspace_id: String,
+pub trait HasRepo {
+    fn repo(&self) -> Arc<dyn RepoTrait>;
+}
+
+pub trait HasGateKeeper {
+    fn gatekeeper(&self) -> Arc<dyn GateKeeperTrait>;
+}
+
+pub trait HasVcBuilder {
+    fn vc_builder(&self) -> Arc<dyn VcBuilderTrait>;
+}
+
+pub trait HasNotifier {
+    fn frontend_notifier(&self) -> Arc<dyn NotificationsTrait>;
 }

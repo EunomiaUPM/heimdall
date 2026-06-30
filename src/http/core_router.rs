@@ -17,11 +17,11 @@
 
 use std::sync::Arc;
 
-use crate::core::traits::CoreTrait;
 use crate::http::fed_catalog_router::FedCatalogRouter;
 use crate::http::{
-    ApproverRouter, GateKeeperRouter, IssuerRouter, MinionRouter, ReactRouter, VerifierRouter,
+    ApproverRouter, GateKeeperRouter, IssuerRouter, ParticipantRouter, ReactRouter, VerifierRouter,
 };
+use crate::modules::OrchestratorTrait;
 use axum::extract::Request;
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
@@ -31,78 +31,54 @@ use tower_http::services::{ServeDir, ServeFile};
 use tower_http::trace::{DefaultOnResponse, TraceLayer};
 use tracing::{error, info, Level};
 use uuid::Uuid;
-use ymir::config::types::HostType;
 use ymir::http::{HealthRouter, OpenapiRouter, WalletRouter};
-use ymir::types::dids::{DidService, DidServiceType};
 
 pub struct RainbowAuthorityRouter {
-    core: Arc<dyn CoreTrait>,
+    core: Arc<dyn OrchestratorTrait>,
     openapi: String,
 }
 
 impl RainbowAuthorityRouter {
-    pub fn new(core: Arc<dyn CoreTrait>) -> Self {
+    pub fn new(core: Arc<dyn OrchestratorTrait>) -> Self {
         let openapi = core.config().get_openapi().expect("Invalid openapi path");
         Self { core, openapi }
     }
 
     pub fn router(self) -> Router {
         let api_version = self.core.config().get_api_version();
+        let wallet = WalletRouter::new(self.core.clone());
         let issuer = IssuerRouter::new(self.core.clone());
         let gatekeeper = GateKeeperRouter::new(self.core.clone());
         let verifier = VerifierRouter::new(self.core.clone());
         let approver = ApproverRouter::new(self.core.clone());
         let fed_catalog = FedCatalogRouter::new(self.core.clone());
-        let minion = MinionRouter::new(self.core.clone());
+        let minion = ParticipantRouter::new(self.core.clone());
         let health = HealthRouter::new();
         let openapi = OpenapiRouter::new(self.openapi.clone());
+        let react = ReactRouter::new(self.core.clone());
 
-        let mut base_router = Router::new().merge(issuer.well_known());
-
-        let mut api_router = Router::new()
+        let base_router = Router::new()
             .merge(health.router())
+            .merge(wallet.well_known())
+            .merge(issuer.well_known())
+            .merge(fed_catalog.well_known())
+            .nest_service(
+                "/admin",
+                ServeDir::new("./react/dist")
+                    .not_found_service(ServeFile::new("./react/dist/index.html")),
+            );
+
+        let api_router = Router::new()
+            .nest("/wallet", wallet.router())
             .nest("/minions", minion.router())
             .nest("/approver", approver.router())
             .nest("/gate", gatekeeper.router())
             .nest("/issuer", issuer.router())
             .nest("/verifier", verifier.router())
-            .nest("/docs", openapi.router());
-
-        if self.core.config().is_wallet_active() {
-            let services = vec![
-                DidService::basic(
-                    DidServiceType::CredentialIssuer,
-                    format!(
-                        "{}{}/gate/access",
-                        self.core.config().get_host(HostType::Http),
-                        api_version
-                    ),
-                ),
-                DidService::basic(
-                    DidServiceType::FederatedCatalog,
-                    format!(
-                        "{}/.well-known/federated-catalog",
-                        self.core.config().get_host(HostType::Http),
-                    ),
-                ),
-            ];
-            let wallet = WalletRouter::new(self.core.clone());
-            base_router = base_router.merge(wallet.well_known(Some(services)));
-            api_router = api_router.nest("/wallet", wallet.router());
-        }
-
-        if self.core.config().is_react() {
-            let react = ReactRouter::new(self.core.clone());
-            base_router = base_router.nest_service(
-                "/admin",
-                ServeDir::new("./react/dist")
-                    .not_found_service(ServeFile::new("./react/dist/index.html")),
-            );
-            api_router = api_router.nest("/react", react.router());
-        }
+            .nest("/docs", openapi.router())
+            .nest("/react", react.router());
 
         base_router
-            .merge(fed_catalog.well_known())
             .nest(&api_version, api_router)
             .fallback(Self::fallback)
             .layer(

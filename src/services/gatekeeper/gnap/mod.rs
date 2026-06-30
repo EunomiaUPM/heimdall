@@ -15,6 +15,9 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-pub mod config;
+mod config;
 mod service;
-pub use service::GnapService;
+// mod service_xxx;
+
+pub use config::GnapConfig;
+pub use service::GnapGateKeeperService;

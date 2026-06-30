@@ -9,6 +9,7 @@ import RequestDetails from './pages/RequestDetails';
 import Wallet from './pages/Wallet';
 import WalletDID from './pages/WalletDID';
 import WalletInfo from './pages/WalletInfo';
+import WalletKeys from './pages/WalletKeys';
 import WalletCredentials from './pages/WalletCredentials';
 import WalletOidc4vp from './pages/WalletOidc4vp';
 import WalletOidc4vci from './pages/WalletOidc4vci';
@@ -37,6 +38,7 @@ function App() {
               <Route path="wallet" element={<Wallet />}>
                 <Route path="did" element={<WalletDID />} />
                 <Route path="info" element={<WalletInfo />} />
+                <Route path="keys" element={<WalletKeys />} />
                 <Route path="credentials" element={<WalletCredentials />} />
                 <Route path="oidc4vp" element={<WalletOidc4vp />} />
                 <Route path="oidc4vci" element={<WalletOidc4vci />} />

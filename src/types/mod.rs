@@ -15,11 +15,19 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-use crate::config::types::DsBuilderConfig;
+use ymir::errors::{Errors, Outcome};
 
-pub trait DSConfigTrait {
-    fn get_ds_config(&self) -> &DsBuilderConfig;
-    fn get_ds_id(&self) -> &str {
-        &self.get_ds_config().dataspace_id
-    }
+pub enum GrantResponseManager {
+    Approved,
+    Pending,
+    Processing,
+}
+
+pub fn need_field_for_vc<T>(opt: Option<T>) -> Outcome<T> {
+    opt.ok_or_else(|| {
+        Errors::unauthorized(
+            "The authentication process is insufficient to receive this credential",
+            None,
+        )
+    })
 }

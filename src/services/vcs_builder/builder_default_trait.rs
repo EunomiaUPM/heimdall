@@ -15,8 +15,6 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-use ymir::config::traits::VcConfigTrait;
-
 use crate::config::traits::RoleConfigTrait;
 
-pub trait BuilderConfigDefaultTrait: VcConfigTrait + RoleConfigTrait {}
+pub trait BuilderConfigDefaultTrait: RoleConfigTrait {}

@@ -17,54 +17,60 @@
 
 use std::sync::Arc;
 
-use sea_orm::DatabaseConnection;
-use ymir::services::repo::postgres::repos::{
-    IssuingRepo, MinionsRepo, RecvInteractionRepo, RecvVerificationRepo, VcRequestRepo,
-};
-use ymir::services::repo::subtraits::{
-    IssuingTrait, MinionsTrait, RecvInteractionTrait, RecvVerificationTrait, VcRequestTrait,
-};
-
 use crate::services::repo::RepoTrait;
+use sea_orm::DatabaseConnection;
+use ymir::services::repo::postgres::received::{
+    RecvGrantPostgresRepo, RecvInteractionPostgresRepo, RecvVerificationPostgresRepo,
+};
+use ymir::services::repo::postgres::shared::{IssuancePostgresRepo, ParticipantPostgresRepo};
+use ymir::services::repo::traits::received::{
+    RecvGrantRepoTrait, RecvInteractionRepoTrait, RecvVerificationRepoTrait,
+};
+use ymir::services::repo::traits::shared::{IssuanceRepoTrait, ParticipantRepoTrait};
 
 #[derive(Clone)]
 pub struct RepoForSql {
-    request_repo: Arc<dyn VcRequestTrait>,
-    interaction_repo: Arc<dyn RecvInteractionTrait>,
-    verification_repo: Arc<dyn RecvVerificationTrait>,
-    issuing_repo: Arc<dyn IssuingTrait>,
-    minions_repo: Arc<dyn MinionsTrait>,
+    recv_grant_repo: Arc<dyn RecvGrantRepoTrait>,
+    recv_interaction_repo: Arc<dyn RecvInteractionRepoTrait>,
+    recv_verification_repo: Arc<dyn RecvVerificationRepoTrait>,
+    issuance_repo: Arc<dyn IssuanceRepoTrait>,
+    participant_repo: Arc<dyn ParticipantRepoTrait>,
 }
 
 impl RepoForSql {
     pub fn new(db_connection: DatabaseConnection) -> Self {
         Self {
-            request_repo: Arc::new(VcRequestRepo::new(db_connection.clone())),
-            interaction_repo: Arc::new(RecvInteractionRepo::new(db_connection.clone())),
-            verification_repo: Arc::new(RecvVerificationRepo::new(db_connection.clone())),
-            issuing_repo: Arc::new(IssuingRepo::new(db_connection.clone())),
-            minions_repo: Arc::new(MinionsRepo::new(db_connection.clone())),
+            recv_grant_repo: Arc::new(RecvGrantPostgresRepo::new(db_connection.clone())),
+            recv_interaction_repo: Arc::new(RecvInteractionPostgresRepo::new(
+                db_connection.clone(),
+            )),
+            recv_verification_repo: Arc::new(RecvVerificationPostgresRepo::new(
+                db_connection.clone(),
+            )),
+            issuance_repo: Arc::new(IssuancePostgresRepo::new(db_connection.clone())),
+            participant_repo: Arc::new(ParticipantPostgresRepo::new(db_connection.clone())),
         }
     }
 }
 
 impl RepoTrait for RepoForSql {
-    fn request(&self) -> Arc<dyn VcRequestTrait> {
-        self.request_repo.clone()
+    fn recv_grant(&self) -> Arc<dyn RecvGrantRepoTrait> {
+        self.recv_grant_repo.clone()
     }
 
-    fn interaction(&self) -> Arc<dyn RecvInteractionTrait> {
-        self.interaction_repo.clone()
+    fn recv_interaction(&self) -> Arc<dyn RecvInteractionRepoTrait> {
+        self.recv_interaction_repo.clone()
     }
 
-    fn verification(&self) -> Arc<dyn RecvVerificationTrait> {
-        self.verification_repo.clone()
-    }
-    fn minions(&self) -> Arc<dyn MinionsTrait> {
-        self.minions_repo.clone()
+    fn recv_verification(&self) -> Arc<dyn RecvVerificationRepoTrait> {
+        self.recv_verification_repo.clone()
     }
 
-    fn issuing(&self) -> Arc<dyn IssuingTrait> {
-        self.issuing_repo.clone()
+    fn participant(&self) -> Arc<dyn ParticipantRepoTrait> {
+        self.participant_repo.clone()
+    }
+
+    fn issuance(&self) -> Arc<dyn IssuanceRepoTrait> {
+        self.issuance_repo.clone()
     }
 }

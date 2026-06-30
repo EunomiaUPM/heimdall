@@ -19,16 +19,16 @@ const WalletOidc4vci = () => {
     setResponse(null);
     setError(null);
     try {
-      const res = await fetch(`${apiUrl}/wallet/oidc4vci`, {
+      const res = await fetch(`${apiUrl}/wallet/oid4vci`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ uri }),
       });
-      if (!res.ok) throw new Error(`Failed to process OIDC4VCI: ${res.statusText}`);
+      if (!res.ok) throw new Error(`Failed to process OID4VCI: ${res.statusText}`);
       setResponse({ success: true });
       setUri('');
     } catch (err) {
-      console.error('Error processing OIDC4VCI:', err);
+      console.error('Error processing OID4VCI:', err);
       setError(err.message);
     } finally {
       setLoading(false);
@@ -37,7 +37,7 @@ const WalletOidc4vci = () => {
 
   return (
     <div className="max-w-2xl mx-auto py-8">
-      <PageSection title="Credential Issuance (OIDC4VCI)">
+      <PageSection title="Credential Issuance (OID4VCI)">
         <div className="bg-white/5 border border-white/10 rounded-2xl p-10 backdrop-blur-md shadow-2xl space-y-8">
           <div className="text-center space-y-2">
             <FileText className="h-12 w-12 text-primary mx-auto mb-2" />

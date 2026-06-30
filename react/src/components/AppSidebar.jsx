@@ -57,17 +57,17 @@ export function AppSidebar() {
         </div>
 
         {/* Logo (full when expanded, iso when collapsed) */}
-        <div className="relative h-24 w-full flex items-center justify-center overflow-hidden">
+        <div className="relative h-14 w-full flex items-center justify-center overflow-hidden">
           <img
             src={logoImg}
-            className={`absolute h-16 w-auto transition-all duration-500 ease-in-out ${
+            className={`absolute h-10 w-auto transition-all duration-500 ease-in-out ${
               isCollapsed ? 'opacity-0 scale-50 pointer-events-none' : 'opacity-100 scale-100'
             }`}
             alt="Heimdall Logo"
           />
           <img
             src={`${import.meta.env.BASE_URL}iso_logo.svg`}
-            className={`absolute h-10 w-auto transition-all duration-500 ease-in-out ${
+            className={`absolute h-7 w-auto transition-all duration-500 ease-in-out ${
               isCollapsed ? 'opacity-100 scale-100' : 'opacity-0 scale-50 pointer-events-none'
             }`}
             alt="Heimdall Iso"

@@ -62,7 +62,7 @@ impl fmt::Display for AuthorityRole {
 }
 
 impl AuthorityRole {
-    pub fn credentials(&self) -> Vec<VcType> {
+    pub fn available_credentials(&self) -> Vec<VcType> {
         match self {
             AuthorityRole::LegalAuthority => {
                 vec![

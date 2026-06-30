@@ -18,24 +18,24 @@
 use std::sync::Arc;
 
 use async_trait::async_trait;
-use ymir::core_traits::CoreWalletTrait;
+use ymir::modules::WalletModuleTrait;
 
-use super::{
-    CoreApproverTrait, CoreFedCatalog, CoreGatekeeperTrait, CoreIssuerTrait, CoreMinionTrait,
-    CoreReactTrait, CoreVerifierTrait,
-};
 use crate::config::CoreConfigTrait;
+use crate::modules::{
+    ApproverModule, FedCatalogModule, FrontendNotifierModule, GatekeeperModule, IssuerModule,
+    ParticipantModule, VerifierModule,
+};
 
 #[async_trait]
-pub trait CoreTrait:
-    CoreVerifierTrait
-    + CoreIssuerTrait
-    + CoreApproverTrait
-    + CoreGatekeeperTrait
-    + CoreFedCatalog
-    + CoreWalletTrait
-    + CoreMinionTrait
-    + CoreReactTrait
+pub trait OrchestratorTrait:
+    VerifierModule
+    + IssuerModule
+    + ApproverModule
+    + GatekeeperModule
+    + FedCatalogModule
+    + WalletModuleTrait
+    + ParticipantModule
+    + FrontendNotifierModule
     + Send
     + Sync
     + 'static

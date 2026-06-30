@@ -15,24 +15,14 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-use ymir::config::traits::VcConfigTrait;
-use ymir::config::types::VcConfig;
-
 use crate::config::traits::{ClHConfigTrait, IssueConfigTrait, RoleConfigTrait};
 use crate::config::types::{AuthorityRole, ClHBuilderConfig};
 use crate::config::CoreApplicationConfig;
 use crate::services::vcs_builder::BuilderConfigDefaultTrait;
 
 pub struct ClearingHouseAuthorityConfig {
-    vc_config: VcConfig,
     clh_config: ClHBuilderConfig,
     role: AuthorityRole,
-}
-
-impl VcConfigTrait for ClearingHouseAuthorityConfig {
-    fn vc_config(&self) -> &VcConfig {
-        &self.vc_config
-    }
 }
 
 impl RoleConfigTrait for ClearingHouseAuthorityConfig {
@@ -52,7 +42,6 @@ impl ClHConfigTrait for ClearingHouseAuthorityConfig {
 impl From<CoreApplicationConfig> for ClearingHouseAuthorityConfig {
     fn from(value: CoreApplicationConfig) -> Self {
         Self {
-            vc_config: value.vc_config().clone(),
             clh_config: value.get_clh_config().clone(),
             role: value.get_role().clone(),
         }

@@ -15,13 +15,12 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-use std::str::FromStr;
 use std::sync::Arc;
 
-use serde_json::Value;
-use ymir::data::entities::{issuing, vc_request};
+use ymir::data::entities::shared::issuance;
 use ymir::errors::{Errors, Outcome};
-use ymir::types::vcs::VcType;
+use ymir::types::jwt::VCJwtClaims;
+use ymir::types::vcs::{VcType, VcTypeConfig};
 
 use crate::config::traits::RoleConfigTrait;
 use crate::config::types::AuthorityRole;
@@ -57,43 +56,20 @@ impl RoleConfigTrait for EcoAuthorityBuilder {
 }
 
 impl VcBuilderTrait for EcoAuthorityBuilder {
-    fn build_vc(&self, model: &issuing::Model) -> Outcome<Value> {
-        let vc_type = VcType::from_str(&model.vc_type)?;
-        match vc_type {
-            VcType::Eori => self.legal.build_vc(&model),
-            VcType::Euid => self.legal.build_vc(&model),
-            VcType::LocalRegistrationNumber => self.legal.build_vc(&model),
-            VcType::LeiCode => self.legal.build_vc(&model),
-            VcType::VatId => self.legal.build_vc(&model),
-            VcType::TaxId => self.legal.build_vc(&model),
-            VcType::DataspaceParticipant => self.dataspace.build_vc(model),
-            VcType::GxLabel => self.clearing_house.build_vc(model),
+    fn build_vc(&self, model: &issuance::Model, vc_config: VcTypeConfig) -> Outcome<VCJwtClaims> {
+        match vc_config.vc_type() {
+            VcType::Eori
+            | VcType::Euid
+            | VcType::LocalRegistrationNumber
+            | VcType::LeiCode
+            | VcType::VatId
+            | VcType::TaxId => self.legal.build_vc(&model, vc_config),
+            VcType::DataspaceParticipant => self.dataspace.build_vc(model, vc_config),
+            VcType::GxLabel => self.clearing_house.build_vc(model, vc_config),
             _ => Err(Errors::unauthorized(
-                format!("Cannot issue vc type: {}", vc_type),
+                format!("Cannot issue vc type: {}", vc_config.vc_type()),
                 None,
             )),
         }
-    }
-
-    fn gather_data(&self, req_model: &vc_request::Model) -> Outcome<String> {
-        let vc_type = VcType::from_str(&req_model.vc_type)?;
-        match vc_type {
-            VcType::Eori => self.legal.gather_data(&req_model),
-            VcType::Euid => self.legal.gather_data(&req_model),
-            VcType::LocalRegistrationNumber => self.legal.gather_data(&req_model),
-            VcType::LeiCode => self.legal.gather_data(&req_model),
-            VcType::VatId => self.legal.gather_data(&req_model),
-            VcType::TaxId => self.legal.gather_data(&req_model),
-            VcType::DataspaceParticipant => self.dataspace.gather_data(&req_model),
-            VcType::GxLabel => self.clearing_house.gather_data(&req_model),
-            _ => Err(Errors::unauthorized(
-                format!("Cannot issue vc type: {}", vc_type),
-                None,
-            )),
-        }
-    }
-
-    fn validate(&self, vc_type: &str) -> Outcome<VcType> {
-        VcType::from_str(vc_type)
     }
 }

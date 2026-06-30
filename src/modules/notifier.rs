@@ -15,17 +15,15 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-use crate::services::repo::RepoTrait;
-use async_trait::async_trait;
-use std::sync::Arc;
-use ymir::data::entities::minions::Model;
-use ymir::errors::Outcome;
+use std::convert::Infallible;
+use std::pin::Pin;
 
-#[async_trait]
-pub trait CoreFedCatalog: Send + Sync + 'static {
-    fn repo(&self) -> Arc<dyn RepoTrait>;
+use crate::services::HasNotifier;
+use axum::response::sse::Event;
+use futures_util::Stream;
 
-    async fn get_all(&self) -> Outcome<Vec<Model>> {
-        self.repo().minions().get_all(None, None).await
+pub trait FrontendNotifierModule: HasNotifier + Send + Sync + 'static {
+    fn handle(&self) -> Pin<Box<dyn Stream<Item = Result<Event, Infallible>> + Send>> {
+        self.frontend_notifier().handle()
     }
 }

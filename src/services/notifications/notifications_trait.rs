@@ -20,7 +20,7 @@ use std::pin::Pin;
 
 use axum::response::sse::Event;
 use futures_util::Stream;
-use ymir::data::entities::vc_request::Model;
+use ymir::data::entities::received::grant::Model;
 
 pub trait NotificationsTrait: Send + Sync + 'static {
     fn notify(&self, model: &Model);

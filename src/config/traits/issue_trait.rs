@@ -15,17 +15,10 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-use crate::config::types::{ClHBuilderConfig, DsBuilderConfig, IssueConfig};
+use crate::config::types::{ClHBuilderConfig, IssueConfig};
 
 pub trait IssueConfigTrait {
     fn issue_config(&self) -> &IssueConfig;
-    fn get_ds_config(&self) -> &DsBuilderConfig {
-        &self
-            .issue_config()
-            .ds_config
-            .as_ref()
-            .expect("Requested dataspace issue configuration is not defined, and wants to be used")
-    }
     fn get_clh_config(&self) -> &ClHBuilderConfig {
         &self.issue_config().clh_config.as_ref().expect(
             "Requested clearing house issue configuration is not defined, and wants to be used",

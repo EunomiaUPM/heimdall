@@ -85,3 +85,40 @@ export const formatIdentifier = (value, maxLength = 40) => {
   if (!value || typeof value !== 'string') return '';
   return value.length > maxLength ? value.slice(0, maxLength) + '...' : value;
 };
+
+/*
+  Convert a technical VC type id (e.g. "gx_VatId_jwt_vc_json") to a friendly label
+  ("Gaia-X Vat Id Credential (JWT)").
+  Rules:
+  - gx_ prefix -> Gaia-X
+  - CamelCase/PascalCase -> split with spaces
+  - Append "Credential" if not present (unless it's a Participant)
+  - jwt -> (JWT) suffix
+*/
+export const getFriendlyVCType = (type) => {
+  if (!type) return '';
+
+  let friendly = type;
+  const isJwt = type.toLowerCase().includes('jwt');
+
+  friendly = friendly.replace(/(_jwt|_vc|_json)/g, '');
+
+  let isGaiaX = false;
+  if (friendly.startsWith('gx_')) {
+    isGaiaX = true;
+    friendly = friendly.replace(/^gx_/, '');
+  }
+
+  friendly = friendly.replace(/_/g, ' ');
+  friendly = friendly.replace(/([a-z0-9])([A-Z])/g, '$1 $2');
+
+  if (!/credential/i.test(friendly) && !/participant/i.test(friendly)) {
+    friendly = `${friendly} Credential`;
+  }
+
+  friendly = friendly.trim();
+  if (isGaiaX) friendly = `Gaia-X ${friendly}`;
+  if (isJwt) friendly = `${friendly} (JWT)`;
+
+  return friendly;
+};

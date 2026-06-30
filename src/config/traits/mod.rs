@@ -16,11 +16,9 @@
  */
 
 mod clh_trait;
-mod ds_trait;
 mod issue_trait;
 mod role_trait;
 
 pub use clh_trait::ClHConfigTrait;
-pub use ds_trait::DSConfigTrait;
 pub use issue_trait::IssueConfigTrait;
 pub use role_trait::RoleConfigTrait;

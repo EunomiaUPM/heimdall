@@ -15,24 +15,12 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-use std::sync::Arc;
-
-use ymir::services::client::ClientService;
-use ymir::services::issuer::basic::config::BasicIssuerConfig;
-use ymir::services::issuer::basic::BasicIssuerService;
-use ymir::services::vault::{VaultService, VaultTrait};
-use ymir::services::verifier::basic::config::BasicVerifierConfig;
-use ymir::services::verifier::basic::BasicVerifierService;
-use ymir::services::wallet::walt_id::config::WaltIdConfig;
-use ymir::services::wallet::walt_id::WaltIdService;
-use ymir::services::wallet::WalletTrait;
-
 use crate::config::traits::RoleConfigTrait;
 use crate::config::types::AuthorityRole;
 use crate::config::{CoreApplicationConfig, CoreConfigTrait};
 use crate::core::Core;
-use crate::services::gatekeeper::gnap::{config::GnapConfig, GnapService};
-use crate::services::notifications::{NotificationService, NotificationsTrait};
+use crate::services::gatekeeper::gnap::{GnapConfig, GnapGateKeeperService};
+use crate::services::notifications::NotificationService;
 use crate::services::repo::RepoForSql;
 use crate::services::repo::RepoTrait;
 use crate::services::vcs_builder::clearing_house::{
@@ -45,18 +33,91 @@ use crate::services::vcs_builder::legal_authority::{
     LegalAuthorityConfig, LegalAuthorityVcBuilder,
 };
 use crate::services::vcs_builder::{EcoAuthorityBuilder, VcBuilderTrait};
+use std::sync::Arc;
+use ymir::config::traits::{ApiConfigTrait, HostsConfigTrait, WalletConfigTrait};
+use ymir::config::types::HostType;
+use ymir::data::entities::shared::participant;
+use ymir::errors::{Errors, Outcome};
+use ymir::services::issuer::oid4vci_1_0;
+use ymir::services::vault::{VaultService, VaultTrait};
+use ymir::services::verifier::oid4vp_draft20;
+use ymir::services::wallet::fafnir::{FafnirConfig, FafnirService};
+use ymir::services::wallet::WalletTrait;
+use ymir::types::dids::{DidService, DidServiceType};
+use ymir::types::participants::ParticipantType;
+use ymir::types::wallet::WalletInstance;
 
 pub struct CoreBuilder {
     core: Core,
 }
 
 impl CoreBuilder {
-    pub async fn from_config(config: CoreApplicationConfig, vault: Arc<VaultService>) -> Self {
-        // ===== ROLE → VC BUILDER =====
+    pub async fn from_config(
+        config: CoreApplicationConfig,
+        vault: Arc<VaultService>,
+    ) -> Outcome<Self> {
+        // ===== CONFIG DERIVATIONS =====
 
+        let gnap_config = GnapConfig::from(&config);
+        let issuer_config = oid4vci_1_0::IssuerConfig::from(&config);
+        let verifier_config = oid4vp_draft20::VerifierConfig::from(&config);
+
+        // ===== SERVICES =====
+        let db_connection = vault.get_db_connection(&config).await?;
+        let repo: Arc<dyn RepoTrait> = Arc::new(RepoForSql::new(db_connection));
+
+        let vc_builder = Self::vc_builder(&config);
+        let wallet = Self::wallet(&config, vault.clone()).await?;
+        let arc_identity = wallet.get_identity();
+
+        let identity = arc_identity.read().await;
+        let participant_id = identity.did().id().to_string();
+
+        let myself = participant::Plan {
+            participant_id,
+            participant_nick: "Myself".to_string(),
+            participant_type: ParticipantType::Authority,
+            base_url: config.get_host(HostType::Http),
+            token: None,
+            extra_fields: None,
+            is_me: true,
+        };
+        repo.participant().force_update(myself).await?;
+
+        let gatekeeper = Arc::new(GnapGateKeeperService::new(gnap_config));
+        let issuer = Arc::new(oid4vci_1_0::IssuerService::new(
+            issuer_config,
+            vault.clone(),
+            arc_identity.clone(),
+        ));
+        let verifier = Arc::new(oid4vp_draft20::VerifierService::new(verifier_config));
+        let notifier = Arc::new(NotificationService::new());
+
+        let core_config: Arc<dyn CoreConfigTrait> = Arc::new(config);
+
+        let core = Core::new(
+            wallet,
+            notifier,
+            gatekeeper,
+            issuer,
+            verifier,
+            vc_builder,
+            repo,
+            core_config,
+        );
+
+        Ok(Self { core })
+    }
+
+    pub fn build(self) -> Core {
+        self.core
+    }
+}
+
+impl CoreBuilder {
+    fn vc_builder(config: &CoreApplicationConfig) -> Arc<dyn VcBuilderTrait> {
         let role = config.get_role();
-
-        let vc_builder: Arc<dyn VcBuilderTrait> = match role {
+        match role {
             AuthorityRole::LegalAuthority => {
                 let config = LegalAuthorityConfig::from(config.clone());
                 Arc::new(LegalAuthorityVcBuilder::new(config))
@@ -85,62 +146,54 @@ impl CoreBuilder {
 
                 Arc::new(EcoAuthorityBuilder::new(legal, dp, clh))
             }
-        };
-
-        // ===== CONFIG DERIVATIONS =====
-
-        let gnap_config = GnapConfig::from(config.clone());
-        let issuer_config = BasicIssuerConfig::from(config.clone());
-        let verifier_config = BasicVerifierConfig::from(config.clone());
-        let core_config: Arc<dyn CoreConfigTrait> = Arc::new(config.clone());
-
-        // ===== SERVICES =====
-
-        let db_connection = vault.get_db_connection(&config).await;
-        let repo: Arc<dyn RepoTrait> = Arc::new(RepoForSql::new(db_connection));
-
-        let client = Arc::new(ClientService::default());
-
-        let gatekeeper = Arc::new(GnapService::new(gnap_config, client.clone()));
-        let issuer = Arc::new(BasicIssuerService::new(
-            issuer_config,
-            client.clone(),
-            vault.clone(),
-        ));
-        let verifier = Arc::new(BasicVerifierService::new(client.clone(), verifier_config));
-
-        let wallet: Option<Arc<dyn WalletTrait>> = if config.is_wallet_active() {
-            let walt_config = WaltIdConfig::from(config.clone());
-            Some(Arc::new(WaltIdService::new(
-                walt_config,
-                client.clone(),
-                vault,
-            )))
-        } else {
-            None
-        };
-
-        let notifier: Option<Arc<dyn NotificationsTrait>> = if config.is_react() {
-            Some(Arc::new(NotificationService::new()))
-        } else {
-            None
-        };
-
-        let core = Core::new(
-            wallet,
-            notifier,
-            gatekeeper,
-            issuer,
-            verifier,
-            vc_builder,
-            repo,
-            core_config,
-        );
-
-        Self { core }
+        }
     }
 
-    pub fn build(self) -> Core {
-        self.core
+    async fn wallet(
+        config: &CoreApplicationConfig,
+        vault: Arc<VaultService>,
+    ) -> Outcome<Arc<dyn WalletTrait>> {
+        let services = Self::authority_services(config);
+        match config.get_wallet() {
+            WalletInstance::WaltId => {
+                Err(Errors::not_impl("Waltid is a legacy option", None))
+                // let walt_id_config = WaltIdConfig::from(config);
+                // let wallet = WaltIdService::new(
+                //     walt_id_config,
+                //     vault.clone(),
+                //     services,
+                //     ParticipantType::Authority,
+                // )
+                // .await?;
+                //
+                // Ok(Arc::new(wallet))
+            }
+            WalletInstance::Fafnir => {
+                let fafnir_config = FafnirConfig::from(config);
+                let fafnir =
+                    FafnirService::new(fafnir_config, vault.clone(), services).await?;
+                Ok(Arc::new(fafnir))
+            }
+        }
+    }
+
+    fn authority_services(config: &CoreApplicationConfig) -> Vec<DidService> {
+        vec![
+            DidService::basic(
+                DidServiceType::CredentialIssuer,
+                format!(
+                    "{}{}/gate/access",
+                    config.get_host(HostType::Http),
+                    config.get_api_version()
+                ),
+            ),
+            DidService::basic(
+                DidServiceType::FederatedCatalog,
+                format!(
+                    "{}/.well-known/federated-catalog",
+                    config.get_host(HostType::Http),
+                ),
+            ),
+        ]
     }
 }

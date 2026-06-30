@@ -17,7 +17,7 @@
 
 use ymir::config::traits::{
     ApiConfigTrait, ConnectionConfigTrait, DatabaseConfigTrait, DidConfigTrait, HostsConfigTrait,
-    VcConfigTrait, VerifyReqConfigTrait, WalletConfigTrait,
+    VerifyReqConfigTrait, WalletConfigTrait,
 };
 
 use crate::config::traits::{IssueConfigTrait, RoleConfigTrait};
@@ -29,7 +29,6 @@ pub trait CoreConfigTrait:
     + DatabaseConfigTrait
     + DidConfigTrait
     + IssueConfigTrait
-    + VcConfigTrait
     + VerifyReqConfigTrait
     + WalletConfigTrait
     + RoleConfigTrait
@@ -37,6 +36,4 @@ pub trait CoreConfigTrait:
     + Sync
     + 'static
 {
-    fn is_wallet_active(&self) -> bool;
-    fn is_react(&self) -> bool;
 }

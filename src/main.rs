@@ -30,7 +30,7 @@ const INFO: &str = r"
 | | | || |___ _| |_| |  | | |/ /| | | || |____| |____
 \_| |_/\____/ \___/\_|  |_/___/ \_| |_/\_____/\_____/
 
-Starting Heimdall Dataspace Authority ⚡🛡️
+Starting Heimdall Authority ⚡🛡️
 UPM Dataspace multistack agent
 Show some love on https://github.com/EunomiaUPM/heimdall
 
@@ -50,6 +50,8 @@ async fn main() -> Outcome<()> {
         })?;
     tracing_subscriber::fmt().with_env_filter(filter).init();
     info!("{}", INFO);
-    AuthorityCommands::init_command_line().await?;
-    Ok(())
+    AuthorityCommands::init_command_line().await.map_err(|e| {
+        e.log();
+        e
+    })
 }

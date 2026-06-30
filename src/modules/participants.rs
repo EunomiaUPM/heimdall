@@ -15,12 +15,20 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-use ymir::config::traits::HostsConfigTrait;
+use crate::services::HasRepo;
+use async_trait::async_trait;
+use ymir::data::entities::shared::participant::Model;
+use ymir::errors::Outcome;
 
-use crate::config::traits::RoleConfigTrait;
-
-pub trait GnapConfigTrait: RoleConfigTrait + HostsConfigTrait {
-    fn get_api_path(&self) -> String;
-    fn is_cert_allowed(&self) -> bool;
-    fn auto_approve_cert(&self) -> bool;
+#[async_trait]
+pub trait ParticipantModule: HasRepo + Send + Sync + 'static {
+    async fn get_all(&self) -> Outcome<Vec<Model>> {
+        self.repo().participant().get_all(None, None).await
+    }
+    async fn get_by_id(&self, id: String) -> Outcome<Model> {
+        self.repo().participant().get_by_id(&id).await
+    }
+    async fn get_me(&self) -> Outcome<Model> {
+        self.repo().participant().get_me().await
+    }
 }

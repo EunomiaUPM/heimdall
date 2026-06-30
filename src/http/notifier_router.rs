@@ -24,25 +24,25 @@ use axum::routing::get;
 use axum::Router;
 use futures_util::stream::Stream;
 
-use crate::core::traits::CoreReactTrait;
+use crate::modules::FrontendNotifierModule;
 
 pub struct ReactRouter {
-    notificator: Arc<dyn CoreReactTrait>,
+    notifier: Arc<dyn FrontendNotifierModule>,
 }
 
 impl ReactRouter {
-    pub fn new(notificator: Arc<dyn CoreReactTrait>) -> Self {
-        Self { notificator }
+    pub fn new(notifier: Arc<dyn FrontendNotifierModule>) -> Self {
+        Self { notifier }
     }
 
     pub fn router(self) -> Router {
         Router::new()
             .route("/notifications/stream", get(Self::sse_handler))
-            .with_state(self.notificator.clone())
+            .with_state(self.notifier.clone())
     }
 
     async fn sse_handler(
-        State(notificator): State<Arc<dyn CoreReactTrait>>,
+        State(notificator): State<Arc<dyn FrontendNotifierModule>>,
     ) -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
         let stream = notificator.handle();
 

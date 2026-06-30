@@ -15,21 +15,16 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-use std::str::FromStr;
-
-use serde_json::Value;
-use tracing::info;
-use ymir::data::entities::{issuing, vc_request};
-use ymir::errors::{Errors, Outcome};
-use ymir::types::present::Missing;
-use ymir::types::vcs::vc_specs::dataspace::DataSpaceParticipantBuilder;
-use ymir::types::vcs::VcType;
-use ymir::utils::{get_from_opt, parse_from_str, parse_to_string, parse_to_value};
-
 use super::super::VcBuilderTrait;
-use crate::config::traits::{DSConfigTrait, RoleConfigTrait};
+use crate::config::traits::RoleConfigTrait;
 use crate::config::types::AuthorityRole;
 use crate::services::vcs_builder::dataspace_authority::config::DataSpaceAuthorityConfig;
+use crate::types::need_field_for_vc;
+use ymir::data::entities::shared::issuance;
+use ymir::errors::{Errors, Outcome};
+use ymir::types::jwt::VCJwtClaims;
+use ymir::types::vcs::vc_specs::dataspace::DataSpaceParticipant;
+use ymir::types::vcs::VcTypeConfig;
 
 pub struct DataSpaceAuthorityVcBuilder {
     config: DataSpaceAuthorityConfig,
@@ -48,48 +43,23 @@ impl RoleConfigTrait for DataSpaceAuthorityVcBuilder {
 }
 
 impl VcBuilderTrait for DataSpaceAuthorityVcBuilder {
-    fn build_vc(&self, model: &issuing::Model) -> Outcome<Value> {
-        let vc_type = VcType::from_str(&model.vc_type)?;
+    fn build_vc(&self, model: &issuance::Model, vc_config: VcTypeConfig) -> Outcome<VCJwtClaims> {
+        let holder_did = need_field_for_vc(model.build_ctx.holder_did.as_ref())?;
 
-        if !matches!(vc_type, VcType::DataspaceParticipant) {
+        let role = self.config.get_role();
+        if !role.available_credentials().contains(vc_config.vc_type()) {
             return Err(Errors::unauthorized(
-                format!("Cannot issue vc type: {}", vc_type),
+                format!("As a {} we cannot issue {}", role, vc_config),
                 None,
             ));
         }
 
-        info!("Building {} credential", vc_type);
+        let cred_sub = DataSpaceParticipant {
+            id: holder_did.clone(),
+            nickname: model.build_ctx.subject_name.clone(),
+        };
 
-        let holder_did = get_from_opt(model.holder_did.as_ref(), "holder did")?;
-        let vc_data = model
-            .credential_data
-            .as_deref()
-            .ok_or_else(|| Errors::crazy("Tried to issue a credential without any data", None))?;
-
-        let vc = parse_from_str::<DataSpaceParticipantBuilder<Missing>>(vc_data)?;
-
-        let cred_subj = vc.id(holder_did).build();
-
-        let credential_subject = parse_to_value(&cred_subj)?;
-        self.just_build(&model, credential_subject, &self.config)
-    }
-
-    fn gather_data(&self, req_model: &vc_request::Model) -> Outcome<String> {
-        let dataspace_id = self.config.get_ds_id().to_string();
-        let nick = req_model.participant_slug.clone();
-        let data = DataSpaceParticipantBuilder::new(nick, dataspace_id);
-        parse_to_string(&data)
-    }
-
-    fn validate(&self, vc_type: &str) -> Outcome<VcType> {
-        let vc_type = VcType::from_str(vc_type)?;
-
-        match &vc_type {
-            VcType::DataspaceParticipant => Ok(vc_type),
-            vc_type => Err(Errors::unauthorized(
-                format!("Unauthorized to issue vc_type {}", vc_type.to_string()),
-                None,
-            )),
-        }
+        let credential_subject = serde_json::to_value(&cred_sub)?;
+        self.just_build(&model, credential_subject, vc_config)
     }
 }

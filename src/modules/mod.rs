@@ -15,7 +15,20 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-mod config;
-mod config_trait;
-pub use config::GnapConfig;
-pub use config_trait::GnapConfigTrait;
+mod approver;
+mod fed_catalog;
+mod gaia;
+mod gatekeeper;
+mod issuer;
+mod notifier;
+mod participants;
+mod verifier;
+
+pub use crate::core::OrchestratorTrait;
+pub use approver::ApproverModule;
+pub use fed_catalog::FedCatalogModule;
+pub use gatekeeper::GatekeeperModule;
+pub use issuer::IssuerModule;
+pub use notifier::FrontendNotifierModule;
+pub use participants::ParticipantModule;
+pub use verifier::VerifierModule;
