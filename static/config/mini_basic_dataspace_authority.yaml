@@ -49,11 +49,11 @@ role: DataSpaceAuthority
 
 api_config:
   version: 'v1'
-  openapi_path: './static/specs/openapi/openapi.json'
+  openapi_path: '/app/static/specs/openapi/openapi.json'
 
 issue_config:
 
 verify_req_config:
   is_cert_allowed: true
   auto_approve_cert: true
-  vcs_requested: [ ]
+  vcs_requested: []
