@@ -14,12 +14,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
+use base64::Engine;
+use base64::engine::general_purpose::STANDARD;
 use serde_json::Value;
 use std::str::FromStr;
 use ymir::capabilities::DigestSRI;
 use ymir::data::entities::shared::issuance;
 use ymir::errors::{Errors, Outcome};
-use ymir::types::crypto::Canon;
+use ymir::types::crypto::{Canon, HashAlg};
 use ymir::types::jwt::{Jwt, VCJwtClaims};
 use ymir::types::vcs::vc_specs::gx_label::{CompliantCredential, GxLabelCredSubject};
 use ymir::types::vcs::{VcType, VcTypeConfig};
@@ -136,10 +138,11 @@ impl ClearingHouseAuthorityVcBuilder {
             .find(|t| t.as_str() != "VerifiableCredential")
             .ok_or_else(|| Errors::unauthorized("Credential type missing", None))?;
 
-        let canon = Canon::try_from(&claims_value)?;
+        let canon = Canon::new(&claims_value)?;
+        let digest = DigestSRI::digest(&canon, HashAlg::Sha256);
         Ok(CompliantCredential {
             credential_type: vc_type.clone(),
-            digest_sri: DigestSRI::digest(&canon),
+            digest_sri: format!("sha256-{}", STANDARD.encode(digest)),
         })
     }
 }

@@ -253,18 +253,17 @@ impl GateKeeperTrait for GnapGateKeeperService {
         Ok(())
     }
 
-    fn manage_grant(&self, interact: Option<&InteractRequest>) -> GrantResponseManager {
+    fn manage_grant(&self, interact: Option<&InteractRequest>) -> Outcome<GrantResponseManager> {
         match interact {
             Some(interact) if interact.start.contains(&InteractStart::Oid4VP) => {
-                GrantResponseManager::Pending
+                Ok(GrantResponseManager::Pending)
             }
-            _ => {
-                if self.config.auto_approve_cert() {
-                    GrantResponseManager::Approved
-                } else {
-                    GrantResponseManager::Processing
-                }
-            }
+            _ if !self.config.is_cert_allowed() => Err(Errors::forbidden(
+                "Certificate-only grants are not allowed by this Authority",
+                None,
+            )),
+            _ if self.config.auto_approve_cert() => Ok(GrantResponseManager::Approved),
+            _ => Ok(GrantResponseManager::Processing),
         }
     }
 

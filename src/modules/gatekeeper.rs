@@ -71,6 +71,9 @@ pub trait GatekeeperModule:
         headers: &HeaderMap,
     ) -> Outcome<GrantResponse> {
         let grant_request = self.gatekeeper().validate_grant(&payload, &headers)?;
+        let response = self
+            .gatekeeper()
+            .manage_grant(grant_request.interact.as_ref())?;
 
         let mut grant = self
             .gatekeeper()
@@ -89,10 +92,6 @@ pub trait GatekeeperModule:
         let mut grant = self.repo().recv_grant().create(grant).await?;
         let issuance = self.repo().issuance().create(issuance).await?;
         self.frontend_notifier().notify(&grant);
-
-        let response = self
-            .gatekeeper()
-            .manage_grant(grant_request.interact.as_ref());
 
         match response {
             GrantResponseManager::Approved => {

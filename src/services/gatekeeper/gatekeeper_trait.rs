@@ -45,7 +45,7 @@ pub trait GateKeeperTrait: Send + Sync + 'static {
         payload: &Bytes,
         headers: &HeaderMap,
     ) -> Outcome<()>;
-    fn manage_grant(&self, interact: Option<&InteractRequest>) -> GrantResponseManager;
+    fn manage_grant(&self, interact: Option<&InteractRequest>) -> Outcome<GrantResponseManager>;
     async fn finish_interaction(
         &self,
         interaction: &interaction::Model,
