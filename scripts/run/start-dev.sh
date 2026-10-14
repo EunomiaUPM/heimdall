@@ -1,6 +1,8 @@
 #!/bin/bash
 set -e
 
+cd "$(dirname "${BASH_SOURCE[0]}")/../.."
+
 # ===============================
 # 1. Variables de entorno
 # ===============================
