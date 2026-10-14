@@ -20,10 +20,10 @@ export RUST_BACKTRACE="full"
 # ===============================
 
 echo -e "\033[0;36mLevantando dependencias...\033[0m"
-docker compose -f docker-compose.dev.yml up -d
+docker compose -f deployment/docker-compose.dev.yaml up -d
 
 # Si quieres compatibilidad con Docker Compose antiguo:
-# docker-compose -f docker-compose.dev.yml up -d
+# docker-compose -f deployment/docker-compose.dev.yaml up -d
 
 # ===============================
 # 3. Esperar a que la DB esté lista

@@ -92,7 +92,7 @@ Heimdall can be deployed in different environments. Below are the primary deploy
 
 ### 1. Mini Deployment (Local / Quickstart)
 
-The `mini` deployment is the fastest way to spin up the Heimdall core and its database using Docker Compose. It leverages `docker-compose.yml`.
+The `mini` deployment is the fastest way to spin up the Heimdall core and its database using Docker Compose. It leverages `deployment/docker-compose.mini.yaml`.
 
 **Steps to deploy:**
 
@@ -101,7 +101,7 @@ The `mini` deployment is the fastest way to spin up the Heimdall core and its da
 3. You can configure your environment variables if you want, but this version runs perfectly with the .example
 4. Run the following command:
    ```bash
-   docker-compose up
+   docker compose -f deployment/docker-compose.mini.yaml up
    ```
    On Windows, `scripts/run/run-mini.ps1` does the same and waits until Heimdall answers (`-Down` to stop).
 
@@ -117,7 +117,7 @@ deployment of [eunomia-deployment](https://github.com/EunomiaUPM/eunomia-deploym
 
 ### 2. Prod Deployment (Production)
 
-For a full production deployment with Vault, Keycloak, and oauth2-proxy, see the [Production Deployment Guide](./PROD-DEPLOYMENT.md).
+For a full production deployment with Vault, Keycloak, and oauth2-proxy, see the [Production Deployment Guide](./deployment/PROD-DEPLOYMENT.md).
 
 ## 🛠️ Development
 
@@ -151,7 +151,7 @@ To run the complete system (Rust Backend + React Frontend), follow these steps:
 2. **Run the Server**:
 
    ```bash
-   docker compose -f docker-compose.dev.yml up -d
+   docker compose -f deployment/docker-compose.dev.yaml up -d
    ```
 
    Depending on yor sistem copy the file heimdall.env.ps1.example o heimdall.env.sh.example into your terminal so that heimdall process can capture those environment variables

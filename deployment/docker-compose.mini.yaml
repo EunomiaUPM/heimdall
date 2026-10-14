@@ -6,7 +6,7 @@ services:
     image: postgres
     restart: always
     env_file:
-      - static/envs/db.env.example
+      - ../static/envs/db.env.example
     ports:
       - "1450:5432"
     healthcheck:
@@ -16,16 +16,16 @@ services:
 
   fafnir-setup:
     container_name: "fafnir-setup"
-    image: "rmenendez8/fafnir:v0.2.1"
+    image: "rmenendez8/fafnir:v0.2.2"
     restart: "no"
     depends_on:
       heimdall-db:
         condition: service_healthy
     volumes:
-      - ./static/fafnir/config.yaml:/app/static/fafnir/config.yaml
-      - ./vault/secrets/db.json.example:/app/vault/secrets/db.json.example
+      - ../static/fafnir/config.yaml:/app/static/fafnir/config.yaml
+      - ../vault/secrets/db.json.example:/app/vault/secrets/db.json.example
     env_file:
-      - static/fafnir/env.example
+      - ../static/fafnir/env.example
     environment:
       RUST_BACKTRACE: 1
     command:
@@ -35,16 +35,16 @@ services:
 
   fafnir-wallet:
     container_name: "fafnir-wallet"
-    image: "rmenendez8/fafnir:v0.2.1"
+    image: "rmenendez8/fafnir:v0.2.2"
     restart: always
     depends_on:
       fafnir-setup:
         condition: service_completed_successfully
     volumes:
-      - ./static/fafnir/config.yaml:/app/static/fafnir/config.yaml
-      - ./vault/secrets/db.json.example:/app/vault/secrets/db.json.example
+      - ../static/fafnir/config.yaml:/app/static/fafnir/config.yaml
+      - ../vault/secrets/db.json.example:/app/vault/secrets/db.json.example
     env_file:
-      - static/fafnir/env.example
+      - ../static/fafnir/env.example
     environment:
       RUST_BACKTRACE: 1
     command:
@@ -61,16 +61,16 @@ services:
 
   heimdall-setup:
     container_name: heimdall-setup
-    image: rmenendez8/heimdall:v2.1.0
+    image: rmenendez8/heimdall:v2.2.test
     restart: "no"
     depends_on:
       heimdall-db:
         condition: service_healthy
     volumes:
-      - ./static:/app/static
-      - ./vault:/app/vault
+      - ../static:/app/static
+      - ../vault:/app/vault
     env_file:
-      - static/envs/heimdall.env.example
+      - ../static/envs/heimdall.env.example
     environment:
       RUST_BACKTRACE: 1
     command:
@@ -80,7 +80,7 @@ services:
 
   heimdall:
     container_name: heimdall
-    image: rmenendez8/heimdall:v2.1.0
+    image: rmenendez8/heimdall:v2.2.test
     restart: always
     ports:
       - "1500:1500"
@@ -90,10 +90,10 @@ services:
       fafnir-wallet:
         condition: service_healthy
     volumes:
-      - ./static:/app/static
-      - ./vault:/app/vault
+      - ../static:/app/static
+      - ../vault:/app/vault
     env_file:
-      - static/envs/heimdall.env.example
+      - ../static/envs/heimdall.env.example
     environment:
       RUST_BACKTRACE: 1
     command:
