@@ -26,10 +26,10 @@ use crate::services::repo::RepoTrait;
 use crate::services::vcs_builder::VcBuilderTrait;
 use crate::services::{HasConfig, HasGateKeeper, HasNotifier, HasRepo, HasVcBuilder};
 use std::sync::Arc;
+use ymir::config::types::HostType;
 use ymir::modules::WalletModuleTrait;
 use ymir::services::issuer::IssuerTrait;
 use ymir::services::verifier::VerifierTrait;
-use ymir::config::types::HostType;
 use ymir::services::wallet::WalletTrait;
 use ymir::services::{HasIssuer, HasVerifier, HasWallet};
 
@@ -123,13 +123,7 @@ impl IssuerModule for Core {}
 impl ApproverModule for Core {}
 impl GatekeeperModule for Core {}
 impl FedCatalogModule for Core {}
-impl ParticipantModule for Core {
-    fn host_url(&self) -> String {
-        self.config.get_host(HostType::Http)
-    }
-}
+impl ParticipantModule for Core {}
 impl FrontendNotifierModule for Core {}
-
-
 
 impl OrchestratorTrait for Core {}

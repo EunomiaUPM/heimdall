@@ -15,18 +15,17 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-use crate::services::HasRepo;
+use crate::services::{HasConfig, HasRepo};
 use async_trait::async_trait;
 use chrono::Utc;
+use ymir::config::types::HostType;
 use ymir::data::entities::shared::participant::Model;
 use ymir::errors::Outcome;
 use ymir::services::HasWallet;
 use ymir::types::participants::ParticipantType;
 
 #[async_trait]
-pub trait ParticipantModule: HasRepo + HasWallet + Send + Sync + 'static {
-    fn host_url(&self) -> String;
-
+pub trait ParticipantModule: HasRepo + HasWallet + HasConfig + Send + Sync + 'static {
     async fn get_all(&self) -> Outcome<Vec<Model>> {
         self.repo().participant().get_all(None, None).await
     }
@@ -41,7 +40,7 @@ pub trait ParticipantModule: HasRepo + HasWallet + Send + Sync + 'static {
             participant_id: identity.did().id().to_string(),
             participant_nick: "Myself".to_string(),
             participant_type: ParticipantType::Authority,
-            base_url: self.host_url(),
+            base_url: self.config().get_host(HostType::Http),
             saved_at: now,
             last_interaction: now,
             extra_fields: serde_json::json!({}),
