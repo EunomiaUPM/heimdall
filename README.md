@@ -103,6 +103,7 @@ The `mini` deployment is the fastest way to spin up the Heimdall core and its da
    ```bash
    docker-compose up
    ```
+   On Windows, `scripts/run/run-mini.ps1` does the same and waits until Heimdall answers (`-Down` to stop).
 
 This will start:
 
