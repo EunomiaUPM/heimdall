@@ -17,8 +17,9 @@
 
 use crate::config::traits::RoleConfigTrait;
 use crate::config::types::AuthorityRole;
-use crate::config::{CoreApplicationConfig, CoreConfigTrait};
+use crate::config::{CoreConfig, CoreConfigTrait};
 use crate::core::Core;
+use crate::http::routes::{fed_catalog, gate};
 use crate::services::gatekeeper::gnap::{GnapConfig, GnapGateKeeperService};
 use crate::services::notifications::NotificationService;
 use crate::services::repo::RepoForSql;
@@ -50,10 +51,7 @@ pub struct CoreBuilder {
 }
 
 impl CoreBuilder {
-    pub async fn from_config(
-        config: CoreApplicationConfig,
-        vault: Arc<VaultService>,
-    ) -> Outcome<Self> {
+    pub async fn from_config(config: CoreConfig, vault: Arc<VaultService>) -> Outcome<Self> {
         // ===== CONFIG DERIVATIONS =====
 
         let gnap_config = GnapConfig::from(&config);
@@ -99,7 +97,7 @@ impl CoreBuilder {
 }
 
 impl CoreBuilder {
-    fn vc_builder(config: &CoreApplicationConfig) -> Arc<dyn VcBuilderTrait> {
+    fn vc_builder(config: &CoreConfig) -> Arc<dyn VcBuilderTrait> {
         let role = config.get_role();
         match role {
             AuthorityRole::LegalAuthority => {
@@ -134,48 +132,38 @@ impl CoreBuilder {
     }
 
     async fn wallet(
-        config: &CoreApplicationConfig,
+        config: &CoreConfig,
         vault: Arc<VaultService>,
     ) -> Outcome<Arc<dyn WalletTrait>> {
         let services = Self::authority_services(config);
         match config.get_wallet() {
-            WalletInstance::WaltId => {
-                Err(Errors::not_impl("Waltid is a legacy option", None))
-                // let walt_id_config = WaltIdConfig::from(config);
-                // let wallet = WaltIdService::new(
-                //     walt_id_config,
-                //     vault.clone(),
-                //     services,
-                //     ParticipantType::Authority,
-                // )
-                // .await?;
-                //
-                // Ok(Arc::new(wallet))
-            }
+            WalletInstance::WaltId => Err(Errors::not_impl("Waltid is a legacy option", None)),
             WalletInstance::Fafnir => {
                 let fafnir_config = FafnirConfig::from(config);
-                let fafnir =
-                    FafnirService::new(fafnir_config, vault.clone(), services).await?;
+                let fafnir = FafnirService::new(fafnir_config, vault.clone(), services).await?;
                 Ok(Arc::new(fafnir))
             }
         }
     }
 
-    fn authority_services(config: &CoreApplicationConfig) -> Vec<DidService> {
+    fn authority_services(config: &CoreConfig) -> Vec<DidService> {
         vec![
             DidService::basic(
                 DidServiceType::CredentialIssuer,
                 format!(
-                    "{}{}/gate/access",
+                    "{}{}{}{}",
                     config.get_host(HostType::Http),
-                    config.get_api_version()
+                    config.get_api_version(),
+                    gate::PREFIX,
+                    gate::ACCESS
                 ),
             ),
             DidService::basic(
                 DidServiceType::FederatedCatalog,
                 format!(
-                    "{}/.well-known/federated-catalog",
+                    "{}{}",
                     config.get_host(HostType::Http),
+                    fed_catalog::CATALOG
                 ),
             ),
         ]

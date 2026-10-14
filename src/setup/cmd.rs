@@ -26,7 +26,7 @@ use ymir::services::vault::fake_vault::FakeVaultService;
 use ymir::services::vault::vault_rs::RealVaultService;
 use ymir::services::vault::{VaultService, VaultTrait};
 
-use crate::config::CoreApplicationConfig;
+use crate::config::CoreConfig;
 use crate::setup::app::AuthorityApp;
 use crate::setup::db_migrations::AuthorityMigration;
 
@@ -74,8 +74,8 @@ impl AuthorityCommands {
         Ok(())
     }
 
-    fn bootstrap(args: AuthCliArgs) -> Outcome<(CoreApplicationConfig, VaultService)> {
-        let config = CoreApplicationConfig::load(args.env_file)?;
+    fn bootstrap(args: AuthCliArgs) -> Outcome<(CoreConfig, VaultService)> {
+        let config = CoreConfig::load(args.env_file)?;
         let vault = if config.is_vault_real() {
             VaultService::Real(RealVaultService::new()?)
         } else {

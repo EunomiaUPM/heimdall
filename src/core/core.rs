@@ -24,7 +24,7 @@ use crate::services::gatekeeper::GateKeeperTrait;
 use crate::services::notifications::NotificationsTrait;
 use crate::services::repo::RepoTrait;
 use crate::services::vcs_builder::VcBuilderTrait;
-use crate::services::{HasGateKeeper, HasNotifier, HasRepo, HasVcBuilder};
+use crate::services::{HasConfig, HasGateKeeper, HasNotifier, HasRepo, HasVcBuilder};
 use std::sync::Arc;
 use ymir::modules::WalletModuleTrait;
 use ymir::services::issuer::IssuerTrait;
@@ -110,6 +110,12 @@ impl HasNotifier for Core {
     }
 }
 
+impl HasConfig for Core {
+    fn config(&self) -> Arc<dyn CoreConfigTrait> {
+        self.config.clone()
+    }
+}
+
 impl WalletModuleTrait for Core {}
 
 impl VerifierModule for Core {}
@@ -123,8 +129,7 @@ impl ParticipantModule for Core {
     }
 }
 impl FrontendNotifierModule for Core {}
-impl OrchestratorTrait for Core {
-    fn config(&self) -> Arc<dyn CoreConfigTrait> {
-        self.config.clone()
-    }
-}
+
+
+
+impl OrchestratorTrait for Core {}

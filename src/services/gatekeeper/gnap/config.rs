@@ -20,7 +20,7 @@ use ymir::config::types::CommonHostsConfig;
 
 use crate::config::traits::RoleConfigTrait;
 use crate::config::types::AuthorityRole;
-use crate::config::CoreApplicationConfig;
+use crate::config::CoreConfig;
 
 pub struct GnapConfig {
     hosts: CommonHostsConfig,
@@ -30,8 +30,8 @@ pub struct GnapConfig {
     auto_approve_cert: bool,
 }
 
-impl From<&CoreApplicationConfig> for GnapConfig {
-    fn from(config: &CoreApplicationConfig) -> GnapConfig {
+impl From<&CoreConfig> for GnapConfig {
+    fn from(config: &CoreConfig) -> GnapConfig {
         GnapConfig {
             hosts: config.hosts().clone(),
             role: config.get_role().clone(),

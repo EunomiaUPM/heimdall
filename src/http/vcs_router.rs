@@ -31,6 +31,7 @@ use ymir::types::gnap::VcDecisionApproval;
 use ymir::types::oauth::UserInfo;
 use ymir::utils::extract_payload;
 
+use crate::http::routes::approver;
 use crate::modules::ApproverModule;
 
 pub struct ApproverRouter {
@@ -41,14 +42,15 @@ impl ApproverRouter {
     pub fn new(approver: Arc<dyn ApproverModule>) -> Self {
         Self { approver }
     }
-    pub fn router(self) -> Router {
+    /// Routes to review and decide on credential requests; mounted behind the OAuth guard.
+    pub fn internal(self) -> Router {
         Router::new()
-            .route("/all", get(Self::get_all_requests))
+            .route(approver::ALL, get(Self::get_all_requests))
             .route(
-                "/{id}",
+                approver::BY_ID,
                 get(Self::get_one_request).post(Self::manage_request),
             )
-            .route("/{id}/details", get(Self::get_one_with_details))
+            .route(approver::DETAILS, get(Self::get_one_with_details))
             .with_state(self.approver)
     }
 

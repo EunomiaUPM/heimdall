@@ -15,7 +15,7 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-use crate::config::CoreApplicationConfig;
+use crate::config::CoreConfig;
 use ymir::config::traits::{
     ApiConfigTrait, DidConfigTrait, HostsConfigTrait, VerifyReqConfigTrait, WalletConfigTrait,
 };
@@ -24,8 +24,8 @@ use ymir::services::verifier::oid4vp_draft20::VerifierConfig;
 use ymir::services::wallet::fafnir::FafnirConfig;
 use ymir::services::wallet::walt_id::WaltIdConfig;
 
-impl From<&CoreApplicationConfig> for WaltIdConfig {
-    fn from(value: &CoreApplicationConfig) -> Self {
+impl From<&CoreConfig> for WaltIdConfig {
+    fn from(value: &CoreConfig) -> Self {
         WaltIdConfig::new(
             value.hosts().clone(),
             value.wallet_config().clone(),
@@ -34,8 +34,8 @@ impl From<&CoreApplicationConfig> for WaltIdConfig {
     }
 }
 
-impl From<&CoreApplicationConfig> for FafnirConfig {
-    fn from(value: &CoreApplicationConfig) -> Self {
+impl From<&CoreConfig> for FafnirConfig {
+    fn from(value: &CoreConfig) -> Self {
         FafnirConfig::new(
             value.hosts().clone(),
             value.wallet_config().clone(),
@@ -44,8 +44,8 @@ impl From<&CoreApplicationConfig> for FafnirConfig {
     }
 }
 
-impl From<&CoreApplicationConfig> for VerifierConfig {
-    fn from(value: &CoreApplicationConfig) -> Self {
+impl From<&CoreConfig> for VerifierConfig {
+    fn from(value: &CoreConfig) -> Self {
         VerifierConfig::new(
             value.hosts().clone(),
             value.get_api_version(),
@@ -54,8 +54,8 @@ impl From<&CoreApplicationConfig> for VerifierConfig {
     }
 }
 
-impl From<&CoreApplicationConfig> for IssuerConfig {
-    fn from(value: &CoreApplicationConfig) -> Self {
+impl From<&CoreConfig> for IssuerConfig {
+    fn from(value: &CoreConfig) -> Self {
         IssuerConfig::new(value.hosts().clone(), value.get_api_version())
     }
 }

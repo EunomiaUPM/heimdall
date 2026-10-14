@@ -17,7 +17,7 @@
 
 use crate::config::traits::RoleConfigTrait;
 use crate::config::types::AuthorityRole;
-use crate::config::CoreApplicationConfig;
+use crate::config::CoreConfig;
 use crate::services::vcs_builder::BuilderConfigDefaultTrait;
 
 pub struct DataSpaceAuthorityConfig {
@@ -32,8 +32,8 @@ impl RoleConfigTrait for DataSpaceAuthorityConfig {
 
 impl BuilderConfigDefaultTrait for DataSpaceAuthorityConfig {}
 
-impl From<CoreApplicationConfig> for DataSpaceAuthorityConfig {
-    fn from(value: CoreApplicationConfig) -> Self {
+impl From<CoreConfig> for DataSpaceAuthorityConfig {
+    fn from(value: CoreConfig) -> Self {
         Self {
             role: value.get_role().clone(),
         }

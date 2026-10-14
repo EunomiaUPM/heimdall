@@ -20,6 +20,7 @@ use crate::services::notifications::NotificationsTrait;
 use crate::services::repo::RepoTrait;
 use crate::services::vcs_builder::VcBuilderTrait;
 use std::sync::Arc;
+use crate::config::CoreConfigTrait;
 
 pub trait HasRepo {
     fn repo(&self) -> Arc<dyn RepoTrait>;
@@ -35,4 +36,8 @@ pub trait HasVcBuilder {
 
 pub trait HasNotifier {
     fn frontend_notifier(&self) -> Arc<dyn NotificationsTrait>;
+}
+
+pub trait HasConfig {
+    fn config(&self) -> Arc<dyn CoreConfigTrait>;
 }

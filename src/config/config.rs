@@ -36,7 +36,7 @@ use crate::config::traits::{IssueConfigTrait, OauthConfigTrait, RoleConfigTrait}
 use crate::config::types::{AuthorityRole, IssueConfig, OauthConfig};
 
 #[derive(Deserialize, Serialize, Clone, Debug)]
-pub struct CoreApplicationConfig {
+pub struct CoreConfig {
     hosts_config: CommonHostsConfig,
     connection_config: ConnectionConfig,
     api_config: ApiConfig,
@@ -50,7 +50,7 @@ pub struct CoreApplicationConfig {
     oauth: OauthConfig,
 }
 
-impl CoreApplicationConfig {
+impl CoreConfig {
     pub fn load(env_file: String) -> Outcome<Self> {
         let path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join(env_file);
         debug!("Config file path: {}", path.display());
@@ -61,64 +61,64 @@ impl CoreApplicationConfig {
     }
 }
 
-impl DatabaseConfigTrait for CoreApplicationConfig {
+impl DatabaseConfigTrait for CoreConfig {
     fn db(&self) -> &DatabaseConfig {
         &self.db_config
     }
 }
 
-impl ApiConfigTrait for CoreApplicationConfig {
+impl ApiConfigTrait for CoreConfig {
     fn api(&self) -> &ApiConfig {
         &self.api_config
     }
 }
 
-impl ConnectionConfigTrait for CoreApplicationConfig {
+impl ConnectionConfigTrait for CoreConfig {
     fn connection(&self) -> &ConnectionConfig {
         &self.connection_config
     }
 }
 
-impl HostsConfigTrait for CoreApplicationConfig {
+impl HostsConfigTrait for CoreConfig {
     fn hosts(&self) -> &CommonHostsConfig {
         &self.hosts_config
     }
 }
 
-impl DidConfigTrait for CoreApplicationConfig {
+impl DidConfigTrait for CoreConfig {
     fn did_config(&self) -> &DidConfig {
         &self.did_config
     }
 }
 
-impl IssueConfigTrait for CoreApplicationConfig {
+impl IssueConfigTrait for CoreConfig {
     fn issue_config(&self) -> &IssueConfig {
         &self.issue_config
     }
 }
 
-impl VerifyReqConfigTrait for CoreApplicationConfig {
+impl VerifyReqConfigTrait for CoreConfig {
     fn verify_req_config(&self) -> &VerifyReqConfig {
         &self.verify_req_config
     }
 }
 
-impl WalletConfigTrait for CoreApplicationConfig {
+impl WalletConfigTrait for CoreConfig {
     fn wallet_config(&self) -> &WalletConfig {
         &self.wallet_config
     }
 }
 
-impl RoleConfigTrait for CoreApplicationConfig {
+impl RoleConfigTrait for CoreConfig {
     fn get_role(&self) -> &AuthorityRole {
         &self.role
     }
 }
 
-impl OauthConfigTrait for CoreApplicationConfig {
+impl OauthConfigTrait for CoreConfig {
     fn oauth(&self) -> &OauthConfig {
         &self.oauth
     }
 }
 
-impl CoreConfigTrait for CoreApplicationConfig {}
+impl CoreConfigTrait for CoreConfig {}

@@ -21,5 +21,5 @@ mod parse_from;
 pub mod traits;
 pub mod types;
 
-pub use config::CoreApplicationConfig;
+pub use config::CoreConfig;
 pub use config_trait::CoreConfigTrait;

@@ -23,6 +23,7 @@ use axum::{Json, Router};
 use ymir::data::entities::shared::participant;
 use ymir::errors::AppResult;
 
+use crate::http::routes::fed_catalog;
 use crate::modules::FedCatalogModule;
 
 // THIS IS A MOCK
@@ -35,15 +36,10 @@ impl FedCatalogRouter {
         FedCatalogRouter { federator }
     }
 
-    // pub fn router(self) -> Router {
-    //     Router::new()
-    //         .route("/all", get(Self::get_all))
-    //         .with_state(self.gru)
-    // }
-
+    /// The federated catalog, at the root of the host.
     pub fn well_known(&self) -> Router {
         Router::new()
-            .route("/.well-known/federated-catalog", get(Self::get_all))
+            .route(fed_catalog::CATALOG, get(Self::get_all))
             .with_state(self.federator.clone())
     }
 

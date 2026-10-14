@@ -39,11 +39,13 @@ use ymir::types::http::HttpBody;
 use ymir::types::keys::{Certificate, DbKeySource, KeySource, PublicKey};
 use ymir::types::oauth::RolePath;
 use ymir::types::participants::{ParticipantType, Visibility};
+use ymir::http::routes::base;
 use ymir::utils::{
     create_opaque_token, extract_gnap_token, http_client, json_headers, trim_4_base,
 };
 
 use super::GnapConfig;
+use crate::http::routes::gate;
 use crate::services::gatekeeper::GateKeeperTrait;
 use crate::types::GrantResponseManager;
 
@@ -131,12 +133,13 @@ impl GateKeeperTrait for GnapGateKeeperService {
         };
 
         let host = format!(
-            "{}{}/gate",
+            "{}{}{}",
             self.config.hosts().get_host(HostType::Http),
             self.config.get_api_path(),
+            gate::PREFIX,
         );
-        let grant_endpoint = format!("{host}/access");
-        let continuation_endpoint = format!("{host}/continue");
+        let grant_endpoint = format!("{host}{}", gate::ACCESS);
+        let continuation_endpoint = format!("{host}{}", base(gate::CONTINUE));
         let continuation_token = create_opaque_token();
 
         let interaction = interaction::Plan {
@@ -191,9 +194,11 @@ impl GateKeeperTrait for GnapGateKeeperService {
         };
 
         let grant_endpoint = format!(
-            "{}{}/gate/access",
+            "{}{}{}{}",
             self.config.get_host(HostType::Http),
-            self.config.get_api_path()
+            self.config.get_api_path(),
+            gate::PREFIX,
+            gate::ACCESS
         );
 
         HttpSig::verify(headers, &key_source, "POST", &grant_endpoint, payload)?;

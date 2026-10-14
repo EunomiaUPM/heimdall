@@ -17,7 +17,7 @@
 
 use crate::config::traits::RoleConfigTrait;
 use crate::config::types::AuthorityRole;
-use crate::config::CoreApplicationConfig;
+use crate::config::CoreConfig;
 use crate::services::vcs_builder::BuilderConfigDefaultTrait;
 
 pub struct LegalAuthorityConfig {
@@ -32,8 +32,8 @@ impl RoleConfigTrait for LegalAuthorityConfig {
 
 impl BuilderConfigDefaultTrait for LegalAuthorityConfig {}
 
-impl From<CoreApplicationConfig> for LegalAuthorityConfig {
-    fn from(value: CoreApplicationConfig) -> Self {
+impl From<CoreConfig> for LegalAuthorityConfig {
+    fn from(value: CoreConfig) -> Self {
         Self {
             role: value.get_role().clone(),
         }

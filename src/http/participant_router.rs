@@ -23,6 +23,7 @@ use axum::{Json, Router};
 use ymir::data::entities::shared::participant::Model;
 use ymir::errors::AppResult;
 
+use crate::http::routes::minions;
 use crate::modules::ParticipantModule;
 
 pub struct ParticipantRouter {
@@ -34,11 +35,12 @@ impl ParticipantRouter {
         ParticipantRouter { participant }
     }
 
-    pub fn router(self) -> Router {
+    /// Participant routes; mounted behind the OAuth guard.
+    pub fn internal(self) -> Router {
         Router::new()
-            .route("/all", get(Self::get_all))
-            .route("/{id}", get(Self::get_by_id))
-            .route("/myself", get(Self::get_me))
+            .route(minions::ALL, get(Self::get_all))
+            .route(minions::BY_ID, get(Self::get_by_id))
+            .route(minions::MYSELF, get(Self::get_me))
             .with_state(self.participant)
     }
 

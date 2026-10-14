@@ -17,6 +17,7 @@
 
 use std::sync::Arc;
 
+use crate::http::routes::gate;
 use crate::modules::GatekeeperModule;
 use axum::body::Bytes;
 use axum::extract::{Path, State};
@@ -36,10 +37,11 @@ impl GateKeeperRouter {
         Self { gatekeeper }
     }
 
-    pub fn router(self) -> Router {
+    /// GNAP routes for the agents, open (requests are signed by the client's key).
+    pub fn external(self) -> Router {
         Router::new()
-            .route("/access", post(Self::access_req))
-            .route("/continue/{id}", post(Self::continue_req))
+            .route(gate::ACCESS, post(Self::access_req))
+            .route(gate::CONTINUE, post(Self::continue_req))
             .with_state(self.gatekeeper)
     }
 

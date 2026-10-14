@@ -19,13 +19,14 @@ mod core_router;
 mod fed_catalog_router;
 mod gatekeeper_router;
 mod issuer_router;
-pub mod notifier_router;
+mod notifier_router;
 mod participant_router;
+pub mod routes;
 mod session;
 mod vcs_router;
 mod verifier_router;
 
-pub use core_router::RainbowAuthorityRouter;
+pub use core_router::CoreRouter;
 pub use fed_catalog_router::FedCatalogRouter;
 pub use gatekeeper_router::GateKeeperRouter;
 pub use issuer_router::IssuerRouter;

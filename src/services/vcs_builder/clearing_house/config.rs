@@ -17,7 +17,7 @@
 
 use crate::config::traits::{ClHConfigTrait, IssueConfigTrait, RoleConfigTrait};
 use crate::config::types::{AuthorityRole, ClHBuilderConfig};
-use crate::config::CoreApplicationConfig;
+use crate::config::CoreConfig;
 use crate::services::vcs_builder::BuilderConfigDefaultTrait;
 
 pub struct ClearingHouseAuthorityConfig {
@@ -39,8 +39,8 @@ impl ClHConfigTrait for ClearingHouseAuthorityConfig {
     }
 }
 
-impl From<CoreApplicationConfig> for ClearingHouseAuthorityConfig {
-    fn from(value: CoreApplicationConfig) -> Self {
+impl From<CoreConfig> for ClearingHouseAuthorityConfig {
+    fn from(value: CoreConfig) -> Self {
         Self {
             clh_config: value.get_clh_config().clone(),
             role: value.get_role().clone(),

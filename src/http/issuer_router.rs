@@ -32,6 +32,7 @@ use ymir::utils::{
     extract_bearer_token, extract_form_payload, extract_payload, extract_query_param,
 };
 
+use crate::http::routes::issuer;
 use crate::modules::IssuerModule;
 
 pub struct IssuerRouter {
@@ -43,33 +44,21 @@ impl IssuerRouter {
         Self { issuer }
     }
 
-    pub fn router(self) -> Router {
+    /// OID4VCI routes for the holder's wallet, open (authenticated by the pre-authorized code
+    /// and the access token it gets).
+    pub fn external(self) -> Router {
         Router::new()
-            .route("/credentialOffer", get(Self::cred_offer))
-            .route(
-                "/.well-known/openid-credential-issuer",
-                get(Self::get_issuer),
-            )
-            .route(
-                "/.well-known/oauth-authorization-server",
-                get(Self::get_oauth_server),
-            )
-            // .route("/jwks", get(Self::get_jwks))
-            .route("/token", post(Self::get_token))
-            .route("/credential", post(Self::post_credential))
+            .route(issuer::CREDENTIAL_OFFER, get(Self::cred_offer))
+            .route(issuer::TOKEN, post(Self::get_token))
+            .route(issuer::CREDENTIAL, post(Self::post_credential))
             .with_state(self.issuer)
     }
 
+    /// Issuer and authorization server metadata, at the root of the host.
     pub fn well_known(&self) -> Router {
         Router::new()
-            .route(
-                "/.well-known/openid-credential-issuer",
-                get(Self::get_issuer),
-            )
-            .route(
-                "/.well-known/oauth-authorization-server",
-                get(Self::get_oauth_server),
-            )
+            .route(issuer::METADATA, get(Self::get_issuer))
+            .route(issuer::AS_METADATA, get(Self::get_oauth_server))
             .with_state(self.issuer.clone())
     }
 

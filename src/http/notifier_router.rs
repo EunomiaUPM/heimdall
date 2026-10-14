@@ -24,6 +24,7 @@ use axum::routing::get;
 use axum::Router;
 use futures_util::stream::Stream;
 
+use crate::http::routes::react;
 use crate::modules::FrontendNotifierModule;
 
 pub struct ReactRouter {
@@ -35,9 +36,10 @@ impl ReactRouter {
         Self { notifier }
     }
 
-    pub fn router(self) -> Router {
+    /// Notification stream of the console; mounted behind the OAuth guard.
+    pub fn internal(self) -> Router {
         Router::new()
-            .route("/notifications/stream", get(Self::sse_handler))
+            .route(react::NOTIFICATIONS_STREAM, get(Self::sse_handler))
             .with_state(self.notifier.clone())
     }
 

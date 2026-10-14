@@ -15,16 +15,14 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-use std::sync::Arc;
-
 use async_trait::async_trait;
 use ymir::modules::WalletModuleTrait;
 
-use crate::config::CoreConfigTrait;
 use crate::modules::{
     ApproverModule, FedCatalogModule, FrontendNotifierModule, GatekeeperModule, IssuerModule,
     ParticipantModule, VerifierModule,
 };
+use crate::services::HasConfig;
 
 #[async_trait]
 pub trait OrchestratorTrait:
@@ -36,9 +34,9 @@ pub trait OrchestratorTrait:
     + WalletModuleTrait
     + ParticipantModule
     + FrontendNotifierModule
+    + HasConfig
     + Send
     + Sync
     + 'static
 {
-    fn config(&self) -> Arc<dyn CoreConfigTrait>;
 }

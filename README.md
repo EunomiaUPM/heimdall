@@ -56,7 +56,7 @@ Heimdall loads its configuration from the `static` directory 📂.
 
 ### 📝 Structure
 
-The `CoreApplicationConfig` (`src/config/config.rs`) aggregates:
+The `CoreConfig` (`src/config/config.rs`) aggregates:
 
 - **Host** 🏠: Server settings.
 - **Database** 🗄️: persistence layer.

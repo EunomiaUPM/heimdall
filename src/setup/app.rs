@@ -29,26 +29,26 @@ use ymir::services::vault::{VaultService, VaultTrait};
 use ymir::types::secrets::StringHelper;
 use ymir::utils::expect_from_env;
 
-use crate::config::CoreApplicationConfig;
+use crate::config::CoreConfig;
 use crate::core::CoreBuilder;
-use crate::http::RainbowAuthorityRouter;
+use crate::http::CoreRouter;
 
 pub struct AuthorityApp;
 
 impl AuthorityApp {
     pub async fn create_router(
-        config: &CoreApplicationConfig,
+        config: &CoreConfig,
         vault: Arc<VaultService>,
     ) -> Outcome<Router> {
         let core = CoreBuilder::from_config(config.clone(), vault)
             .await?
             .build();
 
-        let router = RainbowAuthorityRouter::new(Arc::new(core)).router();
+        let router = CoreRouter::new(Arc::new(core)).router();
         Ok(router)
     }
 
-    pub async fn run_basic(config: CoreApplicationConfig, vault: Arc<VaultService>) -> Outcome<()> {
+    pub async fn run_basic(config: CoreConfig, vault: Arc<VaultService>) -> Outcome<()> {
         let router = Self::create_router(&config, vault).await?;
 
         let port = config.get_internal_port(HostType::Http);
@@ -63,7 +63,7 @@ impl AuthorityApp {
             .await
             .map_err(|e| Errors::crazy("Error while running basic server", Some(Box::new(e))))
     }
-    pub async fn run_tls(config: &CoreApplicationConfig, vault: Arc<VaultService>) -> Outcome<()> {
+    pub async fn run_tls(config: &CoreConfig, vault: Arc<VaultService>) -> Outcome<()> {
         let cert = expect_from_env("VAULT_APP_ROOT_CLIENT_KEY");
         let pkey = expect_from_env("VAULT_APP_CLIENT_KEY");
         let cert: StringHelper = vault.read(None, &cert).await?;
@@ -95,7 +95,7 @@ impl AuthorityApp {
             .map_err(|e| Errors::crazy("Error while running basic server", Some(Box::new(e))))?;
         Ok(())
     }
-    pub async fn run(config: CoreApplicationConfig, vault: Arc<VaultService>) -> Outcome<()> {
+    pub async fn run(config: CoreConfig, vault: Arc<VaultService>) -> Outcome<()> {
         if config.is_prod() && !config.has_tls_proxy() {
             Self::run_tls(&config, vault.clone()).await
         } else {
