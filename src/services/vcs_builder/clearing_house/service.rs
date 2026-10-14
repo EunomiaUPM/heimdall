@@ -142,7 +142,7 @@ impl ClearingHouseAuthorityVcBuilder {
         let digest = DigestSRI::digest(&canon, HashAlg::Sha256);
         Ok(CompliantCredential {
             credential_type: vc_type.clone(),
-            digest_sri: format!("{}-{}", HashAlg::Sha256.label(), STANDARD.encode(digest)),
+            digest_sri: format!("sha256-{}", STANDARD.encode(digest)),
         })
     }
 }
