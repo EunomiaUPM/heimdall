@@ -17,11 +17,16 @@
 
 use crate::services::HasRepo;
 use async_trait::async_trait;
+use chrono::Utc;
 use ymir::data::entities::shared::participant::Model;
 use ymir::errors::Outcome;
+use ymir::services::HasWallet;
+use ymir::types::participants::ParticipantType;
 
 #[async_trait]
-pub trait ParticipantModule: HasRepo + Send + Sync + 'static {
+pub trait ParticipantModule: HasRepo + HasWallet + Send + Sync + 'static {
+    fn host_url(&self) -> String;
+
     async fn get_all(&self) -> Outcome<Vec<Model>> {
         self.repo().participant().get_all(None, None).await
     }
@@ -29,6 +34,17 @@ pub trait ParticipantModule: HasRepo + Send + Sync + 'static {
         self.repo().participant().get_by_id(&id).await
     }
     async fn get_me(&self) -> Outcome<Model> {
-        self.repo().participant().get_me().await
+        let lock = self.wallet().get_identity();
+        let identity = lock.read().await;
+        let now = Utc::now();
+        Ok(Model {
+            participant_id: identity.did().id().to_string(),
+            participant_nick: "Myself".to_string(),
+            participant_type: ParticipantType::Authority,
+            base_url: self.host_url(),
+            saved_at: now,
+            last_interaction: now,
+            extra_fields: serde_json::json!({}),
+        })
     }
 }

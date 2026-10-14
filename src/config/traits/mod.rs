@@ -17,8 +17,10 @@
 
 mod clh_trait;
 mod issue_trait;
+mod oauth_trait;
 mod role_trait;
 
 pub use clh_trait::ClHConfigTrait;
 pub use issue_trait::IssueConfigTrait;
+pub use oauth_trait::OauthConfigTrait;
 pub use role_trait::RoleConfigTrait;

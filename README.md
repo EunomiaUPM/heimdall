@@ -52,7 +52,7 @@ Heimdall supports different authority roles, each specialized in issuing specifi
 
 ## ⚙️ Configuration
 
-Heimdall loads configuration from the `static/environment` directory 📂.
+Heimdall loads its configuration from the `static` directory 📂.
 
 ### 📝 Structure
 
@@ -61,12 +61,18 @@ The `CoreApplicationConfig` (`src/config/config.rs`) aggregates:
 - **Host** 🏠: Server settings.
 - **Database** 🗄️: persistence layer.
 - **API** 🌐: Versioning and specs.
+- **Wallet** 👛 and **DID** 🆔: the wallet that holds Heimdall's identity and how its DID is built.
 - **Role** 🎭: Deployment role (Issuer/Verifier/etc.).
+- **OAuth** 🔐 (`oauth`, optional): who authenticates the users of the admin API. Without the block,
+  `static` (every request acts as the root system user; local use only, refused when `is_prod` is
+  set). With `provider: keycloak`, Heimdall reads the user from the token oauth2-proxy forwards.
+  Protocol routes (gate, issuer, verifier, well-known) never need a user.
 
 ### 📂 Files
 
-- `static/environment/config/....yaml`
-- `static/environment/envs/....env`
+- `static/config/....yaml` (`dev/`, `prod/` and the `mini_*` files)
+- `static/envs/....env.example`
+- `static/fafnir`: configuration of the local Fafnir wallet.
 - `static/specs`: `openapi.json`.
 
 ---
@@ -101,7 +107,12 @@ The `mini` deployment is the fastest way to spin up the Heimdall core and its da
 This will start:
 
 - `heimdall-db`: The PostgreSQL persistence layer on port `1450`.
+- `fafnir-setup` and `fafnir-wallet`: Heimdall's local Fafnir wallet.
 - `heimdall`: The main backend application serving on port `1500`, connected to the database.
+  The admin console is at `http://localhost:1500/admin/` (`/` redirects there).
+
+To run Heimdall together with a provider and a consumer, optionally behind Keycloak, use the mini
+deployment of [eunomia-deployment](https://github.com/EunomiaUPM/eunomia-deployment).
 
 ### 2. Prod Deployment (Production)
 

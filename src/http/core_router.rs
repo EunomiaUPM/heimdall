@@ -19,29 +19,43 @@ use std::sync::Arc;
 
 use crate::http::fed_catalog_router::FedCatalogRouter;
 use crate::http::{
-    ApproverRouter, GateKeeperRouter, IssuerRouter, ParticipantRouter, ReactRouter, VerifierRouter,
+    ApproverRouter, GateKeeperRouter, IssuerRouter, ParticipantRouter, ReactRouter,
+    SessionHandlers, VerifierRouter,
 };
 use crate::modules::OrchestratorTrait;
 use axum::extract::Request;
 use axum::http::StatusCode;
-use axum::response::IntoResponse;
+use axum::response::{IntoResponse, Redirect};
+use axum::middleware::from_fn_with_state;
+use axum::routing::get;
 use axum::Router;
 use tower_http::cors::CorsLayer;
 use tower_http::services::{ServeDir, ServeFile};
 use tower_http::trace::{DefaultOnResponse, TraceLayer};
 use tracing::{error, info, Level};
 use uuid::Uuid;
-use ymir::http::{HealthRouter, OpenapiRouter, WalletRouter};
+use ymir::http::{HealthRouter, OauthHttpMiddleware, OpenapiRouter, WalletRouter};
+use ymir::services::token_validator::OauthTokenValidatorTrait;
 
 pub struct RainbowAuthorityRouter {
     core: Arc<dyn OrchestratorTrait>,
     openapi: String,
+    validator: Arc<dyn OauthTokenValidatorTrait>,
 }
 
 impl RainbowAuthorityRouter {
     pub fn new(core: Arc<dyn OrchestratorTrait>) -> Self {
         let openapi = core.config().get_openapi().expect("Invalid openapi path");
-        Self { core, openapi }
+        let config = core.config();
+        let validator = config
+            .oauth()
+            .validator(config.connection().is_prod)
+            .expect("Invalid oauth config");
+        Self {
+            core,
+            openapi,
+            validator,
+        }
     }
 
     pub fn router(self) -> Router {
@@ -58,6 +72,7 @@ impl RainbowAuthorityRouter {
         let react = ReactRouter::new(self.core.clone());
 
         let base_router = Router::new()
+            .route("/", get(Self::console_root))
             .merge(health.router())
             .merge(wallet.well_known())
             .merge(issuer.well_known())
@@ -65,18 +80,25 @@ impl RainbowAuthorityRouter {
             .nest_service(
                 "/admin",
                 ServeDir::new("./react/dist")
-                    .not_found_service(ServeFile::new("./react/dist/index.html")),
+                    .fallback(ServeFile::new("./react/dist/index.html")),
             );
 
-        let api_router = Router::new()
-            .nest("/wallet", wallet.router())
+        let guard = from_fn_with_state(self.validator.clone(), OauthHttpMiddleware::run);
+
+        let user_router = Router::new()
+            .route("/me", get(SessionHandlers::me))
+            .nest("/wallet", wallet.internal())
             .nest("/minions", minion.router())
             .nest("/approver", approver.router())
+            .nest("/react", react.router())
+            .route_layer(guard);
+
+        let api_router = Router::new()
+            .merge(user_router)
             .nest("/gate", gatekeeper.router())
             .nest("/issuer", issuer.router())
             .nest("/verifier", verifier.router())
-            .nest("/docs", openapi.router())
-            .nest("/react", react.router());
+            .nest("/docs", openapi.router());
 
         base_router
             .nest(&api_version, api_router)
@@ -92,6 +114,10 @@ impl RainbowAuthorityRouter {
                     .on_response(DefaultOnResponse::new().level(Level::TRACE)),
             )
             .layer(CorsLayer::permissive())
+    }
+
+    async fn console_root() -> Redirect {
+        Redirect::temporary("/admin/")
     }
 
     async fn fallback() -> impl IntoResponse {

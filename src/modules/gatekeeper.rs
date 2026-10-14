@@ -78,6 +78,7 @@ pub trait GatekeeperModule:
         let available_vcs = self.vc_builder().get_role().available_credentials();
 
         let issuance = self.issuer().build_issuance_plan(
+            &grant.role,
             &grant.id,
             grant_request.kind,
             grant_request.client.clone(),
@@ -152,7 +153,7 @@ pub trait GatekeeperModule:
         let int_model = self
             .repo()
             .recv_interaction()
-            .get_by_cont_id(&cont_id)
+            .get_by_continuation_id(&cont_id)
             .await?;
 
         self.gatekeeper()

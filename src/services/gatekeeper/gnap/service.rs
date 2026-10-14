@@ -37,7 +37,8 @@ use ymir::types::gnap::{
 };
 use ymir::types::http::HttpBody;
 use ymir::types::keys::{Certificate, DbKeySource, KeySource, PublicKey};
-use ymir::types::participants::ParticipantType;
+use ymir::types::oauth::RolePath;
+use ymir::types::participants::{ParticipantType, Visibility};
 use ymir::utils::{
     create_opaque_token, extract_gnap_token, http_client, json_headers, trim_4_base,
 };
@@ -69,6 +70,8 @@ impl GateKeeperTrait for GnapGateKeeperService {
 
         Ok(grant::Plan {
             id: uuid::Uuid::new_v4().to_string(),
+            role: RolePath::root(),
+            visibility: Visibility::Public,
             participant_nick: class_id,
             vc_type_config: None,
             kind: GrantKind::CredentialRequest,
@@ -133,8 +136,8 @@ impl GateKeeperTrait for GnapGateKeeperService {
             self.config.get_api_path(),
         );
         let grant_endpoint = format!("{host}/access");
-        let continue_endpoint = format!("{host}/continue");
-        let continue_token = create_opaque_token();
+        let continuation_endpoint = format!("{host}/continue");
+        let continuation_token = create_opaque_token();
 
         let interaction = interaction::Plan {
             id: id.to_string(),
@@ -146,9 +149,9 @@ impl GateKeeperTrait for GnapGateKeeperService {
             hash_method: finish.hash_method,
             hints: interact.hints,
             grant_endpoint,
-            continue_endpoint,
-            continue_token,
-            continue_wait: None,
+            continuation_endpoint,
+            continuation_token,
+            continuation_wait: None,
         };
 
         Ok(interaction)
@@ -160,9 +163,7 @@ impl GateKeeperTrait for GnapGateKeeperService {
             participant_nick: nick.to_string(),
             participant_type: ParticipantType::Agent,
             base_url,
-            token: None,
             extra_fields: None,
-            is_me: false,
         }
     }
     fn validate_grant(&self, payload: &Bytes, headers: &HeaderMap) -> Outcome<GrantRequest> {
@@ -225,7 +226,7 @@ impl GateKeeperTrait for GnapGateKeeperService {
             headers,
             &key_source,
             "POST",
-            &interaction.continue_endpoint,
+            &interaction.continuation_endpoint,
             payload,
         )?;
 
@@ -240,11 +241,11 @@ impl GateKeeperTrait for GnapGateKeeperService {
         }
 
         let token = extract_gnap_token(headers)?;
-        if token != interaction.continue_token {
+        if token != interaction.continuation_token {
             return Err(Errors::security(
                 format!(
                     "Token '{}' does not match '{}'",
-                    token, interaction.continue_token
+                    token, interaction.continuation_token
                 ),
                 None,
             ));

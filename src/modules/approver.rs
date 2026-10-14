@@ -24,15 +24,18 @@ use ymir::errors::{Errors, Outcome};
 use ymir::types::gnap::grant_request::GrantKind;
 use ymir::types::gnap::VcDecisionApproval;
 use ymir::types::gnap::{GrantStatus, InteractionFinishResponse};
+use ymir::types::oauth::{RoleTrait, UserInfo};
 
 #[async_trait]
 pub trait ApproverModule: HasRepo + HasGateKeeper + Send + Sync + 'static {
     async fn manage_req(
         &self,
+        user: &UserInfo,
         id: String,
         payload: VcDecisionApproval,
     ) -> Outcome<InteractionFinishResponse> {
         let mut grant = self.repo().recv_grant().get_by_id(&id).await?;
+        user.ensure_handles(&grant.role, &id)?;
         let interaction = self.repo().recv_interaction().get_by_id(&id).await?;
 
         let result: Outcome<()> = if payload.approve {
@@ -53,18 +56,23 @@ pub trait ApproverModule: HasRepo + HasGateKeeper + Send + Sync + 'static {
             .await
     }
     // =================================== GETTERS FOR FRONTEND ====================================
-    async fn get_all(&self) -> Outcome<Vec<Model>> {
-        self.repo()
-            .recv_grant()
-            .filter_by_type(GrantKind::CredentialRequest)
-            .await
+    async fn get_all(&self, user: &UserInfo) -> Outcome<Vec<Model>> {
+        let grants = self.repo().recv_grant().get_all(None, None).await?;
+        Ok(grants
+            .into_iter()
+            .filter(|grant| grant.kind == GrantKind::CredentialRequest)
+            .filter(|grant| user.sees_team(&grant.role, &grant.visibility))
+            .collect())
     }
-    async fn get_by_id(&self, id: String) -> Outcome<Model> {
-        self.repo().recv_grant().get_by_id(&id).await
+    async fn get_by_id(&self, user: &UserInfo, id: String) -> Outcome<Model> {
+        let grant = self.repo().recv_grant().get_by_id(&id).await?;
+        user.ensure_sees_team(&grant.role, &grant.visibility, &id)?;
+        Ok(grant)
     }
 
-    async fn get_by_id_with_details(&self, id: String) -> Outcome<Value> {
+    async fn get_by_id_with_details(&self, user: &UserInfo, id: String) -> Outcome<Value> {
         let grant = self.repo().recv_grant().get_by_id(&id).await?;
+        user.ensure_sees_team(&grant.role, &grant.visibility, &id)?;
         let issuance = self.repo().issuance().get_by_id(&id).await?;
         let interaction = self.repo().recv_interaction().get_by_id(&id).await.ok();
         let verification = self.repo().recv_verification().get_by_id(&id).await.ok();

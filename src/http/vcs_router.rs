@@ -28,6 +28,7 @@ use ymir::data::entities::received::grant::Model;
 use ymir::errors::AppResult;
 use ymir::types::gnap::InteractionFinishResponse;
 use ymir::types::gnap::VcDecisionApproval;
+use ymir::types::oauth::UserInfo;
 use ymir::utils::extract_payload;
 
 use crate::modules::ApproverModule;
@@ -53,30 +54,34 @@ impl ApproverRouter {
 
     async fn get_all_requests(
         State(approver): State<Arc<dyn ApproverModule>>,
+        user: UserInfo,
     ) -> AppResult<Json<Vec<Model>>> {
-        Ok(Json(approver.get_all().await?))
+        Ok(Json(approver.get_all(&user).await?))
     }
 
     async fn get_one_request(
         State(approver): State<Arc<dyn ApproverModule>>,
+        user: UserInfo,
         Path(id): Path<String>,
     ) -> AppResult<Json<Model>> {
-        Ok(Json(approver.get_by_id(id).await?))
+        Ok(Json(approver.get_by_id(&user, id).await?))
     }
     async fn get_one_with_details(
         State(gatekeeper): State<Arc<dyn ApproverModule>>,
+        user: UserInfo,
         Path(id): Path<String>,
     ) -> AppResult<Json<Value>> {
-        Ok(Json(gatekeeper.get_by_id_with_details(id).await?))
+        Ok(Json(gatekeeper.get_by_id_with_details(&user, id).await?))
     }
 
     async fn manage_request(
         State(gatekeeper): State<Arc<dyn ApproverModule>>,
+        user: UserInfo,
         Path(id): Path<String>,
         payload: Result<Json<VcDecisionApproval>, JsonRejection>,
     ) -> AppResult {
         let payload = extract_payload(payload)?;
-        Ok(match gatekeeper.manage_req(id, payload).await? {
+        Ok(match gatekeeper.manage_req(&user, id, payload).await? {
             InteractionFinishResponse::Success(Some(uri)) => (StatusCode::OK, uri).into_response(),
             InteractionFinishResponse::Success(None) => StatusCode::OK.into_response(),
             InteractionFinishResponse::Failure(Some(uri)) => {

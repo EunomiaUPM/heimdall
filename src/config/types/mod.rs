@@ -17,8 +17,10 @@
 
 mod clh_config;
 mod issue_config;
+mod oauth;
 mod role;
 
 pub use clh_config::ClHBuilderConfig;
 pub use issue_config::IssueConfig;
+pub use oauth::OauthConfig;
 pub use role::AuthorityRole;

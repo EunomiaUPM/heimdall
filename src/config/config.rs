@@ -32,8 +32,8 @@ use ymir::errors::{Errors, Outcome};
 use ymir::utils::read;
 
 use super::CoreConfigTrait;
-use crate::config::traits::{IssueConfigTrait, RoleConfigTrait};
-use crate::config::types::{AuthorityRole, IssueConfig};
+use crate::config::traits::{IssueConfigTrait, OauthConfigTrait, RoleConfigTrait};
+use crate::config::types::{AuthorityRole, IssueConfig, OauthConfig};
 
 #[derive(Deserialize, Serialize, Clone, Debug)]
 pub struct CoreApplicationConfig {
@@ -46,6 +46,8 @@ pub struct CoreApplicationConfig {
     issue_config: IssueConfig,
     verify_req_config: VerifyReqConfig,
     role: AuthorityRole,
+    #[serde(default)]
+    oauth: OauthConfig,
 }
 
 impl CoreApplicationConfig {
@@ -110,6 +112,12 @@ impl WalletConfigTrait for CoreApplicationConfig {
 impl RoleConfigTrait for CoreApplicationConfig {
     fn get_role(&self) -> &AuthorityRole {
         &self.role
+    }
+}
+
+impl OauthConfigTrait for CoreApplicationConfig {
+    fn oauth(&self) -> &OauthConfig {
+        &self.oauth
     }
 }
 

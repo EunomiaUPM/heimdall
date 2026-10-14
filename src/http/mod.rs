@@ -21,6 +21,7 @@ mod gatekeeper_router;
 mod issuer_router;
 pub mod notifier_router;
 mod participant_router;
+mod session;
 mod vcs_router;
 mod verifier_router;
 
@@ -30,5 +31,6 @@ pub use gatekeeper_router::GateKeeperRouter;
 pub use issuer_router::IssuerRouter;
 pub use notifier_router::ReactRouter;
 pub use participant_router::ParticipantRouter;
+pub use session::SessionHandlers;
 pub use vcs_router::ApproverRouter;
 pub use verifier_router::VerifierRouter;

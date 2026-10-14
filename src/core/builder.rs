@@ -36,7 +36,6 @@ use crate::services::vcs_builder::{EcoAuthorityBuilder, VcBuilderTrait};
 use std::sync::Arc;
 use ymir::config::traits::{ApiConfigTrait, HostsConfigTrait, WalletConfigTrait};
 use ymir::config::types::HostType;
-use ymir::data::entities::shared::participant;
 use ymir::errors::{Errors, Outcome};
 use ymir::services::issuer::oid4vci_1_0;
 use ymir::services::vault::{VaultService, VaultTrait};
@@ -44,7 +43,6 @@ use ymir::services::verifier::oid4vp_draft20;
 use ymir::services::wallet::fafnir::{FafnirConfig, FafnirService};
 use ymir::services::wallet::WalletTrait;
 use ymir::types::dids::{DidService, DidServiceType};
-use ymir::types::participants::ParticipantType;
 use ymir::types::wallet::WalletInstance;
 
 pub struct CoreBuilder {
@@ -69,20 +67,6 @@ impl CoreBuilder {
         let vc_builder = Self::vc_builder(&config);
         let wallet = Self::wallet(&config, vault.clone()).await?;
         let arc_identity = wallet.get_identity();
-
-        let identity = arc_identity.read().await;
-        let participant_id = identity.did().id().to_string();
-
-        let myself = participant::Plan {
-            participant_id,
-            participant_nick: "Myself".to_string(),
-            participant_type: ParticipantType::Authority,
-            base_url: config.get_host(HostType::Http),
-            token: None,
-            extra_fields: None,
-            is_me: true,
-        };
-        repo.participant().force_update(myself).await?;
 
         let gatekeeper = Arc::new(GnapGateKeeperService::new(gnap_config));
         let issuer = Arc::new(oid4vci_1_0::IssuerService::new(

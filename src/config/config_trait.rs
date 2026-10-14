@@ -20,7 +20,7 @@ use ymir::config::traits::{
     VerifyReqConfigTrait, WalletConfigTrait,
 };
 
-use crate::config::traits::{IssueConfigTrait, RoleConfigTrait};
+use crate::config::traits::{IssueConfigTrait, OauthConfigTrait, RoleConfigTrait};
 
 pub trait CoreConfigTrait:
     HostsConfigTrait
@@ -32,6 +32,7 @@ pub trait CoreConfigTrait:
     + VerifyReqConfigTrait
     + WalletConfigTrait
     + RoleConfigTrait
+    + OauthConfigTrait
     + Send
     + Sync
     + 'static
