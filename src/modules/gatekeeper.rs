@@ -126,7 +126,7 @@ pub trait GatekeeperModule:
                 let ver_model = self.repo().recv_verification().create(verification).await?;
                 let interaction = self.repo().recv_interaction().create(interaction).await?;
 
-                let uri = self.verifier().generate_verification_uri(&ver_model);
+                let uri = self.verifier().generate_verification_uri(&ver_model).await?;
                 Ok(GrantResponse::pending(uri, &interaction))
             }
             GrantResponseManager::Processing => {

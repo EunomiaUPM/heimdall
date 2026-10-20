@@ -74,10 +74,10 @@ pub trait IssuerModule:
             .validate_cred_req(&issuance, payload, &token)
             .await?;
 
-        issuance.build_ctx.holder_did = Some(holder_did);
+        issuance.build_ctx.holder_did = Some(holder_did.id().to_string());
 
         let claims = self.vc_builder().build_vc(&issuance, vc_config)?;
-        let vc_jwt = self.issuer().sign_claims(&claims).await?;
+        let vc_jwt = self.issuer().sign_claims(&claims).await?.as_str().to_string();
 
         issuance.credential = Some(vc_jwt.clone());
 

@@ -22,7 +22,8 @@ use ymir::capabilities::DigestSRI;
 use ymir::data::entities::shared::issuance;
 use ymir::errors::{Errors, Outcome};
 use ymir::types::crypto::{Canon, HashAlg};
-use ymir::types::jwt::{Jwt, VCJwtClaims};
+use ymir::types::jwt::{Jwt, JwtClaims};
+use ymir::types::vcs::VcPayload;
 use ymir::types::vcs::vc_specs::gx_label::{CompliantCredential, GxLabelCredSubject};
 use ymir::types::vcs::{VcType, VcTypeConfig};
 
@@ -53,7 +54,7 @@ impl VcBuilderTrait for ClearingHouseAuthorityVcBuilder {
         &self,
         issuance: &issuance::Model,
         vc_config: VcTypeConfig,
-    ) -> Outcome<VCJwtClaims> {
+    ) -> Outcome<JwtClaims<VcPayload>> {
         let holder_did = need_field_for_vc(issuance.build_ctx.holder_did.as_deref())?;
 
         let role = self.config.get_role();
@@ -128,9 +129,10 @@ impl VcBuilderTrait for ClearingHouseAuthorityVcBuilder {
 
 impl ClearingHouseAuthorityVcBuilder {
     fn parse_credential(credential: &str) -> Outcome<CompliantCredential> {
-        let jwt = Jwt::parse(credential)?;
-        let claims_value: Value = jwt.unsafe_claims()?;
-        let claims: VCJwtClaims = serde_json::from_value(claims_value.clone())?;
+        // The whole payload, untyped, so the digest covers every claim.
+        let jwt: Jwt<Value> = Jwt::parse(credential)?;
+        let claims_value: Value = serde_json::to_value(jwt.unverified_claims())?;
+        let claims: JwtClaims<VcPayload> = serde_json::from_value(claims_value.clone())?;
         let doc = &claims.vc_doc().r#type;
 
         let vc_type = doc
@@ -139,10 +141,11 @@ impl ClearingHouseAuthorityVcBuilder {
             .ok_or_else(|| Errors::unauthorized("Credential type missing", None))?;
 
         let canon = Canon::new(&claims_value)?;
-        let digest = DigestSRI::digest(&canon, HashAlg::Sha256);
+        let alg = HashAlg::Sha256;
+        let digest = DigestSRI::digest(&canon, alg);
         Ok(CompliantCredential {
             credential_type: vc_type.clone(),
-            digest_sri: format!("sha256-{}", STANDARD.encode(digest)),
+            digest_sri: format!("{}-{}", alg.label(), STANDARD.encode(digest)),
         })
     }
 }

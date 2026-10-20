@@ -19,7 +19,8 @@ use std::sync::Arc;
 
 use ymir::data::entities::shared::issuance;
 use ymir::errors::{Errors, Outcome};
-use ymir::types::jwt::VCJwtClaims;
+use ymir::types::jwt::JwtClaims;
+use ymir::types::vcs::VcPayload;
 use ymir::types::vcs::{VcType, VcTypeConfig};
 
 use crate::config::traits::RoleConfigTrait;
@@ -56,7 +57,7 @@ impl RoleConfigTrait for EcoAuthorityBuilder {
 }
 
 impl VcBuilderTrait for EcoAuthorityBuilder {
-    fn build_vc(&self, model: &issuance::Model, vc_config: VcTypeConfig) -> Outcome<VCJwtClaims> {
+    fn build_vc(&self, model: &issuance::Model, vc_config: VcTypeConfig) -> Outcome<JwtClaims<VcPayload>> {
         match vc_config.vc_type() {
             VcType::Eori
             | VcType::Euid

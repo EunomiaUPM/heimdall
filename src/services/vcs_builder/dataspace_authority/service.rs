@@ -22,7 +22,8 @@ use crate::services::vcs_builder::dataspace_authority::config::DataSpaceAuthorit
 use crate::types::need_field_for_vc;
 use ymir::data::entities::shared::issuance;
 use ymir::errors::{Errors, Outcome};
-use ymir::types::jwt::VCJwtClaims;
+use ymir::types::jwt::JwtClaims;
+use ymir::types::vcs::VcPayload;
 use ymir::types::vcs::vc_specs::dataspace::DataSpaceParticipant;
 use ymir::types::vcs::VcTypeConfig;
 
@@ -43,7 +44,7 @@ impl RoleConfigTrait for DataSpaceAuthorityVcBuilder {
 }
 
 impl VcBuilderTrait for DataSpaceAuthorityVcBuilder {
-    fn build_vc(&self, model: &issuance::Model, vc_config: VcTypeConfig) -> Outcome<VCJwtClaims> {
+    fn build_vc(&self, model: &issuance::Model, vc_config: VcTypeConfig) -> Outcome<JwtClaims<VcPayload>> {
         let holder_did = need_field_for_vc(model.build_ctx.holder_did.as_ref())?;
 
         let role = self.config.get_role();

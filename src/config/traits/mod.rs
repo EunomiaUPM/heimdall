@@ -17,10 +17,10 @@
 
 mod clh_trait;
 mod issue_trait;
-mod oauth_trait;
 mod role_trait;
+mod oid4vp_service;
 
 pub use clh_trait::ClHConfigTrait;
 pub use issue_trait::IssueConfigTrait;
-pub use oauth_trait::OauthConfigTrait;
 pub use role_trait::RoleConfigTrait;
+pub use oid4vp_service::Oid4VpServiceTrait;

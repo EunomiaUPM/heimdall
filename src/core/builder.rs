@@ -15,8 +15,8 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-use crate::config::traits::RoleConfigTrait;
-use crate::config::types::AuthorityRole;
+use crate::config::traits::{Oid4VpServiceTrait, RoleConfigTrait};
+use crate::config::types::{AuthorityRole, Oid4VpService};
 use crate::config::{CoreConfig, CoreConfigTrait};
 use crate::core::Core;
 use crate::http::routes::{fed_catalog, gate};
@@ -40,7 +40,8 @@ use ymir::config::types::HostType;
 use ymir::errors::{Errors, Outcome};
 use ymir::services::issuer::oid4vci_1_0;
 use ymir::services::vault::{VaultService, VaultTrait};
-use ymir::services::verifier::oid4vp_draft20;
+use ymir::services::verifier::oid4vp_1_0;
+use ymir::services::verifier::{oid4vp_draft20, VerifierTrait};
 use ymir::services::wallet::fafnir::{FafnirConfig, FafnirService};
 use ymir::services::wallet::WalletTrait;
 use ymir::types::dids::{DidService, DidServiceType};
@@ -56,7 +57,6 @@ impl CoreBuilder {
 
         let gnap_config = GnapConfig::from(&config);
         let issuer_config = oid4vci_1_0::IssuerConfig::from(&config);
-        let verifier_config = oid4vp_draft20::VerifierConfig::from(&config);
 
         // ===== SERVICES =====
         let db_connection = vault.get_db_connection(&config).await?;
@@ -72,7 +72,21 @@ impl CoreBuilder {
             vault.clone(),
             arc_identity.clone(),
         ));
-        let verifier = Arc::new(oid4vp_draft20::VerifierService::new(verifier_config));
+        let verifier: Arc<dyn VerifierTrait> = match config.oid4vp_service() {
+            Oid4VpService::Draft20 => {
+                let config = oid4vp_draft20::VerifierConfig::from(&config);
+                Arc::new(oid4vp_draft20::VerifierService::new(config))
+            }
+            Oid4VpService::V1_0 => {
+                let config = oid4vp_1_0::VerifierConfig::from(&config);
+                Arc::new(oid4vp_1_0::VerifierService::new(
+                    config,
+                    vault.clone(),
+                    arc_identity.clone(),
+                ))
+            }
+        };
+
         let notifier = Arc::new(NotificationService::new());
 
         let core_config: Arc<dyn CoreConfigTrait> = Arc::new(config);

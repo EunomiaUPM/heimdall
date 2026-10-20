@@ -17,10 +17,10 @@
 
 mod clh_config;
 mod issue_config;
-mod oauth;
 mod role;
+mod oid4vp_service;
 
 pub use clh_config::ClHBuilderConfig;
 pub use issue_config::IssueConfig;
-pub use oauth::OauthConfig;
 pub use role::AuthorityRole;
+pub use oid4vp_service::Oid4VpService;

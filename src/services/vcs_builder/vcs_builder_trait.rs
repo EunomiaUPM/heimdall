@@ -19,20 +19,21 @@ use chrono::{Duration, Utc};
 use serde_json::Value;
 use ymir::data::entities::shared::issuance;
 use ymir::errors::{BadFormat, Errors, Outcome};
-use ymir::types::jwt::{VCJwtClaims, VcJwtClaimsBuilder};
+use ymir::types::jwt::JwtClaims;
+use ymir::types::vcs::{VcJwtClaimsBuilder, VcPayload};
 use ymir::types::vcs::doc::VcDocumentBuilder;
 use ymir::types::vcs::{VcIssuer, VcTypeConfig, W3cDataModelVersion};
 
 use crate::config::traits::RoleConfigTrait;
 
 pub trait VcBuilderTrait: RoleConfigTrait + Send + Sync + 'static {
-    fn build_vc(&self, model: &issuance::Model, vc_config: VcTypeConfig) -> Outcome<VCJwtClaims>;
+    fn build_vc(&self, model: &issuance::Model, vc_config: VcTypeConfig) -> Outcome<JwtClaims<VcPayload>>;
     fn just_build(
         &self,
         issuance: &issuance::Model,
         credential_subject: Value,
         vc_config: VcTypeConfig,
-    ) -> Outcome<VCJwtClaims> {
+    ) -> Outcome<JwtClaims<VcPayload>> {
         let subject_id = credential_subject
             .get("id")
             .and_then(|v| v.as_str())

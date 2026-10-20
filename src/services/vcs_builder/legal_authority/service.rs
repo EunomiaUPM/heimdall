@@ -26,7 +26,8 @@ use x509_parser::parse_x509_certificate;
 use x509_parser::prelude::{AttributeTypeAndValue, X509Certificate};
 use ymir::data::entities::shared::issuance;
 use ymir::errors::{BadFormat, Errors, Outcome};
-use ymir::types::jwt::VCJwtClaims;
+use ymir::types::jwt::JwtClaims;
+use ymir::types::vcs::VcPayload;
 use ymir::types::vcs::vc_specs::legal_reg_number::{
     LeiCode, LocalRegistrationNumber, TaxId, VatId,
 };
@@ -56,7 +57,7 @@ impl VcBuilderTrait for LegalAuthorityVcBuilder {
         &self,
         issuance: &issuance::Model,
         vc_config: VcTypeConfig,
-    ) -> Outcome<VCJwtClaims> {
+    ) -> Outcome<JwtClaims<VcPayload>> {
         let holder_did = need_field_for_vc(issuance.build_ctx.holder_did.as_deref())?;
 
         let role = self.config.get_role();

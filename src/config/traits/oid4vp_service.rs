@@ -15,8 +15,8 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-use crate::config::types::OauthConfig;
+use crate::config::types::Oid4VpService;
 
-pub trait OauthConfigTrait {
-    fn oauth(&self) -> &OauthConfig;
+pub trait Oid4VpServiceTrait {
+    fn oid4vp_service(&self) -> &Oid4VpService;
 }

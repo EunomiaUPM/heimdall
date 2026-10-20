@@ -96,7 +96,7 @@ impl AuthorityApp {
         Ok(())
     }
     pub async fn run(config: CoreConfig, vault: Arc<VaultService>) -> Outcome<()> {
-        if config.is_prod() && !config.has_tls_proxy() {
+        if config.is_prod() && !config.has_proxy() {
             Self::run_tls(&config, vault.clone()).await
         } else {
             Self::run_basic(config, vault).await

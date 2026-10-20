@@ -26,7 +26,6 @@ use crate::services::repo::RepoTrait;
 use crate::services::vcs_builder::VcBuilderTrait;
 use crate::services::{HasConfig, HasGateKeeper, HasNotifier, HasRepo, HasVcBuilder};
 use std::sync::Arc;
-use ymir::config::types::HostType;
 use ymir::modules::WalletModuleTrait;
 use ymir::services::issuer::IssuerTrait;
 use ymir::services::verifier::VerifierTrait;

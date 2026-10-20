@@ -20,20 +20,14 @@ use std::path::PathBuf;
 
 use serde::{Deserialize, Serialize};
 use tracing::debug;
-use ymir::config::traits::{
-    ApiConfigTrait, ConnectionConfigTrait, DatabaseConfigTrait, DidConfigTrait, HostsConfigTrait,
-    VerifyReqConfigTrait, WalletConfigTrait,
-};
-use ymir::config::types::{
-    ApiConfig, CommonHostsConfig, ConnectionConfig, DatabaseConfig, DidConfig, VerifyReqConfig,
-    WalletConfig,
-};
+use ymir::config::traits::{ApiConfigTrait, ConnectionConfigTrait, DatabaseConfigTrait, DidConfigTrait, HostsConfigTrait, OauthConfigTrait, VerifyReqConfigTrait, WalletConfigTrait};
+use ymir::config::types::{ApiConfig, CommonHostsConfig, ConnectionConfig, DatabaseConfig, DidConfig, OauthConfig, VerifyReqConfig, WalletConfig};
 use ymir::errors::{Errors, Outcome};
 use ymir::utils::read;
 
 use super::CoreConfigTrait;
-use crate::config::traits::{IssueConfigTrait, OauthConfigTrait, RoleConfigTrait};
-use crate::config::types::{AuthorityRole, IssueConfig, OauthConfig};
+use crate::config::traits::{IssueConfigTrait, Oid4VpServiceTrait, RoleConfigTrait};
+use crate::config::types::{AuthorityRole, IssueConfig, Oid4VpService};
 
 #[derive(Deserialize, Serialize, Clone, Debug)]
 pub struct CoreConfig {
@@ -45,6 +39,7 @@ pub struct CoreConfig {
     did_config: DidConfig,
     issue_config: IssueConfig,
     verify_req_config: VerifyReqConfig,
+    oid4vp_service: Oid4VpService,
     role: AuthorityRole,
     #[serde(default)]
     oauth: OauthConfig,
@@ -118,6 +113,12 @@ impl RoleConfigTrait for CoreConfig {
 impl OauthConfigTrait for CoreConfig {
     fn oauth(&self) -> &OauthConfig {
         &self.oauth
+    }
+}
+
+impl Oid4VpServiceTrait for CoreConfig {
+    fn oid4vp_service(&self) -> &Oid4VpService {
+        &self.oid4vp_service
     }
 }
 

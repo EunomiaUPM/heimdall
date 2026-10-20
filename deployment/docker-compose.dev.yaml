@@ -16,7 +16,7 @@ services:
 
   fafnir-setup:
     container_name: "fafnir-setup"
-    image: "rmenendez8/fafnir:v0.2.2"
+    image: "rmenendez8/fafnir:v0.3.0"
     depends_on:
       heimdall-db:
         condition: service_healthy
@@ -34,7 +34,7 @@ services:
 
   fafnir-wallet:
     container_name: "fafnir-wallet"
-    image: "rmenendez8/fafnir:v0.2.2"
+    image: "rmenendez8/fafnir:v0.3.0"
     restart: always
     depends_on:
       fafnir-setup:

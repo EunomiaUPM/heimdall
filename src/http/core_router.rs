@@ -116,13 +116,14 @@ impl CoreRouter {
             .nest(react::PREFIX, react_r.internal())
             .route_layer(guard);
 
-        // ===== OPEN: API docs ====================================================================
+        // ===== OPEN: health and API docs =========================================================
         let open = Router::new()
             .merge(health_r.router())
             .nest(docs::PREFIX, openapi_r.router());
 
-        // ===== ROOT console ===========
+        // ===== ROOT: health and the console ============
         let root = Router::new()
+            .merge(HealthRouter::new().router())
             .route(console::ROOT, get(Self::console_root))
             .nest_service(
                 console::PREFIX,
