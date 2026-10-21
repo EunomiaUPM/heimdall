@@ -26,8 +26,8 @@ use crate::http::{
 use crate::modules::OrchestratorTrait;
 use axum::extract::Request;
 use axum::http::StatusCode;
-use axum::middleware::from_fn_with_state;
-use axum::response::{IntoResponse, Redirect};
+use axum::middleware::{from_fn, from_fn_with_state, Next};
+use axum::response::{IntoResponse, Redirect, Response};
 use axum::routing::get;
 use axum::Router;
 use tower_http::cors::{Any, CorsLayer};
@@ -128,7 +128,8 @@ impl CoreRouter {
             .nest_service(
                 console::PREFIX,
                 ServeDir::new("./react/dist").fallback(ServeFile::new("./react/dist/index.html")),
-            );
+            )
+            .layer(from_fn(Self::console_slash));
 
         // ===== ALL TOGETHER: well-known and root at the host's root, the rest under the API version
         let api = Router::new().merge(external).merge(internal).merge(open);
@@ -153,6 +154,13 @@ impl CoreRouter {
 
     async fn console_root() -> Redirect {
         Redirect::temporary(&format!("{}/", console::PREFIX))
+    }
+
+    async fn console_slash(req: Request, next: Next) -> Response {
+        if req.uri().path() == console::PREFIX {
+            return Self::console_root().await.into_response();
+        }
+        next.run(req).await
     }
 
     async fn fallback() -> impl IntoResponse {
