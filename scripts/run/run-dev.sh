@@ -38,30 +38,18 @@ done
 echo -e "\033[0;32mDB lista\033[0m"
 
 # ===============================
-# 4. Build React
-# ===============================
-
-echo -e "\033[0;36mPreparando y construyendo la app React...\033[0m"
-
-chmod +x ./react/build.sh
-
-(
-    cd ./react
-    ./build.sh
-)
-
-echo -e "\033[0;32mBuild de React completado\033[0m"
-
-# ===============================
-# 5. Setup
+# 4. Setup
 # ===============================
 
 echo -e "\033[0;36mEjecutando setup...\033[0m"
 
-cargo run setup -e ./static/config/dev/eco_authority.yaml
+if ! cargo run setup -e ./static/config/dev/eco_authority.yaml; then
+    echo -e "\033[0;31mSetup fallido, abortando\033[0m"
+    exit 1
+fi
 
 # ===============================
-# 6. Start
+# 5. Start
 # ===============================
 
 echo -e "\033[0;36mArrancando Heimdall...\033[0m"
