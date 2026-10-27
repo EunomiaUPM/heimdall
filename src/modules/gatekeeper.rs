@@ -158,8 +158,8 @@ pub trait GatekeeperModule:
         self.gatekeeper()
             .validate_cont_req(&int_model, &payload, &headers)?;
 
-        let issuance = self.repo().issuance().get_by_id(&int_model.id).await?;
-        let mut grant = self.repo().recv_grant().get_by_id(&int_model.id).await?;
+        let issuance = self.repo().issuance().get_by_id(&int_model.grant_id).await?;
+        let mut grant = self.repo().recv_grant().get_by_id(&int_model.grant_id).await?;
 
         grant.status = GrantStatus::Approved;
         let _grant = self.repo().recv_grant().update(grant).await?;

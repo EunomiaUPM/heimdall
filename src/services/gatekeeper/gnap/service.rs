@@ -143,7 +143,7 @@ impl GateKeeperTrait for GnapGateKeeperService {
         let continuation_token = create_opaque_token();
 
         let interaction = interaction::Plan {
-            id: id.to_string(),
+            grant_id: id.to_string(),
             start: interact.start,
             method,
             callback_uri,
@@ -153,6 +153,7 @@ impl GateKeeperTrait for GnapGateKeeperService {
             hints: interact.hints,
             grant_endpoint,
             continuation_endpoint,
+            continuation_id: None,
             continuation_token,
             continuation_wait: None,
         };

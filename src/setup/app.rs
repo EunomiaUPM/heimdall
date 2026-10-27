@@ -32,6 +32,8 @@ use ymir::utils::expect_from_env;
 use crate::config::CoreConfig;
 use crate::core::CoreBuilder;
 use crate::http::CoreRouter;
+use crate::modules::fed_catalog::crawl_dsp_every;
+use crate::services::HasRepo;
 
 pub struct AuthorityApp;
 
@@ -40,11 +42,14 @@ impl AuthorityApp {
         config: &CoreConfig,
         vault: Arc<VaultService>,
     ) -> Outcome<Router> {
-        let core = CoreBuilder::from_config(config.clone(), vault)
-            .await?
-            .build();
+        let core = Arc::new(
+            CoreBuilder::from_config(config.clone(), vault)
+                .await?
+                .build(),
+        );
+        tokio::spawn(crawl_dsp_every(core.repo()));
 
-        let router = CoreRouter::new(Arc::new(core)).router();
+        let router = CoreRouter::new(core).router();
         Ok(router)
     }
 

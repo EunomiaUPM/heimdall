@@ -15,6 +15,7 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
+use crate::modules::fed_catalog::crawl_dsp;
 use crate::services::{HasGateKeeper, HasRepo, HasVcBuilder};
 use async_trait::async_trait;
 use chrono::Utc;
@@ -87,7 +88,7 @@ pub trait IssuerModule:
         let interaction = self
             .repo()
             .recv_interaction()
-            .get_by_id(&issuance.id)
+            .get_latest_by_grant(&issuance.id)
             .await?;
 
         let holder = require_field(issuance.build_ctx.holder_did.as_ref(), "holder did")?;
@@ -96,7 +97,8 @@ pub trait IssuerModule:
             &grant.participant_nick,
             &interaction.callback_uri,
         );
-        self.repo().participant().force_update(minion).await?;
+        let minion = self.repo().participant().force_update(minion).await?;
+        tokio::spawn(crawl_dsp(self.repo(), minion));
 
         grant.status = GrantStatus::Finalized;
         grant.ended_at = Some(Utc::now());

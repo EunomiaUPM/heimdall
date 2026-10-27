@@ -48,18 +48,16 @@ pub trait VerifierModule: HasGateKeeper + HasVerifier + HasRepo + Send + Sync + 
                 .verify_all(&mut verification, vp_token)
                 .await
                 .map(|_| ()),
-            // The wallet refused to present (it lacks the credentials, the user declined): a
-            // failed verification, like an invalid presentation.
             (None, refusal) => {
                 verification.ended_at = Some(Utc::now());
-                verification.status = VerificationStatus::Failed;
+                verification.status = VerificationStatus::Refused;
                 Err(refusal.unwrap_or_else(|| Errors::forbidden("no presentation", None)))
             }
         };
 
         let verification = self.repo().recv_verification().update(verification).await?;
 
-        let mut issuance = self.repo().issuance().get_by_id(&verification.id).await?;
+        let mut issuance = self.repo().issuance().get_by_id(&verification.grant_id).await?;
         issuance.build_ctx.holder_did = verification.holder;
         issuance.build_ctx.vcs = verification.vcs;
         let _issuance = self.repo().issuance().update(issuance).await?;
@@ -67,7 +65,7 @@ pub trait VerifierModule: HasGateKeeper + HasVerifier + HasRepo + Send + Sync + 
         let interaction = self
             .repo()
             .recv_interaction()
-            .get_by_id(&verification.id)
+            .get_latest_by_grant(&verification.grant_id)
             .await?;
         self.gatekeeper()
             .finish_interaction(&interaction, result)
