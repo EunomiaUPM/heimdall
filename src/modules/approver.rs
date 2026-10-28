@@ -42,7 +42,7 @@ pub trait ApproverModule: HasRepo + HasGateKeeper + Send + Sync + 'static {
             grant.status = GrantStatus::Approved;
             Ok(())
         } else {
-            grant.status = GrantStatus::Rejected;
+            grant.status = GrantStatus::Finalized;
             grant.ended_at = Some(Utc::now());
             Err(Errors::crazy(
                 "Petition rejected due to internal decisions",

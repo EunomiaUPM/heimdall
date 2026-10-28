@@ -50,7 +50,6 @@ impl From<&CoreConfig> for oid4vp_draft20::VerifierConfig {
         oid4vp_draft20::VerifierConfig::new(
             value.hosts().clone(),
             value.get_api_version(),
-            value.get_requested_vcs().to_vec(),
         )
     }
 }
@@ -60,7 +59,6 @@ impl From<&CoreConfig> for oid4vp_1_0::VerifierConfig {
         oid4vp_1_0::VerifierConfig::new(
             value.hosts().clone(),
             value.get_api_version(),
-            value.get_requested_vcs().to_vec(),
             value.get_request_passing().clone(),
         )
     }

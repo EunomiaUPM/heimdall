@@ -15,11 +15,12 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-use crate::services::{HasGateKeeper, HasNotifier, HasRepo, HasVcBuilder};
+use crate::services::{HasConfig, HasGateKeeper, HasNotifier, HasRepo, HasVcBuilder};
 use crate::types::GrantResponseManager;
 use async_trait::async_trait;
 use axum::body::Bytes;
 use axum::http::HeaderMap;
+use ymir::config::traits::VerifyReqConfigTrait;
 use ymir::errors::Outcome;
 use ymir::services::{HasIssuer, HasVerifier};
 use ymir::types::gnap::grant_response::{ErrorResponse, GrantResponse};
@@ -35,6 +36,7 @@ pub trait GatekeeperModule:
     + HasRepo
     + HasVcBuilder
     + HasNotifier
+    + HasConfig
     + Send
     + Sync
     + 'static
@@ -121,7 +123,8 @@ pub trait GatekeeperModule:
                     grant_request.interact,
                     grant_request.client,
                 )?;
-                let verification = self.verifier().build_vp_plan(&grant.id)?;
+                let vcs = self.config().get_requested_vcs().to_vec();
+                let verification = self.verifier().build_vp_plan(&grant.id, &vcs)?;
 
                 let ver_model = self.repo().recv_verification().create(verification).await?;
                 let interaction = self.repo().recv_interaction().create(interaction).await?;
