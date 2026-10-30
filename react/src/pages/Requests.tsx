@@ -1,5 +1,5 @@
 import React from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "@tanstack/react-router";
 import { ArrowRight } from "lucide-react";
 import {
   Badge,
@@ -65,7 +65,12 @@ export default function Requests() {
           data={requests}
           loading={isFetching}
           keyExtractor={(r) => r.id}
-          onRowClick={(r) => navigate(`/requests/${encodeURIComponent(r.id)}`)}
+          onRowClick={(r) =>
+            void navigate({
+              to: "/requests/$requestId",
+              params: { requestId: r.id },
+            })
+          }
           emptyMessage="No credential requests found"
           emptyDescription="Incoming GNAP / OID4VCI requests from dataspace peers will appear here."
           searchPlaceholder="Filter requests by participant, DID, type, or ID..."
@@ -164,7 +169,10 @@ export default function Requests() {
                   size="sm"
                   onClick={(e) => {
                     e.stopPropagation();
-                    navigate(`/requests/${encodeURIComponent(r.id)}`);
+                    void navigate({
+                      to: "/requests/$requestId",
+                      params: { requestId: r.id },
+                    });
                   }}
                 >
                   See request

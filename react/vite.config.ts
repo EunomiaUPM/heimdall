@@ -1,6 +1,10 @@
 import { defineConfig } from "vite";
-import react from "@vitejs/plugin-react";
+import react from "@vitejs/plugin-react-swc";
 import path from "path";
+import tsconfigPaths from "vite-tsconfig-paths";
+import tailwind from "tailwindcss";
+import autoprefixer from "autoprefixer";
+import { TanStackRouterVite } from "@tanstack/router-plugin/vite";
 
 export default defineConfig(() => {
   const gatewayPort =
@@ -13,12 +17,27 @@ export default defineConfig(() => {
 
   return {
     base: "/admin/",
-    plugins: [react()],
+    plugins: [
+      react(),
+      tsconfigPaths(),
+      TanStackRouterVite({ autoCodeSplitting: true }),
+    ],
     resolve: {
       alias: {
         "@": path.resolve(__dirname, "./src"),
       },
-      dedupe: ["react", "react-dom", "react/jsx-runtime", "@tanstack/react-query"],
+      dedupe: [
+        "react",
+        "react-dom",
+        "react/jsx-runtime",
+        "@tanstack/react-query",
+        "@tanstack/react-router",
+      ],
+    },
+    css: {
+      postcss: {
+        plugins: [tailwind, autoprefixer],
+      },
     },
     optimizeDeps: {
       exclude: ["lucide-react", "@eunomia/ui"],
@@ -37,6 +56,17 @@ export default defineConfig(() => {
         "/.well-known": {
           target: backendTarget,
           changeOrigin: true,
+        },
+      },
+    },
+    build: {
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            vendor: ["react", "react-dom"],
+            ui: ["class-variance-authority", "lucide-react", "clsx", "tailwind-merge"],
+            tanstack: ["@tanstack/react-router", "@tanstack/react-query"],
+          },
         },
       },
     },

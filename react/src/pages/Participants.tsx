@@ -1,5 +1,5 @@
 import React from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { ArrowRight } from "lucide-react";
 import {
   Badge,
@@ -121,7 +121,10 @@ export default function Participants() {
                   </div>
                 </div>
 
-                <Link to={`/participants/${encodePathId(myAgent.participant_id)}`}>
+                <Link
+                  to="/participants/$participantId"
+                  params={{ participantId: encodePathId(myAgent.participant_id) }}
+                >
                   <Button variant="link" className="px-0">
                     View My Profile
                     <ArrowRight className="ml-1 h-4 w-4" />
@@ -140,7 +143,10 @@ export default function Participants() {
           loading={isFetching}
           keyExtractor={(p) => p.participant_id}
           onRowClick={(p) =>
-            navigate(`/participants/${encodePathId(p.participant_id)}`)
+            void navigate({
+              to: "/participants/$participantId",
+              params: { participantId: encodePathId(p.participant_id) },
+            })
           }
           emptyMessage="No network participants registered yet"
           searchPlaceholder="Filter participants by name, DID, or URL..."
@@ -231,7 +237,10 @@ export default function Participants() {
                   size="sm"
                   onClick={(e) => {
                     e.stopPropagation();
-                    navigate(`/participants/${encodePathId(p.participant_id)}`);
+                    void navigate({
+                      to: "/participants/$participantId",
+                      params: { participantId: encodePathId(p.participant_id) },
+                    });
                   }}
                 >
                   See agent

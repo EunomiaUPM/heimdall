@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { Bell, CheckCheck } from "lucide-react";
 import {
   cn,
@@ -24,11 +24,17 @@ export function NotificationBell() {
     markAsRead(item.id);
     setOpen(false);
     if (item.requestId) {
-      navigate(`/requests/${encodeURIComponent(item.requestId)}`);
+      void navigate({
+        to: "/requests/$requestId",
+        params: { requestId: item.requestId },
+      });
     } else if (item.participantId) {
-      navigate(`/participants/${encodePathId(item.participantId)}`);
+      void navigate({
+        to: "/participants/$participantId",
+        params: { participantId: encodePathId(item.participantId) },
+      });
     } else {
-      navigate("/requests");
+      void navigate({ to: "/requests" });
     }
   };
 

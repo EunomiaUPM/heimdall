@@ -1,5 +1,5 @@
 import React, { useMemo } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams } from "@tanstack/react-router";
 import {
   Activity,
   ArrowLeft,
@@ -35,7 +35,9 @@ import {
 } from "@/data/orval/participants/participants";
 
 export default function ParticipantDetails() {
-  const { id: rawParam } = useParams<{ id: string }>();
+  const { participantId: rawParam } = useParams({
+    from: "/participants/$participantId/",
+  });
   const navigate = useNavigate();
 
   const participantId = useMemo(() => {
@@ -157,7 +159,7 @@ export default function ParticipantDetails() {
         <Button
           variant="link"
           className="mt-1 px-0"
-          onClick={() => navigate("/participants")}
+          onClick={() => void navigate({ to: "/participants" })}
         >
           <ArrowLeft className="mr-1 h-4 w-4" />
           Back to participants

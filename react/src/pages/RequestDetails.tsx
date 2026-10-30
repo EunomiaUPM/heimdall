@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { X509 } from "jsrsasign";
 import { toast } from "sonner";
@@ -104,7 +104,9 @@ function SecretField({ value }: { value?: string | null }) {
 }
 
 export default function RequestDetails() {
-  const { id: rawId } = useParams<{ id: string }>();
+  const { requestId: rawId } = useParams({
+    from: "/requests/$requestId/",
+  });
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
@@ -508,7 +510,7 @@ export default function RequestDetails() {
         <Button
           variant="link"
           className="mt-1 px-0"
-          onClick={() => navigate("/requests")}
+          onClick={() => void navigate({ to: "/requests" })}
         >
           <ArrowLeft className="mr-1 h-4 w-4" />
           Back to requests
