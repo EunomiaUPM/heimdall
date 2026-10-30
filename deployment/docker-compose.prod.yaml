@@ -176,7 +176,9 @@ services:
       - --skip-auth-route=^/api/v1/issuer.*
       - --skip-auth-route=^/api/v1/verifier.*
       - --skip-auth-route=^/api/v1/gate.*
+      - --skip-auth-route=^/admin($|/.*)
       - --skip-auth-route=^/assets/.*
+      - --skip-auth-route=^/(favicon|apple-touch-icon).*
       - --skip-auth-route=^/$
     depends_on:
       - heimdall

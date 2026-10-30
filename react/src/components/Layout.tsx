@@ -10,6 +10,8 @@ import {
 import {
   AppShellHeader,
   AppShellSidebar,
+  eunomiaLogoOrangeDark,
+  eunomiaLogoOrangeLight,
   GlobalLoadingIndicator,
   type LinkProps,
   NavigationProvider,
@@ -93,6 +95,8 @@ export function Layout({ user, onSignOut }: LayoutProps) {
             productName="Heimdall"
             homeTo="/home"
             navGroups={navGroups}
+            logoOnDark={eunomiaLogoOrangeLight}
+            logoOnLight={eunomiaLogoOrangeDark}
           />
           <SidebarInset>
             <AppShellHeader

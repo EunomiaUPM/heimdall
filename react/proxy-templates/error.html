@@ -3,23 +3,21 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Heimdall Authority - Error</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  
+  <title>Eunomia Heimdall Admin - Error</title>
+  <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;500;600;700&family=Ubuntu:wght@500;700&display=swap" rel="stylesheet">
   <style>
     :root {
       --background: #09091B;
       --foreground: #f8f8fa;
-      --card: #09091B;
-      --brand-sky: #9DD5F2;
-      --brand-purple: #B592DB;
-      --radius: 0.5rem;
+      --brand-orange: #fda658;
+      --primary-500: #f97316;
+      --radius: 0.75rem;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
-      font-family: 'Inter', sans-serif;
+      font-family: 'Source Sans 3', system-ui, sans-serif;
       background-color: var(--background);
       color: var(--foreground);
       display: flex;
@@ -31,16 +29,16 @@
     }
 
     .bg-glow {
-      position: fixed; width: 600px; height: 600px;
-      background: radial-gradient(circle, var(--brand-sky) 0%, transparent 70%);
-      opacity: 0.05; top: -200px; left: -200px;
+      position: fixed; width: 640px; height: 640px;
+      background: radial-gradient(circle, var(--primary-500) 0%, transparent 70%);
+      opacity: 0.08; top: -220px; left: -220px;
       border-radius: 50%; pointer-events: none;
     }
-    
+
     .bg-glow-2 {
-      position: fixed; width: 600px; height: 600px;
-      background: radial-gradient(circle, var(--brand-purple) 0%, transparent 70%);
-      opacity: 0.05; bottom: -200px; right: -200px;
+      position: fixed; width: 640px; height: 640px;
+      background: radial-gradient(circle, var(--brand-orange) 0%, transparent 70%);
+      opacity: 0.06; bottom: -220px; right: -220px;
       border-radius: 50%; pointer-events: none;
     }
 
@@ -51,29 +49,30 @@
 
     .card {
       background-color: rgba(255, 255, 255, 0.03);
-      border: 1px solid rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.12);
       border-radius: var(--radius);
       padding: 2.5rem 2rem;
-      backdrop-filter: blur(10px);
+      backdrop-filter: blur(12px);
       text-align: center;
-      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.55);
     }
 
-    .logo-container { margin-bottom: 1.5rem; display: flex; justify-content: center; }
-
-    .logo-text {
-      font-size: 2rem; font-weight: 800; letter-spacing: 0.2em;
-      color: var(--foreground); margin-bottom: 0.5rem;
+    .brand-tag {
+      font-family: monospace;
+      font-size: 0.75rem; font-weight: 700; letter-spacing: 0.16em;
+      text-transform: uppercase; color: var(--brand-orange);
+      margin-bottom: 1rem;
     }
 
     h1 {
+      font-family: 'Ubuntu', sans-serif;
       font-size: 1.25rem; font-weight: 600;
-      margin-bottom: 0.5rem; color: #ef4444; /* Error red */
+      margin-bottom: 0.5rem; color: #f47883;
     }
 
     p {
-      color: rgba(255, 255, 255, 0.6);
-      font-size: 0.875rem; margin-bottom: 2rem;
+      color: rgba(241, 241, 246, 0.65);
+      font-size: 0.875rem;
       line-height: 1.5;
     }
   </style>
@@ -84,11 +83,8 @@
 
   <div class="container">
     <div class="card">
-      <div class="logo-container">
-        <div class="logo-text">HEIMDALL</div>
-      </div>
-      
-      <h1>Error</h1>
+      <div class="brand-tag">Eunomia • Heimdall</div>
+      <h1>Authentication Error</h1>
       <p>{{.Message}}</p>
     </div>
   </div>

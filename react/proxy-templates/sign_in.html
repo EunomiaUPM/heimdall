@@ -3,21 +3,16 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Heimdall Authority - Login</title>
-  
-  <!-- Use Inter font matching Heimdall's React app -->
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  
+  <title>Eunomia Heimdall Admin - Sign in</title>
+  <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;500;600;700&family=Ubuntu:wght@500;700&display=swap" rel="stylesheet">
   <style>
     :root {
       --background: #09091B;
       --foreground: #f8f8fa;
-      --card: #09091B;
-      --card-foreground: #f8f8fa;
-      --primary: 210 40% 98%;
-      --primary-foreground: 222.2 47.4% 11.2%;
-      --brand-sky: #9DD5F2;
-      --brand-purple: #B592DB;
+      --brand-orange: #fda658;
+      --primary-700: #c2410c;
+      --primary-600: #ea580c;
+      --primary-500: #f97316;
       --radius: 0.5rem;
     }
 
@@ -28,7 +23,7 @@
     }
 
     body {
-      font-family: 'Inter', sans-serif;
+      font-family: 'Source Sans 3', system-ui, sans-serif;
       background-color: var(--background);
       color: var(--foreground);
       display: flex;
@@ -39,27 +34,26 @@
       overflow: hidden;
     }
 
-    /* Ambient background glow */
     .bg-glow {
       position: fixed;
-      width: 600px;
-      height: 600px;
-      background: radial-gradient(circle, var(--brand-sky) 0%, transparent 70%);
-      opacity: 0.05;
-      top: -200px;
-      left: -200px;
+      width: 640px;
+      height: 640px;
+      background: radial-gradient(circle, var(--primary-500) 0%, transparent 70%);
+      opacity: 0.08;
+      top: -220px;
+      left: -220px;
       border-radius: 50%;
       pointer-events: none;
     }
-    
+
     .bg-glow-2 {
       position: fixed;
-      width: 600px;
-      height: 600px;
-      background: radial-gradient(circle, var(--brand-purple) 0%, transparent 70%);
-      opacity: 0.05;
-      bottom: -200px;
-      right: -200px;
+      width: 640px;
+      height: 640px;
+      background: radial-gradient(circle, var(--brand-orange) 0%, transparent 70%);
+      opacity: 0.06;
+      bottom: -220px;
+      right: -220px;
       border-radius: 50%;
       pointer-events: none;
     }
@@ -74,41 +68,37 @@
 
     .card {
       background-color: rgba(255, 255, 255, 0.03);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      border-radius: var(--radius);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 0.75rem;
       padding: 2.5rem 2rem;
-      backdrop-filter: blur(10px);
-      text-align: center;
-      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(12px);
+      text-align: left;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.55);
     }
 
-    .logo-container {
-      margin-bottom: 1.5rem;
-      display: flex;
-      justify-content: center;
-    }
-
-    /* We inject the logo text directly since we don't have the SVG exported here easily. 
-       We mimic the Heimdall logo text from AppSidebar */
-    .logo-text {
-      font-size: 2rem;
-      font-weight: 800;
-      letter-spacing: 0.2em;
-      color: var(--foreground);
-      margin-bottom: 0.5rem;
+    .brand-tag {
+      font-family: monospace;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--brand-orange);
+      margin-bottom: 0.75rem;
     }
 
     h1 {
-      font-size: 1.25rem;
+      font-family: 'Ubuntu', sans-serif;
+      font-size: 1.5rem;
       font-weight: 600;
+      letter-spacing: -0.02em;
       margin-bottom: 0.5rem;
-      color: var(--brand-sky);
+      color: var(--foreground);
     }
 
     p {
-      color: rgba(255, 255, 255, 0.6);
+      color: rgba(241, 241, 246, 0.65);
       font-size: 0.875rem;
-      margin-bottom: 2rem;
+      margin-bottom: 1.75rem;
       line-height: 1.5;
     }
 
@@ -117,20 +107,21 @@
       align-items: center;
       justify-content: center;
       width: 100%;
-      padding: 0.75rem 1.5rem;
+      padding: 0.65rem 1.25rem;
       font-size: 0.875rem;
       font-weight: 500;
-      color: white;
-      background: linear-gradient(135deg, var(--brand-sky), var(--brand-purple));
-      border: none;
+      color: #ffffff;
+      background-color: var(--primary-700);
+      border: 1px solid rgba(249, 115, 22, 0.35);
       border-radius: var(--radius);
       cursor: pointer;
       text-decoration: none;
-      transition: opacity 0.2s, transform 0.1s;
+      transition: background-color 0.15s, border-color 0.15s, transform 0.1s;
     }
 
     .btn:hover {
-      opacity: 0.9;
+      background-color: var(--primary-600);
+      border-color: rgba(253, 166, 88, 0.55);
     }
 
     .btn:active {
@@ -138,7 +129,7 @@
     }
 
     footer {
-      margin-top: 2rem;
+      margin-top: 1.5rem;
       text-align: center;
       font-size: 0.75rem;
       color: rgba(255, 255, 255, 0.4);
@@ -151,14 +142,10 @@
 
   <div class="container">
     <div class="card">
-      <div class="logo-container">
-        <div class="logo-text">HEIMDALL</div>
-      </div>
-      
-      <h1>Identity Authority</h1>
-      <p>Sign in to access the Heimdall Administration Dashboard and manage Verifiable Credentials.</p>
+      <div class="brand-tag">Eunomia • Heimdall</div>
+      <h1>Eunomia Heimdall Admin</h1>
+      <p>Your session has ended or has not started. Sign in to access the console.</p>
 
-      <!-- The form logic is identical to oauth2-proxy defaults to ensure it works -->
       <form method="GET" action="{{.ProxyPrefix}}/start">
         <input type="hidden" name="rd" value="{{.Redirect}}">
         <button type="submit" class="btn">Sign in</button>
@@ -166,7 +153,7 @@
     </div>
 
     <footer>
-      Secured with OAuth2 Proxy
+      GNAP GateKeeper • OID4VCI Issuer • OID4VP Verifier
     </footer>
   </div>
 
