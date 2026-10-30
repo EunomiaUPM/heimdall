@@ -1,9 +1,9 @@
 {
-  "openapi": "3.1.0",
+  "openapi": "3.0.3",
   "info": {
-    "title": "Heimdall API",
+    "title": "Heimdall Authority & Wallet API",
     "version": "1.0.0",
-    "description": "API documentation for the Heimdall project, managing Verifiable Credentials, GNAP Authorization, and Wallet interactions.",
+    "description": "OpenAPI specification for Heimdall SSI Authority, GNAP GateKeeper, OID4VCI Issuer, OID4VP Verifier, Approver Console, and Embedded Wallet.",
     "contact": {
       "name": "EUNOMIA Support",
       "email": "support@eunomia.upm.es"
@@ -11,8 +11,8 @@
   },
   "servers": [
     {
-      "url": "http://localhost:8080/api",
-      "description": "Local Development Server"
+      "url": "/api/v1",
+      "description": "Default API v1 Base Path"
     }
   ],
   "components": {
@@ -33,276 +33,416 @@
       "Error": {
         "type": "object",
         "properties": {
-          "message": {
-            "type": "string",
-            "example": "Invalid Format"
-          },
-          "error_code": {
-            "type": "integer",
-            "example": 3120
-          },
-          "details": {
-            "type": "string",
-            "nullable": true,
-            "example": "Missing required field 'proof'"
-          }
+          "message": { "type": "string", "example": "Invalid Format" },
+          "error_code": { "type": "integer", "example": 3120 },
+          "details": { "type": "string", "nullable": true }
         },
         "required": ["message", "error_code"]
       },
-      "GrantRequest": {
+      "MeDto": {
         "type": "object",
         "properties": {
-          "access_token": {
-            "type": "object",
-            "properties": {
-              "access": {
-                "type": "object",
-                "properties": {
-                  "type": { "type": "string", "example": "api-access" },
-                  "actions": {
-                    "type": "array",
-                    "items": { "type": "string" },
-                    "example": ["read", "write"]
-                  }
-                },
-                "required": ["type"]
-              },
-              "flags": {
-                "type": "array",
-                "items": { "type": "string" },
-                "example": ["Bearer"]
-              }
-            },
-            "required": ["access"]
+          "userId": { "type": "string" },
+          "username": { "type": "string", "nullable": true },
+          "email": { "type": "string", "nullable": true },
+          "role": { "type": "string" },
+          "root": { "type": "boolean" }
+        },
+        "required": ["userId", "role", "root"]
+      },
+      "ParticipantType": {
+        "type": "string",
+        "enum": ["Agent", "Authority", "All"]
+      },
+      "Visibility": {
+        "type": "string",
+        "enum": ["Private", "Anonymous", "Public"]
+      },
+      "GrantStatus": {
+        "type": "string",
+        "enum": ["Processing", "Pending", "Approved", "Rejected", "Finalized"]
+      },
+      "ParticipantDto": {
+        "type": "object",
+        "properties": {
+          "participant_id": { "type": "string", "example": "did:web:authority.example.com" },
+          "participant_nick": { "type": "string", "example": "Authority Node" },
+          "participant_type": { "$ref": "#/components/schemas/ParticipantType" },
+          "base_url": { "type": "string", "example": "https://authority.example.com" },
+          "saved_at": { "type": "string", "format": "date-time" },
+          "last_interaction": { "type": "string", "format": "date-time" },
+          "extra_fields": { "type": "object", "additionalProperties": true }
+        },
+        "required": [
+          "participant_id",
+          "participant_nick",
+          "participant_type",
+          "base_url",
+          "saved_at",
+          "last_interaction",
+          "extra_fields"
+        ]
+      },
+      "RecvGrantDto": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "role": { "type": "string" },
+          "visibility": { "$ref": "#/components/schemas/Visibility" },
+          "participant_nick": { "type": "string" },
+          "participant_id": { "type": "string", "nullable": true },
+          "kind": { "type": "string" },
+          "final_token_hash": { "type": "string", "nullable": true },
+          "final_expires_at": { "type": "string", "format": "date-time", "nullable": true },
+          "managing_id": { "type": "string", "nullable": true },
+          "managing_token_hash": { "type": "string", "nullable": true },
+          "managing_expires_at": { "type": "string", "format": "date-time", "nullable": true },
+          "vc_type_config": {
+            "type": "array",
+            "items": { "type": "string" },
+            "nullable": true
           },
-          "client": {
-            "type": "object",
-            "properties": {
-              "key": {
-                "type": "object",
-                "properties": {
-                  "proof": { "type": "string", "example": "jwt-proof-string" },
-                  "jwk": { "type": "object", "description": "JSON Web Key" }
-                },
-                "required": ["proof"]
-              }
-            },
-            "required": ["key"]
+          "status": { "$ref": "#/components/schemas/GrantStatus" },
+          "created_at": { "type": "string", "format": "date-time" },
+          "ended_at": { "type": "string", "format": "date-time", "nullable": true }
+        },
+        "required": [
+          "id",
+          "role",
+          "visibility",
+          "participant_nick",
+          "kind",
+          "status",
+          "created_at"
+        ]
+      },
+      "BuildCtxDto": {
+        "type": "object",
+        "properties": {
+          "subject_name": { "type": "string" },
+          "holder_did": { "type": "string", "nullable": true },
+          "cert": { "type": "string", "nullable": true },
+          "vcs": { "type": "array", "items": { "type": "string" } },
+          "claims": { "type": "object", "additionalProperties": true, "nullable": true }
+        },
+        "required": ["subject_name", "vcs"]
+      },
+      "IssuanceDto": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "role": { "type": "string" },
+          "subject_name": { "type": "string" },
+          "pre_auth_code": { "type": "string" },
+          "vc_type_config": { "type": "array", "items": { "type": "string" } },
+          "token": { "type": "string" },
+          "token_expiration": { "type": "integer", "format": "int64" },
+          "nonce": { "type": "string" },
+          "aud": { "type": "string" },
+          "issuer_did": { "type": "string" },
+          "credential_id": { "type": "string" },
+          "credential": { "type": "string", "nullable": true },
+          "build_ctx": { "$ref": "#/components/schemas/BuildCtxDto" }
+        },
+        "required": [
+          "id",
+          "role",
+          "subject_name",
+          "pre_auth_code",
+          "vc_type_config",
+          "token",
+          "token_expiration",
+          "nonce",
+          "aud",
+          "issuer_did",
+          "credential_id",
+          "build_ctx"
+        ]
+      },
+      "RecvInteractionDto": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "start": { "type": "array", "items": {} },
+          "method": { "type": "string" },
+          "callback_uri": { "type": "string" },
+          "key_source": { "type": "object", "additionalProperties": true },
+          "client_nonce": { "type": "string" },
+          "hash_method": { "type": "string" },
+          "hints": { "type": "string", "nullable": true },
+          "continuation_endpoint": { "type": "string" },
+          "continuation_id": { "type": "string" },
+          "continuation_token": { "type": "string" },
+          "continuation_wait": { "type": "integer", "format": "int64", "nullable": true },
+          "as_nonce": { "type": "string" },
+          "interact_ref": { "type": "string" },
+          "hash": { "type": "string" }
+        },
+        "required": [
+          "id",
+          "start",
+          "method",
+          "callback_uri",
+          "client_nonce",
+          "hash_method",
+          "continuation_endpoint",
+          "continuation_id",
+          "continuation_token",
+          "as_nonce",
+          "interact_ref",
+          "hash"
+        ]
+      },
+      "RecvVerificationDto": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "state": { "type": "string" },
+          "nonce": { "type": "string" },
+          "vc_type": { "type": "array", "items": {} },
+          "audience": { "type": "string" },
+          "holder": { "type": "string", "nullable": true },
+          "vpt": { "type": "string", "nullable": true },
+          "vcs": { "type": "array", "items": { "type": "string" } },
+          "status": { "type": "string" },
+          "created_at": { "type": "string", "format": "date-time" },
+          "ended_at": { "type": "string", "format": "date-time", "nullable": true }
+        },
+        "required": ["id", "state", "nonce", "vc_type", "audience", "vcs", "status", "created_at"]
+      },
+      "RequestDetailsDto": {
+        "type": "object",
+        "properties": {
+          "grant": { "$ref": "#/components/schemas/RecvGrantDto" },
+          "issuance": {
+            "allOf": [{ "$ref": "#/components/schemas/IssuanceDto" }],
+            "nullable": true
           },
-          "interact": {
-            "type": "object",
-            "properties": {
-              "start": {
-                "type": "array",
-                "items": { "type": "string" },
-                "example": ["oidc4vp"]
-              },
-              "finish": {
-                "type": "object",
-                "properties": {
-                  "method": { "type": "string", "example": "redirect" },
-                  "uri": { "type": "string", "example": "https://client.example.com/cb" },
-                  "nonce": { "type": "string", "example": "random-nonce-123" }
-                },
-                "required": ["method", "nonce"]
-              }
-            },
-            "required": ["start", "finish"]
+          "interaction": {
+            "allOf": [{ "$ref": "#/components/schemas/RecvInteractionDto" }],
+            "nullable": true
+          },
+          "verification": {
+            "allOf": [{ "$ref": "#/components/schemas/RecvVerificationDto" }],
+            "nullable": true
           }
         },
-        "required": ["access_token", "client"]
-      },
-      "GrantResponse": {
-        "type": "object",
-        "properties": {
-          "access_token": {
-            "type": "object",
-            "properties": {
-              "value": { "type": "string", "example": "gnap-access-token-123" },
-              "label": { "type": "string", "example": "primary" }
-            }
-          },
-          "interact": {
-            "type": "object",
-            "properties": {
-              "redirect": { "type": "string", "example": "https://auth.example.com/interact" },
-              "finish": { "type": "string", "example": "nonce-123" }
-            }
-          },
-          "continue": {
-            "type": "object",
-            "properties": {
-              "uri": { "type": "string", "example": "https://auth.example.com/continue/xyz" },
-              "access_token": {
-                "type": "object",
-                "properties": {
-                  "value": { "type": "string", "example": "continue-token-123" }
-                }
-              }
-            },
-            "required": ["uri", "access_token"]
-          }
-        }
-      },
-      "RefBody": {
-        "type": "object",
-        "properties": {
-          "interact_ref": {
-            "type": "string",
-            "example": "ref-1234-5678"
-          }
-        },
-        "required": ["interact_ref"]
+        "required": ["grant"]
       },
       "VcDecisionApproval": {
         "type": "object",
         "properties": {
-          "approve": {
-            "type": "boolean",
-            "example": true
-          }
+          "approve": { "type": "boolean", "example": true }
         },
         "required": ["approve"]
+      },
+      "WalletKeyRefDto": {
+        "type": "object",
+        "properties": {
+          "internal": { "type": "string" },
+          "fragment": { "type": "string" }
+        },
+        "required": ["internal", "fragment"]
+      },
+      "WalletDidDto": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "did": { "type": "string" },
+          "alias": { "type": "string", "nullable": true },
+          "default": { "type": "boolean" },
+          "type": { "type": "string" },
+          "keys": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/WalletKeyRefDto" }
+          },
+          "default_key": { "$ref": "#/components/schemas/WalletKeyRefDto" },
+          "did_document": { "type": "object", "additionalProperties": true },
+          "added_on": { "type": "string", "format": "date-time" }
+        },
+        "required": ["id", "did", "default", "type", "keys", "default_key", "did_document", "added_on"]
+      },
+      "WalletInfoDto": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string" },
+          "dids": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/WalletDidDto" }
+          },
+          "default_did": {
+            "allOf": [{ "$ref": "#/components/schemas/WalletDidDto" }],
+            "nullable": true
+          },
+          "keys_count": { "type": "integer" },
+          "credentials_count": { "type": "integer" }
+        },
+        "required": ["id", "name", "dids", "keys_count", "credentials_count"]
+      },
+      "WalletKeyDto": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "alias": { "type": "string", "nullable": true },
+          "kty": { "type": "string" },
+          "crv": { "type": "string", "nullable": true },
+          "added_on": { "type": "string", "format": "date-time" }
+        },
+        "required": ["id", "kty", "added_on"]
+      },
+      "RegisterKeyRequest": {
+        "type": "object",
+        "properties": {
+          "pem": { "type": "string" },
+          "alias": { "type": "string", "nullable": true }
+        },
+        "required": ["pem"]
+      },
+      "RegisterDidRequest": {
+        "type": "object",
+        "properties": {
+          "builder": { "type": "object", "additionalProperties": true },
+          "keys_id": { "type": "array", "items": { "type": "string" } },
+          "alias": { "type": "string", "nullable": true },
+          "service": {
+            "type": "array",
+            "items": { "type": "object", "additionalProperties": true },
+            "nullable": true
+          }
+        },
+        "required": ["builder", "keys_id"]
+      },
+      "WalletCredentialDto": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "added_on": { "type": "string", "format": "date-time", "nullable": true },
+          "valid_until": { "type": "string", "format": "date-time", "nullable": true },
+          "parsed_document": { "type": "object", "additionalProperties": true }
+        },
+        "required": ["id"]
+      },
+      "OidcUriRequest": {
+        "type": "object",
+        "properties": {
+          "uri": { "type": "string" }
+        },
+        "required": ["uri"]
+      },
+      "GrantRequest": {
+        "type": "object",
+        "additionalProperties": true
+      },
+      "GrantResponse": {
+        "type": "object",
+        "additionalProperties": true
+      },
+      "RefBody": {
+        "type": "object",
+        "properties": {
+          "interact_ref": { "type": "string" }
+        },
+        "required": ["interact_ref"]
       },
       "TokenRequest": {
         "type": "object",
         "properties": {
-          "grant_type": {
-            "type": "string",
-            "example": "urn:ietf:params:oauth:grant-type:pre-authorized_code"
-          },
-          "pre-authorized_code": {
-            "type": "string",
-            "example": "1234-code-5678"
-          },
-          "tx_code": {
-            "type": "string",
-            "example": "123456"
-          }
+          "grant_type": { "type": "string" },
+          "pre-authorized_code": { "type": "string" },
+          "tx_code": { "type": "string" }
         },
         "required": ["grant_type", "pre-authorized_code"]
       },
       "CredentialRequest": {
         "type": "object",
-        "properties": {
-          "format": {
-            "type": "string",
-            "example": "jwt_vc_json"
-          },
-          "proof": {
-            "type": "object",
-            "properties": {
-              "proof_type": { "type": "string", "example": "jwt" },
-              "jwt": { "type": "string", "example": "eyJhbGciOi..." }
-            },
-            "required": ["proof_type", "jwt"]
-          },
-          "credential_definition": {
-            "type": "object",
-            "properties": {
-              "type": {
-                "type": "array",
-                "items": { "type": "string" },
-                "example": ["VerifiableCredential", "UniversityDegreeCredential"]
-              }
-            },
-            "required": ["type"]
-          }
-        },
-        "required": ["format", "proof", "credential_definition"]
+        "additionalProperties": true
       },
       "VerifyPayload": {
         "type": "object",
         "properties": {
-          "vp_token": {
-            "type": "string",
-            "description": "Verifiable Presentation Token",
-            "example": "eyJhbGciOi..."
-          },
-          "presentation_submission": {
-            "type": "string",
-            "description": "JSON string of presentation submission",
-            "example": "{\"id\":\"...\",\"definition_id\":\"...\",\"descriptor_map\":[...]}"
-          }
+          "vp_token": { "type": "string" },
+          "presentation_submission": { "type": "string" }
         },
         "required": ["vp_token", "presentation_submission"]
-      },
-      "KeyDefinition": {
-        "type": "object",
-        "properties": {
-          "algorithm": { "type": "string", "example": "EdDSA" },
-          "cryptoProvider": { "type": "string", "example": "RustCrypto" },
-          "keyId": {
-            "type": "object",
-            "properties": { "id": { "type": "string", "example": "key-1" } },
-            "required": ["id"]
-          },
-          "keyPair": { "type": "object", "description": "Key Pair JSON" },
-          "keyset_handle": { "type": "object", "nullable": true }
-        },
-        "required": ["algorithm", "cryptoProvider", "keyId", "keyPair"]
-      },
-      "DidsInfo": {
-        "type": "object",
-        "properties": {
-          "did": { "type": "string", "example": "did:web:example.com" },
-          "alias": { "type": "string", "example": "my-did" },
-          "document": { "type": "string", "example": "{\"@context\":...}" },
-          "keyId": { "type": "string", "example": "key-1" },
-          "default": { "type": "boolean", "example": true },
-          "createdOn": { "type": "string", "example": "2025-01-01T12:00:00Z" }
-        },
-        "required": ["did", "alias", "document", "keyId", "default", "createdOn"]
       }
     }
   },
   "paths": {
-    "/status": {
+    "/health": {
       "get": {
-        "summary": "Check Server Status",
-        "description": "Returns the health status of the server.",
+        "operationId": "getHealth",
+        "summary": "Check Server Health",
+        "tags": ["Health"],
         "responses": {
-          "200": {
-            "description": "Server is up and running",
-            "content": {
-              "text/plain": {
-                "schema": { "type": "string", "example": "Server is Okay!" }
-              }
-            }
-          }
+          "200": { "description": "Healthy" }
         }
       }
     },
-    "/approver/all": {
+    "/me": {
       "get": {
-        "summary": "Get All Approval Requests",
-        "tags": ["Approver"],
+        "operationId": "getMe",
+        "summary": "Get Current Console User Session",
+        "tags": ["Session"],
+        "security": [{ "BearerAuth": [] }],
         "responses": {
           "200": {
-            "description": "List of pending requests",
+            "description": "Authenticated user info",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/MeDto" }
+              }
+            }
+          },
+          "401": { "description": "Unauthorized" }
+        }
+      }
+    },
+    "/minions/all": {
+      "get": {
+        "operationId": "getAllParticipants",
+        "summary": "List All Known Network Participants",
+        "tags": ["Participants"],
+        "security": [{ "BearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Participants array",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "array",
-                  "items": { "type": "object" },
-                  "example": [{ "id": "req-1", "status": "pending" }]
+                  "items": { "$ref": "#/components/schemas/ParticipantDto" }
                 }
               }
-            }
-          },
-          "500": {
-            "description": "Internal Server Error",
-            "content": {
-              "application/json": { "schema": { "$ref": "#/components/schemas/Error" } }
             }
           }
         }
       }
     },
-    "/approver/{id}": {
+    "/minions/myself": {
       "get": {
-        "summary": "Get Approval Request by ID",
-        "tags": ["Approver"],
+        "operationId": "getMyself",
+        "summary": "Get Local Authority Participant Identity",
+        "tags": ["Participants"],
+        "security": [{ "BearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Local participant record",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ParticipantDto" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/minions/{id}": {
+      "get": {
+        "operationId": "getParticipantById",
+        "summary": "Get Participant by DID Identifier",
+        "tags": ["Participants"],
+        "security": [{ "BearerAuth": [] }],
         "parameters": [
           {
             "name": "id",
@@ -313,24 +453,73 @@
         ],
         "responses": {
           "200": {
-            "description": "Request details",
+            "description": "Participant details",
             "content": {
               "application/json": {
-                "schema": { "type": "object", "example": { "id": "req-1", "status": "pending" } }
+                "schema": { "$ref": "#/components/schemas/ParticipantDto" }
               }
             }
           },
           "404": {
-            "description": "Request not found",
+            "description": "Not Found",
             "content": {
               "application/json": { "schema": { "$ref": "#/components/schemas/Error" } }
             }
           }
         }
+      }
+    },
+    "/approver/all": {
+      "get": {
+        "operationId": "getAllRequests",
+        "summary": "Get All Credential Requests",
+        "tags": ["Approver"],
+        "security": [{ "BearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "List of credential grant requests",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/RecvGrantDto" }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/approver/{id}": {
+      "get": {
+        "operationId": "getRequestById",
+        "summary": "Get Credential Request Grant by ID",
+        "tags": ["Approver"],
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Grant record",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/RecvGrantDto" }
+              }
+            }
+          }
+        }
       },
       "post": {
-        "summary": "Process Approval Request",
+        "operationId": "manageRequest",
+        "summary": "Approve or Reject Credential Request",
         "tags": ["Approver"],
+        "security": [{ "BearerAuth": [] }],
         "parameters": [
           {
             "name": "id",
@@ -348,53 +537,22 @@
           }
         },
         "responses": {
-          "200": { "description": "Request processed successfully" },
-          "400": {
-            "description": "Bad Request or Invalid Format",
-            "content": {
-              "application/json": { "schema": { "$ref": "#/components/schemas/Error" } }
-            }
-          }
-        }
-      }
-    },
-    "/gate/access": {
-      "post": {
-        "summary": "GNAP TX Request",
-        "tags": ["GateKeeper"],
-        "description": "Initial request to start a GNAP transaction.",
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": { "$ref": "#/components/schemas/GrantRequest" }
-            }
-          }
-        },
-        "responses": {
           "200": {
-            "description": "Transaction started",
+            "description": "Decision processed",
             "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/GrantResponse" }
-              }
+              "text/plain": { "schema": { "type": "string" } }
             }
           },
-          "400": {
-            "description": "Invalid Request",
-            "content": {
-              "application/json": { "schema": { "$ref": "#/components/schemas/Error" } }
-            }
-          }
+          "422": { "description": "Interaction rejected or failed" }
         }
       }
     },
-    "/gate/continue/{id}": {
-      "post": {
-        "summary": "GNAP Continue Request",
-        "tags": ["GateKeeper"],
-        "description": "Continue a GNAP transaction after user interaction.",
-        "security": [{ "GnapAuth": [] }],
+    "/approver/{id}/details": {
+      "get": {
+        "operationId": "getRequestDetails",
+        "summary": "Get Full Credential Request Details (Grant, Issuance, Interaction, Verification)",
+        "tags": ["Approver"],
+        "security": [{ "BearerAuth": [] }],
         "parameters": [
           {
             "name": "id",
@@ -403,27 +561,345 @@
             "schema": { "type": "string" }
           }
         ],
+        "responses": {
+          "200": {
+            "description": "Full request details bundle",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/RequestDetailsDto" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/wallet/is-linked": {
+      "get": {
+        "operationId": "isWalletLinked",
+        "summary": "Check if Wallet is Linked",
+        "tags": ["Wallet"],
+        "security": [{ "BearerAuth": [] }],
+        "responses": {
+          "200": { "description": "Wallet is linked" },
+          "404": { "description": "Wallet is not linked" }
+        }
+      }
+    },
+    "/wallet/link": {
+      "post": {
+        "operationId": "linkWallet",
+        "summary": "Link and Initialize Wallet",
+        "tags": ["Wallet"],
+        "security": [{ "BearerAuth": [] }],
+        "responses": {
+          "200": { "description": "Wallet linked" }
+        }
+      }
+    },
+    "/wallet/info": {
+      "get": {
+        "operationId": "getWalletInfo",
+        "summary": "Get Wallet Overview Information",
+        "tags": ["Wallet"],
+        "security": [{ "BearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Wallet overview",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/WalletInfoDto" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/wallet/keys": {
+      "get": {
+        "operationId": "getWalletKeys",
+        "summary": "List Registered Wallet Keys",
+        "tags": ["Wallet"],
+        "security": [{ "BearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "List of keys",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/WalletKeyDto" }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/wallet/key": {
+      "post": {
+        "operationId": "registerWalletKey",
+        "summary": "Import Private Key PEM into Wallet",
+        "tags": ["Wallet"],
+        "security": [{ "BearerAuth": [] }],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
-              "schema": { "$ref": "#/components/schemas/RefBody" }
+              "schema": { "$ref": "#/components/schemas/RegisterKeyRequest" }
             }
           }
         },
         "responses": {
+          "201": { "description": "Key registered" }
+        }
+      }
+    },
+    "/wallet/key/{id}": {
+      "delete": {
+        "operationId": "deleteWalletKey",
+        "summary": "Delete Wallet Key by ID",
+        "tags": ["Wallet"],
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Key deleted" }
+        }
+      }
+    },
+    "/wallet/did": {
+      "get": {
+        "operationId": "getWalletDefaultDid",
+        "summary": "Get Default Wallet DID String",
+        "tags": ["Wallet"],
+        "security": [{ "BearerAuth": [] }],
+        "responses": {
           "200": {
-            "description": "Transaction continued or completed",
+            "description": "Default DID",
+            "content": { "text/plain": { "schema": { "type": "string" } } }
+          }
+        }
+      },
+      "post": {
+        "operationId": "registerWalletDid",
+        "summary": "Create and Register a DID",
+        "tags": ["Wallet"],
+        "security": [{ "BearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/RegisterDidRequest" }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "DID registered" }
+        }
+      }
+    },
+    "/wallet/did/{id}": {
+      "delete": {
+        "operationId": "deleteWalletDid",
+        "summary": "Delete DID by ID",
+        "tags": ["Wallet"],
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "DID deleted" }
+        }
+      }
+    },
+    "/wallet/did/{id}/default": {
+      "post": {
+        "operationId": "setDefaultWalletDid",
+        "summary": "Set Default Wallet DID",
+        "tags": ["Wallet"],
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Updated DID record",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/WalletDidDto" } }
+            }
+          }
+        }
+      }
+    },
+    "/wallet/did/{id}/key/{key_id}": {
+      "post": {
+        "operationId": "addKeyToDid",
+        "summary": "Bind Key to DID",
+        "tags": ["Wallet"],
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "key_id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Updated DID record",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/WalletDidDto" } }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "removeKeyFromDid",
+        "summary": "Remove Key from DID",
+        "tags": ["Wallet"],
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "key_id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Updated DID record",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/WalletDidDto" } }
+            }
+          }
+        }
+      }
+    },
+    "/wallet/did/{id}/key/default/{key_id}": {
+      "post": {
+        "operationId": "setDefaultDidKey",
+        "summary": "Set Default Key for DID",
+        "tags": ["Wallet"],
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "key_id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Updated DID record",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/WalletDidDto" } }
+            }
+          }
+        }
+      }
+    },
+    "/wallet/vcs": {
+      "get": {
+        "operationId": "getWalletCredentials",
+        "summary": "List Wallet Verifiable Credentials",
+        "tags": ["Wallet"],
+        "security": [{ "BearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "List of credentials",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/GrantResponse" }
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/WalletCredentialDto" }
+                }
               }
             }
-          },
-          "401": {
-            "description": "Unauthorized - Missing or Invalid Token",
+          }
+        }
+      }
+    },
+    "/wallet/credential/{id}": {
+      "delete": {
+        "operationId": "deleteWalletCredential",
+        "summary": "Delete Credential from Wallet",
+        "tags": ["Wallet"],
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Credential deleted" }
+        }
+      }
+    },
+    "/wallet/oid4vci": {
+      "post": {
+        "operationId": "processOidc4vci",
+        "summary": "Process Inbound OID4VCI Credential Offer URI",
+        "tags": ["Wallet"],
+        "security": [{ "BearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": { "schema": { "$ref": "#/components/schemas/OidcUriRequest" } }
+          }
+        },
+        "responses": {
+          "200": { "description": "Offer processed" }
+        }
+      }
+    },
+    "/wallet/oid4vp": {
+      "post": {
+        "operationId": "processOidc4vp",
+        "summary": "Process OID4VP Authorization Request URI",
+        "tags": ["Wallet"],
+        "security": [{ "BearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": { "schema": { "$ref": "#/components/schemas/OidcUriRequest" } }
+          }
+        },
+        "responses": {
+          "200": { "description": "Presentation submitted" }
+        }
+      }
+    },
+    "/gate/access": {
+      "post": {
+        "operationId": "gnapAccess",
+        "summary": "GNAP TX Request",
+        "tags": ["GateKeeper"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": { "schema": { "$ref": "#/components/schemas/GrantRequest" } }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Transaction started",
             "content": {
-              "application/json": { "schema": { "$ref": "#/components/schemas/Error" } }
+              "application/json": { "schema": { "$ref": "#/components/schemas/GrantResponse" } }
+            }
+          }
+        }
+      }
+    },
+    "/gate/continue/{id}": {
+      "post": {
+        "operationId": "gnapContinue",
+        "summary": "GNAP Continue Request",
+        "tags": ["GateKeeper"],
+        "security": [{ "GnapAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": { "schema": { "$ref": "#/components/schemas/RefBody" } }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Transaction continued",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/GrantResponse" } }
             }
           }
         }
@@ -431,101 +907,24 @@
     },
     "/issuer/credentialOffer": {
       "get": {
+        "operationId": "getCredentialOffer",
         "summary": "Get Credential Offer Data",
         "tags": ["Issuer"],
         "parameters": [
-          {
-            "name": "id",
-            "in": "query",
-            "required": true,
-            "schema": { "type": "string" },
-            "description": "Hash ID of the offer"
-          }
+          { "name": "id", "in": "query", "required": true, "schema": { "type": "string" } }
         ],
         "responses": {
           "200": {
             "description": "Credential Offer",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "example": {
-                    "credential_issuer": "https://issuer.example.com",
-                    "credential_configuration_ids": ["UniversityDegreeCredential"]
-                  }
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Bad Format - Missing ID",
-            "content": {
-              "application/json": { "schema": { "$ref": "#/components/schemas/Error" } }
-            }
-          }
-        }
-      }
-    },
-    "/issuer/.well-known/openid-credential-issuer": {
-      "get": {
-        "summary": "Get Issuer Metadata",
-        "tags": ["Issuer"],
-        "responses": {
-          "200": {
-            "description": "Issuer Metadata",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "example": { "credential_issuer": "https://issuer.example.com" }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/issuer/.well-known/oauth-authorization-server": {
-      "get": {
-        "summary": "Get OAuth Authorization Server Metadata",
-        "tags": ["Issuer"],
-        "responses": {
-          "200": {
-            "description": "OAuth Metadata",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "example": { "token_endpoint": "https://issuer.example.com/token" }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/issuer/jwks": {
-      "get": {
-        "summary": "Get JWKS",
-        "tags": ["Issuer"],
-        "responses": {
-          "200": {
-            "description": "JSON Web Key Set",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "example": { "keys": [{ "kty": "RSA", "kid": "1", "n": "...", "e": "AQAB" }] }
-                }
-              }
-            }
+            "content": { "application/json": { "schema": { "type": "object" } } }
           }
         }
       }
     },
     "/issuer/token": {
       "post": {
-        "summary": "Get Access Token",
+        "operationId": "issuerToken",
+        "summary": "Exchange Pre-Authorized Code for Access Token",
         "tags": ["Issuer"],
         "requestBody": {
           "required": true,
@@ -538,94 +937,54 @@
         "responses": {
           "200": {
             "description": "Access Token Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "example": {
-                    "access_token": "token-123",
-                    "token_type": "Bearer",
-                    "expires_in": 3600
-                  }
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Invalid Request",
-            "content": {
-              "application/json": { "schema": { "$ref": "#/components/schemas/Error" } }
-            }
+            "content": { "application/json": { "schema": { "type": "object" } } }
           }
         }
       }
     },
     "/issuer/credential": {
       "post": {
-        "summary": "Request Credential",
+        "operationId": "issuerCredential",
+        "summary": "Request Verifiable Credential",
         "tags": ["Issuer"],
         "security": [{ "BearerAuth": [] }],
         "requestBody": {
           "required": true,
           "content": {
-            "application/json": {
-              "schema": { "$ref": "#/components/schemas/CredentialRequest" }
-            }
+            "application/json": { "schema": { "$ref": "#/components/schemas/CredentialRequest" } }
           }
         },
         "responses": {
           "200": {
             "description": "Credential Issued",
-            "content": {
-              "application/json": {
-                "schema": { "type": "object", "example": { "credential": "eyJ..." } }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": { "schema": { "$ref": "#/components/schemas/Error" } }
-            }
+            "content": { "application/json": { "schema": { "type": "object" } } }
           }
         }
       }
     },
     "/verifier/pd/{state}": {
       "get": {
+        "operationId": "getPresentationDefinition",
         "summary": "Get Presentation Definition",
         "tags": ["Verifier"],
         "parameters": [
-          {
-            "name": "state",
-            "in": "path",
-            "required": true,
-            "schema": { "type": "string" }
-          }
+          { "name": "state", "in": "path", "required": true, "schema": { "type": "string" } }
         ],
         "responses": {
           "200": {
             "description": "Presentation Definition",
-            "content": {
-              "application/json": {
-                "schema": { "type": "object", "example": { "input_descriptors": [] } }
-              }
-            }
+            "content": { "application/json": { "schema": { "type": "object" } } }
           }
         }
       }
     },
     "/verifier/verify/{state}": {
       "post": {
+        "operationId": "verifyPresentation",
         "summary": "Verify Presentation",
         "tags": ["Verifier"],
         "parameters": [
-          {
-            "name": "state",
-            "in": "path",
-            "required": true,
-            "schema": { "type": "string" }
-          }
+          { "name": "state", "in": "path", "required": true, "schema": { "type": "string" } }
         ],
         "requestBody": {
           "required": true,
@@ -638,141 +997,7 @@
         "responses": {
           "200": {
             "description": "Verification Successful",
-            "content": {
-              "text/plain": {
-                "schema": { "type": "string", "example": "https://redirect.example.com" }
-              }
-            }
-          },
-          "400": {
-            "description": "Verification Failed or Bad Request",
-            "content": {
-              "application/json": { "schema": { "$ref": "#/components/schemas/Error" } }
-            }
-          }
-        }
-      }
-    },
-    "/wallet/register": {
-      "post": {
-        "summary": "Register Wallet",
-        "tags": ["Wallet"],
-        "responses": {
-          "201": { "description": "Wallet Registered Successfully" },
-          "500": {
-            "description": "Internal Server Error",
-            "content": {
-              "application/json": { "schema": { "$ref": "#/components/schemas/Error" } }
-            }
-          }
-        }
-      }
-    },
-    "/wallet/login": {
-      "post": {
-        "summary": "Login Wallet",
-        "tags": ["Wallet"],
-        "responses": {
-          "200": { "description": "Login Successful" },
-          "500": {
-            "description": "Login Failed",
-            "content": {
-              "application/json": { "schema": { "$ref": "#/components/schemas/Error" } }
-            }
-          }
-        }
-      }
-    },
-    "/wallet/logout": {
-      "post": {
-        "summary": "Logout Wallet",
-        "tags": ["Wallet"],
-        "responses": {
-          "200": { "description": "Logout Successful" }
-        }
-      }
-    },
-    "/wallet/onboard": {
-      "post": {
-        "summary": "Full Onboard Wallet",
-        "tags": ["Wallet"],
-        "responses": {
-          "201": { "description": "Onboarded Successfully" }
-        }
-      }
-    },
-    "/wallet/partial-onboard": {
-      "post": {
-        "summary": "Partial Onboard Wallet",
-        "tags": ["Wallet"],
-        "responses": {
-          "201": { "description": "Partial Onboard Successful" }
-        }
-      }
-    },
-    "/wallet/key": {
-      "post": {
-        "summary": "Register Key",
-        "tags": ["Wallet"],
-        "responses": {
-          "201": { "description": "Key Registered" }
-        }
-      },
-      "delete": {
-        "summary": "Delete Key",
-        "tags": ["Wallet"],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": { "$ref": "#/components/schemas/KeyDefinition" }
-            }
-          }
-        },
-        "responses": {
-          "200": { "description": "Key Deleted" }
-        }
-      }
-    },
-    "/wallet/did": {
-      "post": {
-        "summary": "Register DID",
-        "tags": ["Wallet"],
-        "responses": {
-          "201": { "description": "DID Registered" }
-        }
-      },
-      "delete": {
-        "summary": "Delete DID",
-        "tags": ["Wallet"],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": { "$ref": "#/components/schemas/DidsInfo" }
-            }
-          }
-        },
-        "responses": {
-          "200": { "description": "DID Deleted" }
-        }
-      }
-    },
-    "/wallet/did.json": {
-      "get": {
-        "summary": "Get DID Document",
-        "tags": ["Wallet"],
-        "responses": {
-          "200": {
-            "description": "DID Document",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "example": { "id": "did:web:example.com", "verificationMethod": [] }
-                }
-              }
-            }
+            "content": { "text/plain": { "schema": { "type": "string" } } }
           }
         }
       }
