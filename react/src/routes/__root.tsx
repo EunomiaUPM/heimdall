@@ -69,7 +69,7 @@ export function HeimdallSignIn({ onSignIn }: { onSignIn: () => void }) {
       pillars="GNAP GateKeeper • OID4VCI Issuer • OID4VP Verifier"
       logoSrc={eunomiaLogoOrangeLight}
       bubbleColors={HEIMDALL_BUBBLE_COLORS}
-      bubbleClassName="from-[#140b07] via-[#1f1009] to-[#0a0812]"
+      bubbleClassName="from-[#0b0b1a] via-[#15101d] to-[#080814]"
       onSignIn={onSignIn}
     />
   );

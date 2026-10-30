@@ -3,10 +3,10 @@
 :root {
   --background: #09091B;
   --foreground: #f8f8fa;
-  --brand-orange: #fda658;
-  --primary-700: #c2410c;
-  --primary-600: #ea580c;
-  --primary-500: #f97316;
+  --brand-orange: #ecba94;
+  --primary-700: #964c2a;
+  --primary-600: #ad5a32;
+  --primary-500: #c47044;
   --border-color: rgba(255, 255, 255, 0.12);
 }
 
@@ -14,8 +14,8 @@ body {
   background-color: var(--background) !important;
   color: var(--foreground) !important;
   font-family: 'Source Sans 3', system-ui, sans-serif !important;
-  background-image: radial-gradient(circle at 15% 15%, rgba(249, 115, 22, 0.08) 0%, transparent 45%),
-    radial-gradient(circle at 85% 85%, rgba(253, 166, 88, 0.06) 0%, transparent 45%) !important;
+  background-image: radial-gradient(circle at 15% 15%, rgba(196, 112, 68, 0.08) 0%, transparent 45%),
+    radial-gradient(circle at 85% 85%, rgba(236, 186, 148, 0.06) 0%, transparent 45%) !important;
   margin: 0 !important;
   padding: 0 !important;
 }
@@ -82,16 +82,16 @@ body {
 }
 
 .pf-c-form-control:focus {
-  border-color: rgba(253, 166, 88, 0.65) !important;
+  border-color: rgba(236, 186, 148, 0.6) !important;
   outline: none !important;
-  box-shadow: 0 0 0 1px rgba(253, 166, 88, 0.65) !important;
+  box-shadow: 0 0 0 1px rgba(236, 186, 148, 0.6) !important;
 }
 
 .pf-c-button.pf-m-primary {
   background-color: var(--primary-700) !important;
   background-image: none !important;
   color: #ffffff !important;
-  border: 1px solid rgba(249, 115, 22, 0.35) !important;
+  border: 1px solid rgba(196, 112, 68, 0.35) !important;
   border-radius: 0.5rem !important;
   font-weight: 500 !important;
   width: 100% !important;
@@ -104,7 +104,7 @@ body {
 
 .pf-c-button.pf-m-primary:hover {
   background-color: var(--primary-600) !important;
-  border-color: rgba(253, 166, 88, 0.55) !important;
+  border-color: rgba(236, 186, 148, 0.5) !important;
 }
 
 .pf-c-button.pf-m-primary:active {
