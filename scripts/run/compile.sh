@@ -5,7 +5,7 @@ set -e
 cd "$(dirname "${BASH_SOURCE[0]}")/../../react"
 
 echo "Installing dependencies..."
-npm install --legacy-peer-deps
+npm install
 
 echo "Building React Application for Production..."
 if npm run build; then

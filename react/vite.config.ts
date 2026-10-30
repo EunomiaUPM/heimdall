@@ -3,9 +3,13 @@ import react from "@vitejs/plugin-react";
 import path from "path";
 
 export default defineConfig(() => {
+  const gatewayPort =
+    process.env.VITE_GATEWAY_PORT || process.env.VITE_BACKEND_PORT || "1500";
   const backendTarget =
+    process.env.VITE_GATEWAY_TARGET ||
     process.env.VITE_BACKEND_TARGET ||
-    `http://127.0.0.1:${process.env.VITE_BACKEND_PORT || "1500"}`;
+    `http://127.0.0.1:${gatewayPort}`;
+  const devPort = Number(process.env.VITE_PORT) || 5176;
 
   return {
     base: "/admin/",
@@ -20,7 +24,7 @@ export default defineConfig(() => {
       exclude: ["lucide-react", "@eunomia/ui"],
     },
     server: {
-      port: 5175,
+      port: devPort,
       proxy: {
         "/api": {
           target: backendTarget,
