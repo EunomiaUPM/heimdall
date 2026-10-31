@@ -19,13 +19,14 @@ use std::sync::Arc;
 
 use axum::extract::rejection::JsonRejection;
 use axum::extract::{Path, State};
-use axum::http::StatusCode;
+use axum::http::{HeaderMap, StatusCode};
 use axum::response::IntoResponse;
 use axum::routing::get;
 use axum::{Json, Router};
 use serde_json::Value;
 use ymir::data::entities::received::grant::Model;
 use ymir::errors::AppResult;
+use ymir::http_tracing::ExtractedHeaders;
 use ymir::types::gnap::InteractionFinishResponse;
 use ymir::types::gnap::VcDecisionApproval;
 use ymir::types::oauth::UserInfo;
@@ -57,33 +58,40 @@ impl ApproverRouter {
     async fn get_all_requests(
         State(approver): State<Arc<dyn ApproverModule>>,
         user: UserInfo,
-    ) -> AppResult<Json<Vec<Model>>> {
-        Ok(Json(approver.get_all(&user).await?))
+        headers: ExtractedHeaders,
+    ) -> AppResult<(HeaderMap, Json<Vec<Model>>)> {
+        let grants = approver.get_all(&user).await?;
+        Ok((headers.response_headers(), Json(grants)))
     }
 
     async fn get_one_request(
         State(approver): State<Arc<dyn ApproverModule>>,
         user: UserInfo,
+        headers: ExtractedHeaders,
         Path(id): Path<String>,
-    ) -> AppResult<Json<Model>> {
-        Ok(Json(approver.get_by_id(&user, id).await?))
+    ) -> AppResult<(HeaderMap, Json<Model>)> {
+        let grant = approver.get_by_id(&user, id).await?;
+        Ok((headers.response_headers(), Json(grant)))
     }
     async fn get_one_with_details(
         State(gatekeeper): State<Arc<dyn ApproverModule>>,
         user: UserInfo,
+        headers: ExtractedHeaders,
         Path(id): Path<String>,
-    ) -> AppResult<Json<Value>> {
-        Ok(Json(gatekeeper.get_by_id_with_details(&user, id).await?))
+    ) -> AppResult<(HeaderMap, Json<Value>)> {
+        let details = gatekeeper.get_by_id_with_details(&user, id).await?;
+        Ok((headers.response_headers(), Json(details)))
     }
 
     async fn manage_request(
         State(gatekeeper): State<Arc<dyn ApproverModule>>,
         user: UserInfo,
+        headers: ExtractedHeaders,
         Path(id): Path<String>,
         payload: Result<Json<VcDecisionApproval>, JsonRejection>,
     ) -> AppResult {
         let payload = extract_payload(payload)?;
-        Ok(match gatekeeper.manage_req(&user, id, payload).await? {
+        let response = match gatekeeper.manage_req(&user, id, payload).await? {
             InteractionFinishResponse::Success(Some(uri)) => (StatusCode::OK, uri).into_response(),
             InteractionFinishResponse::Success(None) => StatusCode::OK.into_response(),
             InteractionFinishResponse::Failure(Some(uri)) => {
@@ -92,6 +100,7 @@ impl ApproverRouter {
             InteractionFinishResponse::Failure(None) => {
                 StatusCode::UNPROCESSABLE_ENTITY.into_response()
             }
-        })
+        };
+        Ok((headers.response_headers(), response).into_response())
     }
 }

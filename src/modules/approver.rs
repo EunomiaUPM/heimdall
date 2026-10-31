@@ -28,6 +28,7 @@ use ymir::types::oauth::{RoleTrait, UserInfo};
 
 #[async_trait]
 pub trait ApproverModule: HasRepo + HasGateKeeper + Send + Sync + 'static {
+    #[tracing::instrument(level = "info", skip_all, err, fields(user = %user.id()))]
     async fn manage_req(
         &self,
         user: &UserInfo,
@@ -56,6 +57,7 @@ pub trait ApproverModule: HasRepo + HasGateKeeper + Send + Sync + 'static {
             .await
     }
     // =================================== GETTERS FOR FRONTEND ====================================
+    #[tracing::instrument(level = "info", skip_all, err, fields(user = %user.id()))]
     async fn get_all(&self, user: &UserInfo) -> Outcome<Vec<Model>> {
         let grants = self.repo().recv_grant().get_all(None, None).await?;
         Ok(grants
@@ -64,12 +66,14 @@ pub trait ApproverModule: HasRepo + HasGateKeeper + Send + Sync + 'static {
             .filter(|grant| user.sees_team(&grant.role, &grant.visibility))
             .collect())
     }
+    #[tracing::instrument(level = "info", skip_all, err, fields(user = %user.id()))]
     async fn get_by_id(&self, user: &UserInfo, id: String) -> Outcome<Model> {
         let grant = self.repo().recv_grant().get_by_id(&id).await?;
         user.ensure_sees_team(&grant.role, &grant.visibility, &id)?;
         Ok(grant)
     }
 
+    #[tracing::instrument(level = "info", skip_all, err, fields(user = %user.id()))]
     async fn get_by_id_with_details(&self, user: &UserInfo, id: String) -> Outcome<Value> {
         let grant = self.repo().recv_grant().get_by_id(&id).await?;
         user.ensure_sees_team(&grant.role, &grant.visibility, &id)?;

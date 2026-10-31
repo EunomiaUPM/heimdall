@@ -18,10 +18,12 @@
 use std::sync::Arc;
 
 use axum::extract::State;
+use axum::http::HeaderMap;
 use axum::routing::get;
 use axum::{Json, Router};
 use ymir::data::entities::shared::participant;
 use ymir::errors::AppResult;
+use ymir::http_tracing::ExtractedHeaders;
 
 use crate::http::routes::fed_catalog;
 use crate::modules::FedCatalogModule;
@@ -45,7 +47,9 @@ impl FedCatalogRouter {
 
     async fn get_all(
         State(federator): State<Arc<dyn FedCatalogModule>>,
-    ) -> AppResult<Json<Vec<participant::Model>>> {
-        Ok(Json(federator.get_all().await?))
+        headers: ExtractedHeaders,
+    ) -> AppResult<(HeaderMap, Json<Vec<participant::Model>>)> {
+        let participants = federator.get_all().await?;
+        Ok((headers.response_headers(), Json(participants)))
     }
 }

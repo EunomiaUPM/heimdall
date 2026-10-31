@@ -39,6 +39,7 @@ pub trait GatekeeperModule:
     + Sync
     + 'static
 {
+    #[tracing::instrument(level = "info", skip_all)]
     async fn manage_grant_req(&self, payload: Bytes, headers: HeaderMap) -> GrantResponse {
         self.inner_manage_grant_req(&payload, &headers)
             .await
@@ -49,6 +50,7 @@ pub trait GatekeeperModule:
             })
     }
 
+    #[tracing::instrument(level = "info", skip_all)]
     async fn manage_cont_req(
         &self,
         cont_id: String,
@@ -65,6 +67,7 @@ pub trait GatekeeperModule:
     }
 
     // ========================================= INTERNALS =========================================
+    #[tracing::instrument(level = "info", skip_all, err)]
     async fn inner_manage_grant_req(
         &self,
         payload: &Bytes,
@@ -143,6 +146,7 @@ pub trait GatekeeperModule:
         }
     }
 
+    #[tracing::instrument(level = "info", skip_all, err)]
     async fn inner_manage_cont_req(
         &self,
         cont_id: &str,

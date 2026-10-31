@@ -31,15 +31,18 @@ use ymir::utils::require_field;
 pub trait IssuerModule:
     HasGateKeeper + HasIssuer + HasRepo + HasVcBuilder + HasWallet + Send + Sync + 'static
 {
+    #[tracing::instrument(level = "info", skip_all, err)]
     async fn get_cred_offer_data(&self, id: &str) -> Outcome<VcCredOffer> {
         let model = self.repo().issuance().get_by_id(&id).await?;
         Ok(self.issuer().get_cred_offer_data(&model))
     }
+    #[tracing::instrument(level = "info", skip_all)]
     fn issuer_metadata(&self) -> IssuerMetadata {
         let vcs = self.vc_builder().get_role().available_credentials();
         self.issuer().get_issuer_metadata(&vcs)
     }
 
+    #[tracing::instrument(level = "info", skip_all)]
     fn oauth_server_metadata(&self) -> AuthServerMetadata {
         self.issuer().get_oauth_server_data()
     }
@@ -48,6 +51,7 @@ pub trait IssuerModule:
     //     self.issuer().get_jwks_data().await
     // }
 
+    #[tracing::instrument(level = "info", skip_all, err)]
     async fn get_token(&self, payload: TokenRequest) -> Outcome<IssuingToken> {
         match payload.grant_type {
             OidcGrantType::PreAuthorizedCode => {
@@ -66,6 +70,7 @@ pub trait IssuerModule:
         }
     }
 
+    #[tracing::instrument(level = "info", skip_all, err)]
     async fn get_credential(&self, payload: CredentialRequest, token: String) -> Outcome<GiveVC> {
         let mut issuance = self.repo().issuance().get_by_token(&token).await?;
 

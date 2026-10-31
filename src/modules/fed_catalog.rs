@@ -22,6 +22,7 @@ use ymir::errors::Outcome;
 
 #[async_trait]
 pub trait FedCatalogModule: HasRepo + Send + Sync + 'static {
+    #[tracing::instrument(level = "info", skip_all, err)]
     async fn get_all(&self) -> Outcome<Vec<Model>> {
         self.repo().participant().get_all(None, None).await
     }

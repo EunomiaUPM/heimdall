@@ -24,6 +24,7 @@ use axum::http::HeaderMap;
 use axum::routing::{get, post};
 use axum::{Form, Json, Router};
 use ymir::errors::AppResult;
+use ymir::http_tracing::ExtractedHeaders;
 use ymir::types::issuance::{
     AuthServerMetadata, CredentialRequest, GiveVC, IssuerMetadata, IssuingToken, TokenRequest,
     VcCredOffer,
@@ -64,22 +65,29 @@ impl IssuerRouter {
 
     async fn cred_offer(
         State(issuer): State<Arc<dyn IssuerModule>>,
+        trace: ExtractedHeaders,
         Query(params): Query<HashMap<String, String>>,
-    ) -> AppResult<Json<VcCredOffer>> {
+    ) -> AppResult<(HeaderMap, Json<VcCredOffer>)> {
         let id = extract_query_param(&params, "id")?;
-        Ok(Json(issuer.get_cred_offer_data(&id).await?))
+        let offer = issuer.get_cred_offer_data(&id).await?;
+        Ok((trace.response_headers(), Json(offer)))
     }
 
     async fn get_issuer(
         State(issuer): State<Arc<dyn IssuerModule>>,
-    ) -> AppResult<Json<IssuerMetadata>> {
-        Ok(Json(issuer.issuer_metadata()))
+        trace: ExtractedHeaders,
+    ) -> AppResult<(HeaderMap, Json<IssuerMetadata>)> {
+        Ok((trace.response_headers(), Json(issuer.issuer_metadata())))
     }
 
     async fn get_oauth_server(
         State(issuer): State<Arc<dyn IssuerModule>>,
-    ) -> AppResult<Json<AuthServerMetadata>> {
-        Ok(Json(issuer.oauth_server_metadata()))
+        trace: ExtractedHeaders,
+    ) -> AppResult<(HeaderMap, Json<AuthServerMetadata>)> {
+        Ok((
+            trace.response_headers(),
+            Json(issuer.oauth_server_metadata()),
+        ))
     }
 
     // async fn get_jwks(State(issuer): State<Arc<dyn IssuerModule>>) -> AppResult<Json<Value>> {
@@ -88,19 +96,23 @@ impl IssuerRouter {
 
     async fn get_token(
         State(issuer): State<Arc<dyn IssuerModule>>,
+        trace: ExtractedHeaders,
         payload: Result<Form<TokenRequest>, FormRejection>,
-    ) -> AppResult<Json<IssuingToken>> {
+    ) -> AppResult<(HeaderMap, Json<IssuingToken>)> {
         let payload = extract_form_payload(payload)?;
-        Ok(Json(issuer.get_token(payload).await?))
+        let token = issuer.get_token(payload).await?;
+        Ok((trace.response_headers(), Json(token)))
     }
 
     async fn post_credential(
         State(authority): State<Arc<dyn IssuerModule>>,
+        trace: ExtractedHeaders,
         headers: HeaderMap,
         payload: Result<Json<CredentialRequest>, JsonRejection>,
-    ) -> AppResult<Json<GiveVC>> {
+    ) -> AppResult<(HeaderMap, Json<GiveVC>)> {
         let payload = extract_payload(payload)?;
         let token = extract_bearer_token(&headers)?;
-        Ok(Json(authority.get_credential(payload, token).await?))
+        let vc = authority.get_credential(payload, token).await?;
+        Ok((trace.response_headers(), Json(vc)))
     }
 }

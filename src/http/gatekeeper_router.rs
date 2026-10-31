@@ -26,6 +26,7 @@ use axum::response::IntoResponse;
 use axum::routing::post;
 use axum::{Json, Router};
 use ymir::errors::AppResult;
+use ymir::http_tracing::ExtractedHeaders;
 use ymir::types::gnap::grant_response::GrantResponse;
 
 pub struct GateKeeperRouter {
@@ -47,6 +48,7 @@ impl GateKeeperRouter {
 
     async fn access_req(
         State(gatekeeper): State<Arc<dyn GatekeeperModule>>,
+        trace: ExtractedHeaders,
         headers: HeaderMap,
         payload: Bytes,
     ) -> AppResult {
@@ -58,11 +60,12 @@ impl GateKeeperRouter {
             _ => StatusCode::OK,
         };
 
-        Ok((status, Json(response)).into_response())
+        Ok((status, trace.response_headers(), Json(response)).into_response())
     }
 
     async fn continue_req(
         State(gatekeeper): State<Arc<dyn GatekeeperModule>>,
+        trace: ExtractedHeaders,
         headers: HeaderMap,
         Path(id): Path<String>,
         payload: Bytes,
@@ -75,6 +78,6 @@ impl GateKeeperRouter {
             _ => StatusCode::OK,
         };
 
-        Ok((status, Json(response)).into_response())
+        Ok((status, trace.response_headers(), Json(response)).into_response())
     }
 }

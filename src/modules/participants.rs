@@ -26,10 +26,12 @@ use ymir::types::participants::ParticipantType;
 
 #[async_trait]
 pub trait ParticipantModule: HasRepo + HasWallet + HasConfig + Send + Sync + 'static {
+    #[tracing::instrument(level = "info", skip_all, err)]
     async fn get_all(&self) -> Outcome<Vec<Model>> {
         self.repo().participant().get_all(None, None).await
     }
     /// The authority itself is not stored as a participant, so its own DID answers `get_me`.
+    #[tracing::instrument(level = "info", skip_all, err)]
     async fn get_by_id(&self, id: String) -> Outcome<Model> {
         let own = self.wallet().get_identity().read().await.did().id().to_string();
         if id == own {
@@ -37,6 +39,7 @@ pub trait ParticipantModule: HasRepo + HasWallet + HasConfig + Send + Sync + 'st
         }
         self.repo().participant().get_by_id(&id).await
     }
+    #[tracing::instrument(level = "info", skip_all, err)]
     async fn get_me(&self) -> Outcome<Model> {
         let lock = self.wallet().get_identity();
         let identity = lock.read().await;

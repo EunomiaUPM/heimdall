@@ -26,16 +26,19 @@ use ymir::types::verification::{VerificationStatus, VerifyPayload};
 
 #[async_trait]
 pub trait VerifierModule: HasGateKeeper + HasVerifier + HasRepo + Send + Sync + 'static {
+    #[tracing::instrument(level = "info", skip_all, err)]
     async fn get_vp_def(&self, state: String) -> Outcome<VPDef> {
         let verification = self.repo().recv_verification().get_by_state(&state).await?;
         self.verifier().generate_vpd(&verification)
     }
     /// Signed Request Object of the verification opened with `state` (OpenID4VP 1.0
     /// `request_uri`), echoing the wallet's `wallet_nonce`, if any.
+    #[tracing::instrument(level = "info", skip_all, err)]
     async fn request_object(&self, state: String, wallet_nonce: Option<String>) -> Outcome<String> {
         let verification = self.repo().recv_verification().get_by_state(&state).await?;
         self.verifier().request_object(&verification, wallet_nonce).await
     }
+    #[tracing::instrument(level = "info", skip_all, err)]
     async fn verify(
         &self,
         state: String,

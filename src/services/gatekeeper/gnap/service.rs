@@ -169,6 +169,7 @@ impl GateKeeperTrait for GnapGateKeeperService {
             extra_fields: None,
         }
     }
+    #[tracing::instrument(level = "info", skip_all, err)]
     fn validate_grant(&self, payload: &Bytes, headers: &HeaderMap) -> Outcome<GrantRequest> {
         let grant_request: GrantRequest = serde_json::from_slice(payload)?;
 
@@ -206,6 +207,7 @@ impl GateKeeperTrait for GnapGateKeeperService {
         Ok(grant_request)
     }
 
+    #[tracing::instrument(level = "info", skip_all, err)]
     fn validate_cont_req(
         &self,
         interaction: &interaction::Model,
@@ -273,6 +275,7 @@ impl GateKeeperTrait for GnapGateKeeperService {
         }
     }
 
+    #[tracing::instrument(level = "info", skip_all, err)]
     async fn finish_interaction(
         &self,
         interaction: &interaction::Model,
