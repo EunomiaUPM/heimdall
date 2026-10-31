@@ -15,43 +15,11 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-use heimdall::setup::cmd::AuthorityCommands;
-use tracing::info;
-use tracing_subscriber::filter::LevelFilter;
-use tracing_subscriber::EnvFilter;
-use ymir::errors::{Errors, Outcome};
-
-const INFO: &str = r"
-----------
- _   _  _____ ________  ________  ___   _      _     
-| | | ||  ___|_   _|  \/  |  _  \/ _ \ | |    | |    
-| |_| || |__   | | | .  . | | | / /_\ \| |    | |    
-|  _  ||  __|  | | | |\/| | | | |  _  || |    | |    
-| | | || |___ _| |_| |  | | |/ /| | | || |____| |____
-\_| |_/\____/ \___/\_|  |_/___/ \_| |_/\_____/\_____/
-
-Starting Heimdall Authority ⚡🛡️
-UPM Dataspace multistack agent
-Show some love on https://github.com/EunomiaUPM/heimdall
-
-----------
-
-";
+use heimdall::setup::boot::{HeimdallBoot, SERVICE_BIG_NAME, SERVICE_NAME};
+use ymir::boot::cli::AgentCli;
+use ymir::errors::Outcome;
 
 #[tokio::main]
 async fn main() -> Outcome<()> {
-    let filter = EnvFilter::builder()
-        .with_default_directive(LevelFilter::INFO.into())
-        .parse("debug,sqlx::query=off")
-        .map_err(|e| {
-            let error = Errors::crazy("Unexpected error on main", Some(Box::new(e)));
-            error.log();
-            error
-        })?;
-    tracing_subscriber::fmt().with_env_filter(filter).init();
-    info!("{}", INFO);
-    AuthorityCommands::init_command_line().await.map_err(|e| {
-        e.log();
-        e
-    })
+    AgentCli::<HeimdallBoot>::run(SERVICE_NAME, SERVICE_BIG_NAME).await
 }

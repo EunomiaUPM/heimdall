@@ -15,30 +15,20 @@ path = "src/main.rs"
 [dependencies]
 serde = { version = "1.0.203", features = ["default", "derive"] }
 serde_json = { version = "1.0.117", features = ["default"] }
-clap = { version = "4.4.9", features = [
-    "env",
-    "derive",
-    "wrap_help",
-    "unicode",
-] }
 tokio = { version = "1.35.0", features = ["full"] }
 tracing = "0.1"
-tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 axum = { version = "0.8.8", features = ["ws"] }
 chrono = { version = "0.4.38", features = ["serde"] }
 uuid = { version = "1.8.0", features = ["serde", "default", "v4"] }
 sea-orm = { version = "1.1.1", features = ["sqlx-postgres", "sqlx-sqlite", "runtime-tokio", "macros", "with-json"] }
 sea-orm-migration = { version = "1.1.1" }
-json_to_table = "0.12.0"
 base64 = "0.22.1"
 tower-http = { version = "0.6.8", features = ["trace", "cors", "fs"] }
 x509-parser = "0.18.0"
 async-trait = "0.1.89"
-serde_norway = "0.9.42"
-axum-server = { version = "0.8.0", features = ["tls-rustls"] }
-rustls = { version = "0.23", features = ["ring"] }
 futures-util = "0.3.32"
 tokio-stream = { version = "0.1.18", features = ["sync"] }
-ymir = { git = "https://github.com/EunomiaUPM/ymir.git", branch = "multi-tenancy" }
+ymir = { git = "https://github.com/EunomiaUPM/ymir.git", rev = "4dc42001c631bac3934a528c7a790a0802933029" }
 #ymir = {git = "https://github.com/EunomiaUPM/ymir.git", tag = "v0.8.6"}
-#ymir = { path = "./../ymir" }
+#ymir = { path = "../ymir/crates/ymir" }
+

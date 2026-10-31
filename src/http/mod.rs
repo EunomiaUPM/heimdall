@@ -15,7 +15,6 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-mod core_router;
 mod fed_catalog_router;
 mod gatekeeper_router;
 mod issuer_router;
@@ -26,7 +25,6 @@ mod session;
 mod vcs_router;
 mod verifier_router;
 
-pub use core_router::CoreRouter;
 pub use fed_catalog_router::FedCatalogRouter;
 pub use gatekeeper_router::GateKeeperRouter;
 pub use issuer_router::IssuerRouter;

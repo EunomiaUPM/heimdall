@@ -15,15 +15,15 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-use std::env;
-use std::path::PathBuf;
-
 use serde::{Deserialize, Serialize};
-use tracing::debug;
-use ymir::config::traits::{ApiConfigTrait, ConnectionConfigTrait, DatabaseConfigTrait, DidConfigTrait, HostsConfigTrait, OauthConfigTrait, VerifyReqConfigTrait, WalletConfigTrait};
-use ymir::config::types::{ApiConfig, CommonHostsConfig, ConnectionConfig, DatabaseConfig, DidConfig, OauthConfig, VerifyReqConfig, WalletConfig};
-use ymir::errors::{Errors, Outcome};
-use ymir::utils::read;
+use ymir::config::traits::{
+    ApiConfigTrait, CommonConfigTrait, ConfigLoader, ConnectionConfigTrait, DatabaseConfigTrait,
+    DidConfigTrait, HostsConfigTrait, OauthConfigTrait, VerifyReqConfigTrait, WalletConfigTrait,
+};
+use ymir::config::types::{
+    ApiConfig, CommonConfig, CommonHostsConfig, ConnectionConfig, DatabaseConfig, DidConfig,
+    OauthConfig, VerifyReqConfig, WalletConfig,
+};
 
 use super::CoreConfigTrait;
 use crate::config::traits::{IssueConfigTrait, Oid4VpServiceTrait, RoleConfigTrait};
@@ -31,52 +31,46 @@ use crate::config::types::{AuthorityRole, IssueConfig, Oid4VpService};
 
 #[derive(Deserialize, Serialize, Clone, Debug)]
 pub struct CoreConfig {
-    hosts_config: CommonHostsConfig,
-    connection_config: ConnectionConfig,
-    api_config: ApiConfig,
-    db_config: DatabaseConfig,
+    /// `hosts`, `db`, `api`, `connection` and `oauth`, shared with every agent.
+    #[serde(flatten)]
+    common: CommonConfig,
     wallet_config: WalletConfig,
     did_config: DidConfig,
     issue_config: IssueConfig,
     verify_req_config: VerifyReqConfig,
     oid4vp_service: Oid4VpService,
     role: AuthorityRole,
-    #[serde(default)]
-    oauth: OauthConfig,
 }
 
-impl CoreConfig {
-    pub fn load(env_file: String) -> Outcome<Self> {
-        let path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join(env_file);
-        debug!("Config file path: {}", path.display());
+impl ConfigLoader for CoreConfig {}
 
-        let data = read(path)?;
-        serde_norway::from_str(&data)
-            .map_err(|e| Errors::parse("Unable to parse config file", Some(Box::new(e))))
+impl CommonConfigTrait for CoreConfig {
+    fn common(&self) -> &CommonConfig {
+        &self.common
     }
 }
 
 impl DatabaseConfigTrait for CoreConfig {
     fn db(&self) -> &DatabaseConfig {
-        &self.db_config
+        self.common.db()
     }
 }
 
 impl ApiConfigTrait for CoreConfig {
     fn api(&self) -> &ApiConfig {
-        &self.api_config
+        self.common.api()
     }
 }
 
 impl ConnectionConfigTrait for CoreConfig {
     fn connection(&self) -> &ConnectionConfig {
-        &self.connection_config
+        self.common.connection()
     }
 }
 
 impl HostsConfigTrait for CoreConfig {
     fn hosts(&self) -> &CommonHostsConfig {
-        &self.hosts_config
+        self.common.hosts()
     }
 }
 
@@ -112,7 +106,7 @@ impl RoleConfigTrait for CoreConfig {
 
 impl OauthConfigTrait for CoreConfig {
     fn oauth(&self) -> &OauthConfig {
-        &self.oauth
+        self.common.oauth()
     }
 }
 
