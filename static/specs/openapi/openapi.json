@@ -448,6 +448,7 @@
             "name": "id",
             "in": "path",
             "required": true,
+            "description": "The participant's DID as base64url without padding (RFC 4648 §5), so `:` and `%3A` survive every URL decoding.",
             "schema": { "type": "string" }
           }
         ],

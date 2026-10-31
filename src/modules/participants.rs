@@ -29,7 +29,12 @@ pub trait ParticipantModule: HasRepo + HasWallet + HasConfig + Send + Sync + 'st
     async fn get_all(&self) -> Outcome<Vec<Model>> {
         self.repo().participant().get_all(None, None).await
     }
+    /// The authority itself is not stored as a participant, so its own DID answers `get_me`.
     async fn get_by_id(&self, id: String) -> Outcome<Model> {
+        let own = self.wallet().get_identity().read().await.did().id().to_string();
+        if id == own {
+            return self.get_me().await;
+        }
         self.repo().participant().get_by_id(&id).await
     }
     async fn get_me(&self) -> Outcome<Model> {

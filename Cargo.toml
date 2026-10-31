@@ -28,7 +28,7 @@ x509-parser = "0.18.0"
 async-trait = "0.1.89"
 futures-util = "0.3.32"
 tokio-stream = { version = "0.1.18", features = ["sync"] }
-ymir = { git = "https://github.com/EunomiaUPM/ymir.git", rev = "4dc42001c631bac3934a528c7a790a0802933029" }
+ymir = { git = "https://github.com/EunomiaUPM/ymir.git", rev = "997e65ee0884e5066ecf3f22fdceb2fc8d33704c" }
 #ymir = {git = "https://github.com/EunomiaUPM/ymir.git", tag = "v0.8.6"}
 #ymir = { path = "../ymir/crates/ymir" }
 

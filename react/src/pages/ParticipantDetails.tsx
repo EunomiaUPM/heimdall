@@ -18,6 +18,7 @@ import {
   CardHeader,
   CardTitle,
   decodePathId,
+  encodePathId,
   FormatDate,
   GeneralErrorComponent,
   Identifier,
@@ -50,7 +51,8 @@ export default function ParticipantDetails() {
   }, [rawParam]);
 
   const { data: res, isLoading, isError, error, refetch } =
-    useGetParticipantById(participantId, {
+    // The API takes the DID as base64url too, so its `:` and `%3A` survive the path.
+    useGetParticipantById(encodePathId(participantId), {
       query: { enabled: Boolean(participantId) },
     });
 

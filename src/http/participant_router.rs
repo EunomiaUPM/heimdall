@@ -17,11 +17,12 @@
 
 use std::sync::Arc;
 
-use axum::extract::{Path, State};
+use axum::extract::State;
 use axum::routing::get;
 use axum::{Json, Router};
 use ymir::data::entities::shared::participant::Model;
 use ymir::errors::AppResult;
+use ymir::http::PathId;
 
 use crate::http::routes::minions;
 use crate::modules::ParticipantModule;
@@ -52,7 +53,7 @@ impl ParticipantRouter {
 
     async fn get_by_id(
         State(participant): State<Arc<dyn ParticipantModule>>,
-        Path(id): Path<String>,
+        PathId(id): PathId,
     ) -> AppResult<Json<Model>> {
         Ok(Json(participant.get_by_id(id).await?))
     }
