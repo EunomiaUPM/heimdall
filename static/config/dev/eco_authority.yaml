@@ -11,17 +11,17 @@ http_host: &http_host
 # CONFIG
 # ==========================
 
-hosts_config:
+hosts:
   http: *http_host
   grpc: null
   graphql: null
 
-connection_config:
+connection:
   is_prod: false
   is_vault_real: false
   has_proxy: false
 
-db_config:
+db:
   db_type: Postgres
   url: '127.0.0.1'
   port: '1450'
@@ -47,7 +47,7 @@ did_config:
 
 role: EcoAuthority
 
-api_config:
+api:
   version: 'v1'
   openapi_path: './static/specs/openapi/openapi.json'
 
