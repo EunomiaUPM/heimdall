@@ -22,7 +22,6 @@ use crate::core::Core;
 use crate::http::routes::{fed_catalog, gate};
 use crate::services::events::EventsService;
 use crate::services::gatekeeper::gnap::{GnapConfig, GnapGateKeeperService};
-use crate::services::notifications::NotificationService;
 use crate::services::repo::RepoForSql;
 use crate::services::repo::RepoTrait;
 use crate::services::vcs_builder::clearing_house::{
@@ -93,14 +92,12 @@ impl CoreBuilder {
             }
         };
 
-        let notifier = Arc::new(NotificationService::new());
         let events = Arc::new(EventsService::new(sink));
 
         let core_config: Arc<dyn CoreConfigTrait> = Arc::new(config);
 
         let core = Core::new(
             wallet,
-            notifier,
             gatekeeper,
             issuer,
             verifier,

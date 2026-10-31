@@ -17,15 +17,14 @@
 
 use crate::config::CoreConfigTrait;
 use crate::modules::{
-    ApproverModule, FedCatalogModule, FrontendNotifierModule, GatekeeperModule, IssuerModule,
-    OrchestratorTrait, ParticipantModule, VerifierModule,
+    ApproverModule, FedCatalogModule, GatekeeperModule, IssuerModule, OrchestratorTrait,
+    ParticipantModule, VerifierModule,
 };
 use crate::services::events::EventsTrait;
 use crate::services::gatekeeper::GateKeeperTrait;
-use crate::services::notifications::NotificationsTrait;
 use crate::services::repo::RepoTrait;
 use crate::services::vcs_builder::VcBuilderTrait;
-use crate::services::{HasConfig, HasEvents, HasGateKeeper, HasNotifier, HasRepo, HasVcBuilder};
+use crate::services::{HasConfig, HasEvents, HasGateKeeper, HasRepo, HasVcBuilder};
 use std::sync::Arc;
 use ymir::modules::WalletModuleTrait;
 use ymir::services::issuer::IssuerTrait;
@@ -35,7 +34,6 @@ use ymir::services::{HasIssuer, HasVerifier, HasWallet};
 
 pub struct Core {
     wallet: Arc<dyn WalletTrait>,
-    notifier: Arc<dyn NotificationsTrait>,
     gatekeeper: Arc<dyn GateKeeperTrait>,
     issuer: Arc<dyn IssuerTrait>,
     verifier: Arc<dyn VerifierTrait>,
@@ -48,7 +46,6 @@ pub struct Core {
 impl Core {
     pub fn new(
         wallet: Arc<dyn WalletTrait>,
-        notifier: Arc<dyn NotificationsTrait>,
         gatekeeper: Arc<dyn GateKeeperTrait>,
         issuer: Arc<dyn IssuerTrait>,
         verifier: Arc<dyn VerifierTrait>,
@@ -65,7 +62,6 @@ impl Core {
             vc_builder,
             repo,
             config,
-            notifier,
             events,
         }
     }
@@ -107,12 +103,6 @@ impl HasGateKeeper for Core {
     }
 }
 
-impl HasNotifier for Core {
-    fn frontend_notifier(&self) -> Arc<dyn NotificationsTrait> {
-        self.notifier.clone()
-    }
-}
-
 impl HasEvents for Core {
     fn events(&self) -> Arc<dyn EventsTrait> {
         self.events.clone()
@@ -133,6 +123,5 @@ impl ApproverModule for Core {}
 impl GatekeeperModule for Core {}
 impl FedCatalogModule for Core {}
 impl ParticipantModule for Core {}
-impl FrontendNotifierModule for Core {}
 
 impl OrchestratorTrait for Core {}

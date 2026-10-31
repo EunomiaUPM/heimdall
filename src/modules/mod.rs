@@ -20,7 +20,6 @@ mod fed_catalog;
 mod gaia;
 mod gatekeeper;
 mod issuer;
-mod notifier;
 mod participants;
 mod verifier;
 
@@ -29,6 +28,5 @@ pub use approver::ApproverModule;
 pub use fed_catalog::FedCatalogModule;
 pub use gatekeeper::GatekeeperModule;
 pub use issuer::IssuerModule;
-pub use notifier::FrontendNotifierModule;
 pub use participants::ParticipantModule;
 pub use verifier::VerifierModule;

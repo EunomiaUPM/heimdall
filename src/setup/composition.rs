@@ -32,10 +32,10 @@ use ymir::module_loader::service_module::ServiceModuleTrait;
 use ymir::services::token_validator::OauthTokenValidatorTrait;
 
 use crate::core::Core;
-use crate::http::routes::{approver, console, docs, gate, issuer, minions, react, session, wallet};
+use crate::http::routes::{approver, console, docs, gate, issuer, minions, session, wallet};
 use crate::http::{
     ApproverRouter, FedCatalogRouter, GateKeeperRouter, IssuerRouter, ParticipantRouter,
-    ReactRouter, SessionHandlers, VerifierRouter,
+    SessionHandlers, VerifierRouter,
 };
 use ymir::http::routes::verifier;
 
@@ -239,27 +239,6 @@ impl ServiceModuleTrait for FedCatalogPlane {
 
     fn http(&self) -> Option<(String, Router)> {
         PlaneContext::mount(FedCatalogRouter::new(self.0.core.clone()).well_known())
-    }
-}
-
-/// Console notification stream.
-pub struct NotifierPlane(PlaneContext);
-
-impl NotifierPlane {
-    pub fn new(ctx: PlaneContext) -> Self {
-        Self(ctx)
-    }
-}
-
-impl ServiceModuleTrait for NotifierPlane {
-    fn name(&self) -> &'static str {
-        "notifier"
-    }
-
-    fn http(&self) -> Option<(String, Router)> {
-        let r = ReactRouter::new(self.0.core.clone());
-        let router = Router::new().nest(&self.0.api(react::PREFIX), self.0.guarded(r.internal()));
-        PlaneContext::mount(router)
     }
 }
 

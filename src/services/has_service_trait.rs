@@ -17,7 +17,6 @@
 
 use crate::services::events::EventsTrait;
 use crate::services::gatekeeper::GateKeeperTrait;
-use crate::services::notifications::NotificationsTrait;
 use crate::services::repo::RepoTrait;
 use crate::services::vcs_builder::VcBuilderTrait;
 use std::sync::Arc;
@@ -33,10 +32,6 @@ pub trait HasGateKeeper {
 
 pub trait HasVcBuilder {
     fn vc_builder(&self) -> Arc<dyn VcBuilderTrait>;
-}
-
-pub trait HasNotifier {
-    fn frontend_notifier(&self) -> Arc<dyn NotificationsTrait>;
 }
 
 pub trait HasConfig {

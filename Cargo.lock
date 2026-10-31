@@ -1365,13 +1365,11 @@ dependencies = [
  "axum",
  "base64",
  "chrono",
- "futures-util",
  "sea-orm",
  "sea-orm-migration",
  "serde",
  "serde_json",
  "tokio",
- "tokio-stream",
  "tower-http",
  "tracing",
  "uuid",
@@ -4105,7 +4103,6 @@ dependencies = [
  "futures-core",
  "pin-project-lite",
  "tokio",
- "tokio-util",
 ]
 
 [[package]]

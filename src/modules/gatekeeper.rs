@@ -15,7 +15,7 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-use crate::services::{HasEvents, HasGateKeeper, HasNotifier, HasRepo, HasVcBuilder};
+use crate::services::{HasEvents, HasGateKeeper, HasRepo, HasVcBuilder};
 use crate::types::GrantResponseManager;
 use async_trait::async_trait;
 use axum::body::Bytes;
@@ -34,7 +34,6 @@ pub trait GatekeeperModule:
     + HasIssuer
     + HasRepo
     + HasVcBuilder
-    + HasNotifier
     + HasEvents
     + Send
     + Sync
@@ -98,7 +97,6 @@ pub trait GatekeeperModule:
         let issuance = self.repo().issuance().create(issuance).await?;
         self.events().grant(&grant, "create").await;
         self.events().issuance(&grant, &issuance, "create").await;
-        self.frontend_notifier().notify(&grant);
 
         match response {
             GrantResponseManager::Approved => {

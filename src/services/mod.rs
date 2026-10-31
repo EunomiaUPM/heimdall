@@ -18,7 +18,6 @@
 pub mod events;
 pub mod gatekeeper;
 mod has_service_trait;
-pub mod notifications;
 pub mod repo;
 pub mod vcs_builder;
 pub use has_service_trait::*;

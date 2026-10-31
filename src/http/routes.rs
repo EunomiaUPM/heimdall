@@ -80,13 +80,6 @@ pub mod fed_catalog {
     pub const CATALOG: &str = "/.well-known/federated-catalog";
 }
 
-/// Notifications to the console.
-pub mod react {
-    pub const PREFIX: &str = "/react";
-    /// Server-sent events stream.
-    pub const NOTIFICATIONS_STREAM: &str = "/notifications/stream";
-}
-
 /// API documentation; its routes are ymir's ([`ymir::http::routes::openapi`]).
 pub mod docs {
     pub const PREFIX: &str = "/docs";

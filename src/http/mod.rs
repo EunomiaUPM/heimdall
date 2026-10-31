@@ -18,7 +18,6 @@
 mod fed_catalog_router;
 mod gatekeeper_router;
 mod issuer_router;
-mod notifier_router;
 mod participant_router;
 pub mod routes;
 mod session;
@@ -28,7 +27,6 @@ mod verifier_router;
 pub use fed_catalog_router::FedCatalogRouter;
 pub use gatekeeper_router::GateKeeperRouter;
 pub use issuer_router::IssuerRouter;
-pub use notifier_router::ReactRouter;
 pub use participant_router::ParticipantRouter;
 pub use session::SessionHandlers;
 pub use vcs_router::ApproverRouter;

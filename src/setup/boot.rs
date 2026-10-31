@@ -32,8 +32,8 @@ use crate::config::CoreConfig;
 use crate::core::CoreBuilder;
 use crate::data::Migrator;
 use crate::setup::composition::{
-    ApproverPlane, ConsolePlane, FedCatalogPlane, GatekeeperPlane, IssuerPlane, NotifierPlane,
-    ParticipantsPlane, PlaneContext, VerifierPlane, WalletPlane,
+    ApproverPlane, ConsolePlane, FedCatalogPlane, GatekeeperPlane, IssuerPlane, ParticipantsPlane,
+    PlaneContext, VerifierPlane, WalletPlane,
 };
 
 pub const SERVICE_NAME: &str = "heimdall";
@@ -94,7 +94,6 @@ impl BootstrapServiceTrait for HeimdallBoot {
             .register(ApproverPlane::new(ctx.clone()))
             .register(ParticipantsPlane::new(ctx.clone()))
             .register(FedCatalogPlane::new(ctx.clone()))
-            .register(NotifierPlane::new(ctx.clone()))
             .register(ConsolePlane::new(ctx, config.get_openapi()?)))
     }
 }

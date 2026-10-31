@@ -19,8 +19,8 @@ use async_trait::async_trait;
 use ymir::modules::WalletModuleTrait;
 
 use crate::modules::{
-    ApproverModule, FedCatalogModule, FrontendNotifierModule, GatekeeperModule, IssuerModule,
-    ParticipantModule, VerifierModule,
+    ApproverModule, FedCatalogModule, GatekeeperModule, IssuerModule, ParticipantModule,
+    VerifierModule,
 };
 use crate::services::HasConfig;
 
@@ -33,7 +33,6 @@ pub trait OrchestratorTrait:
     + FedCatalogModule
     + WalletModuleTrait
     + ParticipantModule
-    + FrontendNotifierModule
     + HasConfig
     + Send
     + Sync
