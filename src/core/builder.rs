@@ -20,6 +20,7 @@ use crate::config::types::{AuthorityRole, Oid4VpService};
 use crate::config::{CoreConfig, CoreConfigTrait};
 use crate::core::Core;
 use crate::http::routes::{fed_catalog, gate};
+use crate::services::events::EventsService;
 use crate::services::gatekeeper::gnap::{GnapConfig, GnapGateKeeperService};
 use crate::services::notifications::NotificationService;
 use crate::services::repo::RepoForSql;
@@ -34,6 +35,7 @@ use crate::services::vcs_builder::legal_authority::{
     LegalAuthorityConfig, LegalAuthorityVcBuilder,
 };
 use crate::services::vcs_builder::{EcoAuthorityBuilder, VcBuilderTrait};
+use ::events::EventSinkTrait;
 use std::sync::Arc;
 use ymir::config::traits::{ApiConfigTrait, HostsConfigTrait, WalletConfigTrait};
 use ymir::config::types::HostType;
@@ -52,7 +54,11 @@ pub struct CoreBuilder {
 }
 
 impl CoreBuilder {
-    pub async fn from_config(config: CoreConfig, vault: Arc<VaultService>) -> Outcome<Self> {
+    pub async fn from_config(
+        config: CoreConfig,
+        vault: Arc<VaultService>,
+        sink: Arc<dyn EventSinkTrait>,
+    ) -> Outcome<Self> {
         // ===== CONFIG DERIVATIONS =====
 
         let gnap_config = GnapConfig::from(&config);
@@ -88,6 +94,7 @@ impl CoreBuilder {
         };
 
         let notifier = Arc::new(NotificationService::new());
+        let events = Arc::new(EventsService::new(sink));
 
         let core_config: Arc<dyn CoreConfigTrait> = Arc::new(config);
 
@@ -100,6 +107,7 @@ impl CoreBuilder {
             vc_builder,
             repo,
             core_config,
+            events,
         );
 
         Ok(Self { core })

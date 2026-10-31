@@ -15,7 +15,7 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-use crate::services::{HasGateKeeper, HasRepo};
+use crate::services::{HasEvents, HasGateKeeper, HasRepo};
 use async_trait::async_trait;
 use chrono::Utc;
 use ymir::errors::{Errors, Outcome};
@@ -25,7 +25,7 @@ use ymir::types::vcs::VPDef;
 use ymir::types::verification::{VerificationStatus, VerifyPayload};
 
 #[async_trait]
-pub trait VerifierModule: HasGateKeeper + HasVerifier + HasRepo + Send + Sync + 'static {
+pub trait VerifierModule: HasGateKeeper + HasVerifier + HasRepo + HasEvents + Send + Sync + 'static {
     #[tracing::instrument(level = "info", skip_all, err)]
     async fn get_vp_def(&self, state: String) -> Outcome<VPDef> {
         let verification = self.repo().recv_verification().get_by_state(&state).await?;
@@ -61,11 +61,14 @@ pub trait VerifierModule: HasGateKeeper + HasVerifier + HasRepo + Send + Sync + 
         };
 
         let verification = self.repo().recv_verification().update(verification).await?;
+        let grant = self.repo().recv_grant().get_by_id(&verification.id).await?;
+        self.events().verification(&grant, &verification, "edit").await;
 
         let mut issuance = self.repo().issuance().get_by_id(&verification.id).await?;
-        issuance.build_ctx.holder_did = verification.holder;
-        issuance.build_ctx.vcs = verification.vcs;
-        let _issuance = self.repo().issuance().update(issuance).await?;
+        issuance.build_ctx.holder_did = verification.holder.clone();
+        issuance.build_ctx.vcs = verification.vcs.clone();
+        let issuance = self.repo().issuance().update(issuance).await?;
+        self.events().issuance(&grant, &issuance, "edit").await;
 
         let interaction = self
             .repo()

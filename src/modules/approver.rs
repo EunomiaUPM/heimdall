@@ -15,7 +15,7 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-use crate::services::{HasGateKeeper, HasRepo};
+use crate::services::{HasEvents, HasGateKeeper, HasRepo};
 use async_trait::async_trait;
 use chrono::Utc;
 use serde_json::{json, Value};
@@ -27,7 +27,7 @@ use ymir::types::gnap::{GrantStatus, InteractionFinishResponse};
 use ymir::types::oauth::{RoleTrait, UserInfo};
 
 #[async_trait]
-pub trait ApproverModule: HasRepo + HasGateKeeper + Send + Sync + 'static {
+pub trait ApproverModule: HasRepo + HasGateKeeper + HasEvents + Send + Sync + 'static {
     #[tracing::instrument(level = "info", skip_all, err, fields(user = %user.id()))]
     async fn manage_req(
         &self,
@@ -50,7 +50,8 @@ pub trait ApproverModule: HasRepo + HasGateKeeper + Send + Sync + 'static {
                 None,
             ))
         };
-        self.repo().recv_grant().update(grant).await?;
+        let grant = self.repo().recv_grant().update(grant).await?;
+        self.events().grant(&grant, "edit").await;
 
         self.gatekeeper()
             .finish_interaction(&interaction, result)

@@ -15,7 +15,7 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-use crate::services::{HasGateKeeper, HasNotifier, HasRepo, HasVcBuilder};
+use crate::services::{HasEvents, HasGateKeeper, HasNotifier, HasRepo, HasVcBuilder};
 use crate::types::GrantResponseManager;
 use async_trait::async_trait;
 use axum::body::Bytes;
@@ -35,6 +35,7 @@ pub trait GatekeeperModule:
     + HasRepo
     + HasVcBuilder
     + HasNotifier
+    + HasEvents
     + Send
     + Sync
     + 'static
@@ -95,20 +96,24 @@ pub trait GatekeeperModule:
 
         let mut grant = self.repo().recv_grant().create(grant).await?;
         let issuance = self.repo().issuance().create(issuance).await?;
+        self.events().grant(&grant, "create").await;
+        self.events().issuance(&grant, &issuance, "create").await;
         self.frontend_notifier().notify(&grant);
 
         match response {
             GrantResponseManager::Approved => {
                 grant.status = GrantStatus::Approved;
                 let grant = self.repo().recv_grant().update(grant).await?;
-                
+                self.events().grant(&grant, "edit").await;
+
                 let interaction = self.gatekeeper().build_interaction_plan(
                     &grant.id,
                     grant_request.interact,
                     grant_request.client,
                 )?;
 
-                self.repo().recv_interaction().create(interaction).await?;
+                let interaction = self.repo().recv_interaction().create(interaction).await?;
+                self.events().interaction(&grant, &interaction, "create").await;
 
                 let cred_offer = self.issuer().get_cred_offer_data(&issuance);
                 let vc_transmission_offer = VcTransmissionOffer::ByValue(cred_offer);
@@ -119,6 +124,7 @@ pub trait GatekeeperModule:
             GrantResponseManager::Pending => {
                 grant.status = GrantStatus::Pending;
                 let grant = self.repo().recv_grant().update(grant).await?;
+                self.events().grant(&grant, "edit").await;
                 let interaction = self.gatekeeper().build_interaction_plan(
                     &grant.id,
                     grant_request.interact,
@@ -128,6 +134,8 @@ pub trait GatekeeperModule:
 
                 let ver_model = self.repo().recv_verification().create(verification).await?;
                 let interaction = self.repo().recv_interaction().create(interaction).await?;
+                self.events().verification(&grant, &ver_model, "create").await;
+                self.events().interaction(&grant, &interaction, "create").await;
 
                 let uri = self.verifier().generate_verification_uri(&ver_model).await?;
                 Ok(GrantResponse::pending(uri, &interaction))
@@ -135,12 +143,14 @@ pub trait GatekeeperModule:
             GrantResponseManager::Processing => {
                 grant.status = GrantStatus::Processing;
                 let grant = self.repo().recv_grant().update(grant).await?;
+                self.events().grant(&grant, "edit").await;
                 let interaction = self.gatekeeper().build_interaction_plan(
                     &grant.id,
                     grant_request.interact,
                     grant_request.client,
                 )?;
                 let interaction = self.repo().recv_interaction().create(interaction).await?;
+                self.events().interaction(&grant, &interaction, "create").await;
                 Ok(GrantResponse::processing(&interaction))
             }
         }
@@ -166,7 +176,8 @@ pub trait GatekeeperModule:
         let mut grant = self.repo().recv_grant().get_by_id(&int_model.id).await?;
 
         grant.status = GrantStatus::Approved;
-        let _grant = self.repo().recv_grant().update(grant).await?;
+        let grant = self.repo().recv_grant().update(grant).await?;
+        self.events().grant(&grant, "edit").await;
 
         let cred_offer = self.issuer().get_cred_offer_data(&issuance);
         let vc_transmission_offer = VcTransmissionOffer::ByValue(cred_offer);

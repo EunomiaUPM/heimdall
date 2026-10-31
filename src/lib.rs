@@ -15,6 +15,9 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
+/// Topic prefix of heimdall's events.
+pub const EVENT_PREFIX: &str = "heimdall:";
+
 pub mod config;
 pub mod core;
 pub mod data;

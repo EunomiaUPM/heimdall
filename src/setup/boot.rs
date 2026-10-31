@@ -19,6 +19,8 @@
 
 use std::sync::Arc;
 
+use events::setup::EventsModule;
+use events::NoopEventSink;
 use sea_orm_migration::{MigrationTrait, MigratorTrait};
 use ymir::boot::BootstrapServiceTrait;
 use ymir::config::traits::ApiConfigTrait;
@@ -67,18 +69,24 @@ impl BootstrapServiceTrait for HeimdallBoot {
     }
 
     fn migrations() -> Vec<Box<dyn MigrationTrait>> {
-        Migrator::migrations()
+        [Migrator::migrations(), EventsModule::migrations()]
+            .into_iter()
+            .flatten()
+            .collect()
     }
 
-    /// One `Core` shared by every plane; each plane mounts the routers it already had.
+    /// One `Core` shared by every plane, publishing to the bus heimdall hosts.
     async fn compose(config: &CoreConfig, root: &RootContext) -> Outcome<ServiceComposer> {
+        let events = EventsModule::compose(root);
+        let sink = NoopEventSink::or_bus(Some(events.event_bus()));
         let core = Arc::new(
-            CoreBuilder::from_config(config.clone(), root.vault.clone())
+            CoreBuilder::from_config(config.clone(), root.vault.clone(), sink)
                 .await?
                 .build(),
         );
         let ctx = PlaneContext::new(core, config.get_api_version(), root.validator.clone());
         Ok(ServiceComposer::new()
+            .register(events)
             .register(WalletPlane::new(ctx.clone()))
             .register(IssuerPlane::new(ctx.clone()))
             .register(VerifierPlane::new(ctx.clone()))

@@ -15,7 +15,7 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-use crate::services::{HasGateKeeper, HasRepo, HasVcBuilder};
+use crate::services::{HasEvents, HasGateKeeper, HasRepo, HasVcBuilder};
 use async_trait::async_trait;
 use chrono::Utc;
 use ymir::errors::{Errors, Outcome};
@@ -29,7 +29,7 @@ use ymir::utils::require_field;
 
 #[async_trait]
 pub trait IssuerModule:
-    HasGateKeeper + HasIssuer + HasRepo + HasVcBuilder + HasWallet + Send + Sync + 'static
+    HasGateKeeper + HasIssuer + HasRepo + HasVcBuilder + HasWallet + HasEvents + Send + Sync + 'static
 {
     #[tracing::instrument(level = "info", skip_all, err)]
     async fn get_cred_offer_data(&self, id: &str) -> Outcome<VcCredOffer> {
@@ -89,6 +89,7 @@ pub trait IssuerModule:
         let issuance = self.repo().issuance().update(issuance).await?;
 
         let mut grant = self.repo().recv_grant().get_by_id(&issuance.id).await?;
+        self.events().issuance(&grant, &issuance, "edit").await;
         let interaction = self
             .repo()
             .recv_interaction()
@@ -101,11 +102,15 @@ pub trait IssuerModule:
             &grant.participant_nick,
             &interaction.callback_uri,
         );
-        self.repo().participant().force_update(minion).await?;
+        let known = self.repo().participant().get_by_id(holder).await.is_ok();
+        let participant = self.repo().participant().force_update(minion).await?;
+        let action = if known { "edit" } else { "create" };
+        self.events().participant(&grant, &participant, action).await;
 
         grant.status = GrantStatus::Finalized;
         grant.ended_at = Some(Utc::now());
-        self.repo().recv_grant().update(grant).await?;
+        let grant = self.repo().recv_grant().update(grant).await?;
+        self.events().grant(&grant, "edit").await;
 
         Ok(GiveVC::synchronous(vec![VcBody::jwt(vc_jwt)]))
     }

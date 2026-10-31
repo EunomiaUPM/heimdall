@@ -20,11 +20,12 @@ use crate::modules::{
     ApproverModule, FedCatalogModule, FrontendNotifierModule, GatekeeperModule, IssuerModule,
     OrchestratorTrait, ParticipantModule, VerifierModule,
 };
+use crate::services::events::EventsTrait;
 use crate::services::gatekeeper::GateKeeperTrait;
 use crate::services::notifications::NotificationsTrait;
 use crate::services::repo::RepoTrait;
 use crate::services::vcs_builder::VcBuilderTrait;
-use crate::services::{HasConfig, HasGateKeeper, HasNotifier, HasRepo, HasVcBuilder};
+use crate::services::{HasConfig, HasEvents, HasGateKeeper, HasNotifier, HasRepo, HasVcBuilder};
 use std::sync::Arc;
 use ymir::modules::WalletModuleTrait;
 use ymir::services::issuer::IssuerTrait;
@@ -41,6 +42,7 @@ pub struct Core {
     vc_builder: Arc<dyn VcBuilderTrait>,
     repo: Arc<dyn RepoTrait>,
     config: Arc<dyn CoreConfigTrait>,
+    events: Arc<dyn EventsTrait>,
 }
 
 impl Core {
@@ -53,6 +55,7 @@ impl Core {
         vc_builder: Arc<dyn VcBuilderTrait>,
         repo: Arc<dyn RepoTrait>,
         config: Arc<dyn CoreConfigTrait>,
+        events: Arc<dyn EventsTrait>,
     ) -> Self {
         Self {
             wallet,
@@ -63,6 +66,7 @@ impl Core {
             repo,
             config,
             notifier,
+            events,
         }
     }
 }
@@ -106,6 +110,12 @@ impl HasGateKeeper for Core {
 impl HasNotifier for Core {
     fn frontend_notifier(&self) -> Arc<dyn NotificationsTrait> {
         self.notifier.clone()
+    }
+}
+
+impl HasEvents for Core {
+    fn events(&self) -> Arc<dyn EventsTrait> {
+        self.events.clone()
     }
 }
 

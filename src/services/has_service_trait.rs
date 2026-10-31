@@ -15,6 +15,7 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
+use crate::services::events::EventsTrait;
 use crate::services::gatekeeper::GateKeeperTrait;
 use crate::services::notifications::NotificationsTrait;
 use crate::services::repo::RepoTrait;
@@ -40,4 +41,8 @@ pub trait HasNotifier {
 
 pub trait HasConfig {
     fn config(&self) -> Arc<dyn CoreConfigTrait>;
+}
+
+pub trait HasEvents {
+    fn events(&self) -> Arc<dyn EventsTrait>;
 }
