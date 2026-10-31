@@ -9,6 +9,7 @@ import {
 } from "@tanstack/react-router";
 import { TanStackRouterDevtools } from "@tanstack/router-devtools";
 import {
+  Activity,
   Home as HomeIcon,
   Info,
   Loader2,
@@ -36,8 +37,8 @@ import {
   Toaster,
   UNAUTHORIZED_EVENT,
 } from "@eunomia/ui";
-import { NotificationBell } from "@/components/NotificationBell";
-import { NotificationProvider } from "@/contexts/NotificationContext";
+import { LiveProvider, NotificationBell } from "@eunomia/ui/events";
+import { EVENT_INVALIDATIONS, EventTopics, liveEventsUrl } from "@/lib/eventTopics";
 import { useHeimdallDirectory } from "@/hooks/useHeimdallDirectory";
 
 export const Route = createRootRouteWithContext<{
@@ -123,6 +124,12 @@ function AuthenticatedShell({
             url: "/admin/requests",
             icon: ShieldCheck,
           },
+          {
+            title: "Events",
+            url: "/admin/events/feed",
+            section: "/admin/events",
+            icon: Activity,
+          },
         ],
       },
       {
@@ -134,7 +141,7 @@ function AuthenticatedShell({
 
   return (
     <ParticipantDirectoryProvider value={resolveParticipant}>
-      <NotificationProvider>
+      <LiveProvider transport="sse" url={liveEventsUrl} invalidations={EVENT_INVALIDATIONS}>
         <SidebarProvider>
           <AppShellSidebar
             productName="Heimdall"
@@ -147,7 +154,7 @@ function AuthenticatedShell({
             <AppShellHeader
               user={user}
               onSignOut={onSignOut}
-              rightActionsSlot={<NotificationBell />}
+              rightActionsSlot={<NotificationBell topics={EventTopics} feedTo="/events/feed" />}
             />
             <div className="flex flex-1 flex-col gap-4 p-8 items-start justify-start w-full h-full min-w-0">
               <Outlet />
@@ -157,7 +164,7 @@ function AuthenticatedShell({
         <Toaster />
         <GlobalLoadingIndicator />
         <TanStackRouterDevtools />
-      </NotificationProvider>
+      </LiveProvider>
     </ParticipantDirectoryProvider>
   );
 }

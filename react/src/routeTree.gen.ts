@@ -17,16 +17,21 @@ import { Route as AboutImport } from './routes/about'
 import { Route as WalletRouteImport } from './routes/wallet/route'
 import { Route as RequestsRouteImport } from './routes/requests/route'
 import { Route as ParticipantsRouteImport } from './routes/participants/route'
+import { Route as EventsRouteImport } from './routes/events/route'
 import { Route as IndexImport } from './routes/index'
 import { Route as WalletIndexImport } from './routes/wallet/index'
 import { Route as RequestsIndexImport } from './routes/requests/index'
 import { Route as ParticipantsIndexImport } from './routes/participants/index'
+import { Route as EventsIndexImport } from './routes/events/index'
 import { Route as WalletOidc4vpImport } from './routes/wallet/oidc4vp'
 import { Route as WalletOidc4vciImport } from './routes/wallet/oidc4vci'
 import { Route as WalletKeysImport } from './routes/wallet/keys'
 import { Route as WalletInfoImport } from './routes/wallet/info'
 import { Route as WalletDidImport } from './routes/wallet/did'
 import { Route as WalletCredentialsImport } from './routes/wallet/credentials'
+import { Route as EventsSubscriptionsImport } from './routes/events/subscriptions'
+import { Route as EventsFeedImport } from './routes/events/feed'
+import { Route as EventsDlqImport } from './routes/events/dlq'
 import { Route as RequestsRequestIdIndexImport } from './routes/requests/$requestId/index'
 import { Route as ParticipantsParticipantIdIndexImport } from './routes/participants/$participantId/index'
 
@@ -68,6 +73,12 @@ const ParticipantsRouteRoute = ParticipantsRouteImport.update({
   getParentRoute: () => rootRoute,
 } as any)
 
+const EventsRouteRoute = EventsRouteImport.update({
+  id: '/events',
+  path: '/events',
+  getParentRoute: () => rootRoute,
+} as any)
+
 const IndexRoute = IndexImport.update({
   id: '/',
   path: '/',
@@ -90,6 +101,12 @@ const ParticipantsIndexRoute = ParticipantsIndexImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => ParticipantsRouteRoute,
+} as any)
+
+const EventsIndexRoute = EventsIndexImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => EventsRouteRoute,
 } as any)
 
 const WalletOidc4vpRoute = WalletOidc4vpImport.update({
@@ -128,6 +145,24 @@ const WalletCredentialsRoute = WalletCredentialsImport.update({
   getParentRoute: () => WalletRouteRoute,
 } as any)
 
+const EventsSubscriptionsRoute = EventsSubscriptionsImport.update({
+  id: '/subscriptions',
+  path: '/subscriptions',
+  getParentRoute: () => EventsRouteRoute,
+} as any)
+
+const EventsFeedRoute = EventsFeedImport.update({
+  id: '/feed',
+  path: '/feed',
+  getParentRoute: () => EventsRouteRoute,
+} as any)
+
+const EventsDlqRoute = EventsDlqImport.update({
+  id: '/dlq',
+  path: '/dlq',
+  getParentRoute: () => EventsRouteRoute,
+} as any)
+
 const RequestsRequestIdIndexRoute = RequestsRequestIdIndexImport.update({
   id: '/$requestId/',
   path: '/$requestId/',
@@ -150,6 +185,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexImport
+      parentRoute: typeof rootRoute
+    }
+    '/events': {
+      id: '/events'
+      path: '/events'
+      fullPath: '/events'
+      preLoaderRoute: typeof EventsRouteImport
       parentRoute: typeof rootRoute
     }
     '/participants': {
@@ -194,6 +236,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoginImport
       parentRoute: typeof rootRoute
     }
+    '/events/dlq': {
+      id: '/events/dlq'
+      path: '/dlq'
+      fullPath: '/events/dlq'
+      preLoaderRoute: typeof EventsDlqImport
+      parentRoute: typeof EventsRouteImport
+    }
+    '/events/feed': {
+      id: '/events/feed'
+      path: '/feed'
+      fullPath: '/events/feed'
+      preLoaderRoute: typeof EventsFeedImport
+      parentRoute: typeof EventsRouteImport
+    }
+    '/events/subscriptions': {
+      id: '/events/subscriptions'
+      path: '/subscriptions'
+      fullPath: '/events/subscriptions'
+      preLoaderRoute: typeof EventsSubscriptionsImport
+      parentRoute: typeof EventsRouteImport
+    }
     '/wallet/credentials': {
       id: '/wallet/credentials'
       path: '/credentials'
@@ -236,6 +299,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof WalletOidc4vpImport
       parentRoute: typeof WalletRouteImport
     }
+    '/events/': {
+      id: '/events/'
+      path: '/'
+      fullPath: '/events/'
+      preLoaderRoute: typeof EventsIndexImport
+      parentRoute: typeof EventsRouteImport
+    }
     '/participants/': {
       id: '/participants/'
       path: '/'
@@ -275,6 +345,24 @@ declare module '@tanstack/react-router' {
 }
 
 // Create and export the route tree
+
+interface EventsRouteRouteChildren {
+  EventsDlqRoute: typeof EventsDlqRoute
+  EventsFeedRoute: typeof EventsFeedRoute
+  EventsSubscriptionsRoute: typeof EventsSubscriptionsRoute
+  EventsIndexRoute: typeof EventsIndexRoute
+}
+
+const EventsRouteRouteChildren: EventsRouteRouteChildren = {
+  EventsDlqRoute: EventsDlqRoute,
+  EventsFeedRoute: EventsFeedRoute,
+  EventsSubscriptionsRoute: EventsSubscriptionsRoute,
+  EventsIndexRoute: EventsIndexRoute,
+}
+
+const EventsRouteRouteWithChildren = EventsRouteRoute._addFileChildren(
+  EventsRouteRouteChildren,
+)
 
 interface ParticipantsRouteRouteChildren {
   ParticipantsIndexRoute: typeof ParticipantsIndexRoute
@@ -329,18 +417,23 @@ const WalletRouteRouteWithChildren = WalletRouteRoute._addFileChildren(
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/events': typeof EventsRouteRouteWithChildren
   '/participants': typeof ParticipantsRouteRouteWithChildren
   '/requests': typeof RequestsRouteRouteWithChildren
   '/wallet': typeof WalletRouteRouteWithChildren
   '/about': typeof AboutRoute
   '/home': typeof HomeRoute
   '/login': typeof LoginRoute
+  '/events/dlq': typeof EventsDlqRoute
+  '/events/feed': typeof EventsFeedRoute
+  '/events/subscriptions': typeof EventsSubscriptionsRoute
   '/wallet/credentials': typeof WalletCredentialsRoute
   '/wallet/did': typeof WalletDidRoute
   '/wallet/info': typeof WalletInfoRoute
   '/wallet/keys': typeof WalletKeysRoute
   '/wallet/oidc4vci': typeof WalletOidc4vciRoute
   '/wallet/oidc4vp': typeof WalletOidc4vpRoute
+  '/events/': typeof EventsIndexRoute
   '/participants/': typeof ParticipantsIndexRoute
   '/requests/': typeof RequestsIndexRoute
   '/wallet/': typeof WalletIndexRoute
@@ -353,12 +446,16 @@ export interface FileRoutesByTo {
   '/about': typeof AboutRoute
   '/home': typeof HomeRoute
   '/login': typeof LoginRoute
+  '/events/dlq': typeof EventsDlqRoute
+  '/events/feed': typeof EventsFeedRoute
+  '/events/subscriptions': typeof EventsSubscriptionsRoute
   '/wallet/credentials': typeof WalletCredentialsRoute
   '/wallet/did': typeof WalletDidRoute
   '/wallet/info': typeof WalletInfoRoute
   '/wallet/keys': typeof WalletKeysRoute
   '/wallet/oidc4vci': typeof WalletOidc4vciRoute
   '/wallet/oidc4vp': typeof WalletOidc4vpRoute
+  '/events': typeof EventsIndexRoute
   '/participants': typeof ParticipantsIndexRoute
   '/requests': typeof RequestsIndexRoute
   '/wallet': typeof WalletIndexRoute
@@ -369,18 +466,23 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRoute
   '/': typeof IndexRoute
+  '/events': typeof EventsRouteRouteWithChildren
   '/participants': typeof ParticipantsRouteRouteWithChildren
   '/requests': typeof RequestsRouteRouteWithChildren
   '/wallet': typeof WalletRouteRouteWithChildren
   '/about': typeof AboutRoute
   '/home': typeof HomeRoute
   '/login': typeof LoginRoute
+  '/events/dlq': typeof EventsDlqRoute
+  '/events/feed': typeof EventsFeedRoute
+  '/events/subscriptions': typeof EventsSubscriptionsRoute
   '/wallet/credentials': typeof WalletCredentialsRoute
   '/wallet/did': typeof WalletDidRoute
   '/wallet/info': typeof WalletInfoRoute
   '/wallet/keys': typeof WalletKeysRoute
   '/wallet/oidc4vci': typeof WalletOidc4vciRoute
   '/wallet/oidc4vp': typeof WalletOidc4vpRoute
+  '/events/': typeof EventsIndexRoute
   '/participants/': typeof ParticipantsIndexRoute
   '/requests/': typeof RequestsIndexRoute
   '/wallet/': typeof WalletIndexRoute
@@ -392,18 +494,23 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/events'
     | '/participants'
     | '/requests'
     | '/wallet'
     | '/about'
     | '/home'
     | '/login'
+    | '/events/dlq'
+    | '/events/feed'
+    | '/events/subscriptions'
     | '/wallet/credentials'
     | '/wallet/did'
     | '/wallet/info'
     | '/wallet/keys'
     | '/wallet/oidc4vci'
     | '/wallet/oidc4vp'
+    | '/events/'
     | '/participants/'
     | '/requests/'
     | '/wallet/'
@@ -415,12 +522,16 @@ export interface FileRouteTypes {
     | '/about'
     | '/home'
     | '/login'
+    | '/events/dlq'
+    | '/events/feed'
+    | '/events/subscriptions'
     | '/wallet/credentials'
     | '/wallet/did'
     | '/wallet/info'
     | '/wallet/keys'
     | '/wallet/oidc4vci'
     | '/wallet/oidc4vp'
+    | '/events'
     | '/participants'
     | '/requests'
     | '/wallet'
@@ -429,18 +540,23 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/events'
     | '/participants'
     | '/requests'
     | '/wallet'
     | '/about'
     | '/home'
     | '/login'
+    | '/events/dlq'
+    | '/events/feed'
+    | '/events/subscriptions'
     | '/wallet/credentials'
     | '/wallet/did'
     | '/wallet/info'
     | '/wallet/keys'
     | '/wallet/oidc4vci'
     | '/wallet/oidc4vp'
+    | '/events/'
     | '/participants/'
     | '/requests/'
     | '/wallet/'
@@ -451,6 +567,7 @@ export interface FileRouteTypes {
 
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  EventsRouteRoute: typeof EventsRouteRouteWithChildren
   ParticipantsRouteRoute: typeof ParticipantsRouteRouteWithChildren
   RequestsRouteRoute: typeof RequestsRouteRouteWithChildren
   WalletRouteRoute: typeof WalletRouteRouteWithChildren
@@ -461,6 +578,7 @@ export interface RootRouteChildren {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  EventsRouteRoute: EventsRouteRouteWithChildren,
   ParticipantsRouteRoute: ParticipantsRouteRouteWithChildren,
   RequestsRouteRoute: RequestsRouteRouteWithChildren,
   WalletRouteRoute: WalletRouteRouteWithChildren,
@@ -480,6 +598,7 @@ export const routeTree = rootRoute
       "filePath": "__root.tsx",
       "children": [
         "/",
+        "/events",
         "/participants",
         "/requests",
         "/wallet",
@@ -490,6 +609,15 @@ export const routeTree = rootRoute
     },
     "/": {
       "filePath": "index.tsx"
+    },
+    "/events": {
+      "filePath": "events/route.tsx",
+      "children": [
+        "/events/dlq",
+        "/events/feed",
+        "/events/subscriptions",
+        "/events/"
+      ]
     },
     "/participants": {
       "filePath": "participants/route.tsx",
@@ -526,6 +654,18 @@ export const routeTree = rootRoute
     "/login": {
       "filePath": "login.tsx"
     },
+    "/events/dlq": {
+      "filePath": "events/dlq.tsx",
+      "parent": "/events"
+    },
+    "/events/feed": {
+      "filePath": "events/feed.tsx",
+      "parent": "/events"
+    },
+    "/events/subscriptions": {
+      "filePath": "events/subscriptions.tsx",
+      "parent": "/events"
+    },
     "/wallet/credentials": {
       "filePath": "wallet/credentials.tsx",
       "parent": "/wallet"
@@ -549,6 +689,10 @@ export const routeTree = rootRoute
     "/wallet/oidc4vp": {
       "filePath": "wallet/oidc4vp.tsx",
       "parent": "/wallet"
+    },
+    "/events/": {
+      "filePath": "events/index.tsx",
+      "parent": "/events"
     },
     "/participants/": {
       "filePath": "participants/index.tsx",
