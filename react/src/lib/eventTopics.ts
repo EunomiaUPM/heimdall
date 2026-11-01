@@ -1,4 +1,4 @@
-import { encodePathId, getApiGatewayBase } from "@eunomia/ui";
+import { getApiGatewayBase } from "@eunomia/ui";
 import type {
   EventEnvelope,
   EventLink,
@@ -42,7 +42,7 @@ export const EventTopics: EventTopicCatalog = {
     if (event.topic.startsWith("heimdall:participant:") && typeof p.participant_id === "string")
       return {
         to: "/participants/$participantId",
-        params: { participantId: encodePathId(p.participant_id) },
+        params: { participantId: p.participant_id },
         label: p.participant_id,
       };
     if (typeof p.grant_id === "string")

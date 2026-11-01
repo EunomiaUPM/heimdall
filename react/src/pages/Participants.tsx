@@ -11,7 +11,6 @@ import {
   CardTitle,
   cn,
   DataTable,
-  encodePathId,
   FormatDate,
   GeneralErrorComponent,
   Identifier,
@@ -123,7 +122,7 @@ export default function Participants() {
 
                 <Link
                   to="/participants/$participantId"
-                  params={{ participantId: encodePathId(myAgent.participant_id) }}
+                  params={{ participantId: myAgent.participant_id }}
                 >
                   <Button variant="link" className="px-0">
                     View My Profile
@@ -145,7 +144,7 @@ export default function Participants() {
           onRowClick={(p) =>
             void navigate({
               to: "/participants/$participantId",
-              params: { participantId: encodePathId(p.participant_id) },
+              params: { participantId: p.participant_id },
             })
           }
           emptyMessage="No network participants registered yet"
@@ -239,7 +238,7 @@ export default function Participants() {
                     e.stopPropagation();
                     void navigate({
                       to: "/participants/$participantId",
-                      params: { participantId: encodePathId(p.participant_id) },
+                      params: { participantId: p.participant_id },
                     });
                   }}
                 >

@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React from "react";
 import { useNavigate, useParams } from "@tanstack/react-router";
 import {
   Activity,
@@ -17,7 +17,6 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
-  decodePathId,
   encodePathId,
   FormatDate,
   GeneralErrorComponent,
@@ -36,19 +35,11 @@ import {
 } from "@/data/orval/participants/participants";
 
 export default function ParticipantDetails() {
-  const { participantId: rawParam } = useParams({
+  // The route decodes the base64url segment (`pathIdParams`).
+  const { participantId } = useParams({
     from: "/participants/$participantId/",
   });
   const navigate = useNavigate();
-
-  const participantId = useMemo(() => {
-    if (!rawParam) return "";
-    try {
-      return decodePathId(rawParam);
-    } catch {
-      return decodeURIComponent(rawParam);
-    }
-  }, [rawParam]);
 
   const { data: res, isLoading, isError, error, refetch } =
     // The API takes the DID as base64url too, so its `:` and `%3A` survive the path.
