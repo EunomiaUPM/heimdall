@@ -16,7 +16,7 @@
  */
 
 mod approver;
-mod fed_catalog;
+pub mod fed_catalog;
 mod gaia;
 mod gatekeeper;
 mod issuer;

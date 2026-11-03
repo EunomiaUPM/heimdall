@@ -37,13 +37,13 @@ pub trait ApproverModule: HasRepo + HasGateKeeper + HasEvents + Send + Sync + 's
     ) -> Outcome<InteractionFinishResponse> {
         let mut grant = self.repo().recv_grant().get_by_id(&id).await?;
         user.ensure_handles(&grant.role, &id)?;
-        let interaction = self.repo().recv_interaction().get_by_id(&id).await?;
+        let interaction = self.repo().recv_interaction().get_latest_by_grant(&id).await?;
 
         let result: Outcome<()> = if payload.approve {
             grant.status = GrantStatus::Approved;
             Ok(())
         } else {
-            grant.status = GrantStatus::Rejected;
+            grant.status = GrantStatus::Finalized;
             grant.ended_at = Some(Utc::now());
             Err(Errors::crazy(
                 "Petition rejected due to internal decisions",
@@ -79,8 +79,8 @@ pub trait ApproverModule: HasRepo + HasGateKeeper + HasEvents + Send + Sync + 's
         let grant = self.repo().recv_grant().get_by_id(&id).await?;
         user.ensure_sees_team(&grant.role, &grant.visibility, &id)?;
         let issuance = self.repo().issuance().get_by_id(&id).await?;
-        let interaction = self.repo().recv_interaction().get_by_id(&id).await.ok();
-        let verification = self.repo().recv_verification().get_by_id(&id).await.ok();
+        let interaction = self.repo().recv_interaction().get_latest_by_grant(&id).await.ok();
+        let verification = self.repo().recv_verification().get_latest_by_grant(&id).await.ok();
         Ok(json!({
             "grant": grant,
             "issuance": issuance,

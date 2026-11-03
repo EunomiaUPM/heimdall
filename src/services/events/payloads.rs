@@ -89,7 +89,7 @@ pub struct InteractionEvent {
 impl From<&interaction::Model> for InteractionEvent {
     fn from(interaction: &interaction::Model) -> Self {
         Self {
-            grant_id: interaction.id.clone(),
+            grant_id: interaction.grant_id.clone(),
             method: interaction.method.to_string(),
             callback_uri: interaction.callback_uri.clone(),
         }
@@ -107,7 +107,7 @@ pub struct VerificationEvent {
 impl From<&verification::Model> for VerificationEvent {
     fn from(verification: &verification::Model) -> Self {
         Self {
-            grant_id: verification.id.clone(),
+            grant_id: verification.grant_id.clone(),
             holder: verification.holder.clone(),
             vc_types: verification.vc_type.clone(),
             status: verification.status.clone(),

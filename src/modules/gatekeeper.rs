@@ -15,7 +15,7 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-use crate::services::{HasEvents, HasGateKeeper, HasRepo, HasVcBuilder};
+use crate::services::{HasConfig, HasEvents, HasGateKeeper, HasRepo, HasVcBuilder};
 use crate::types::GrantResponseManager;
 use async_trait::async_trait;
 use axum::body::Bytes;
@@ -35,6 +35,7 @@ pub trait GatekeeperModule:
     + HasRepo
     + HasVcBuilder
     + HasEvents
+    + HasConfig
     + Send
     + Sync
     + 'static
@@ -128,7 +129,8 @@ pub trait GatekeeperModule:
                     grant_request.interact,
                     grant_request.client,
                 )?;
-                let verification = self.verifier().build_vp_plan(&grant.id)?;
+                let vcs = self.config().get_requested_vcs().to_vec();
+                let verification = self.verifier().build_vp_plan(&grant.id, &vcs)?;
 
                 let ver_model = self.repo().recv_verification().create(verification).await?;
                 let interaction = self.repo().recv_interaction().create(interaction).await?;
@@ -170,8 +172,8 @@ pub trait GatekeeperModule:
         self.gatekeeper()
             .validate_cont_req(&int_model, &payload, &headers)?;
 
-        let issuance = self.repo().issuance().get_by_id(&int_model.id).await?;
-        let mut grant = self.repo().recv_grant().get_by_id(&int_model.id).await?;
+        let issuance = self.repo().issuance().get_by_id(&int_model.grant_id).await?;
+        let mut grant = self.repo().recv_grant().get_by_id(&int_model.grant_id).await?;
 
         grant.status = GrantStatus::Approved;
         let grant = self.repo().recv_grant().update(grant).await?;

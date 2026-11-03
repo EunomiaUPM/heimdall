@@ -27,11 +27,14 @@ use axum::routing::get;
 use axum::Router;
 use tower_http::cors::{Any, CorsLayer};
 use tower_http::services::{ServeDir, ServeFile};
+use ymir::boot::workers::BackgroundWorker;
 use ymir::http::{OauthHttpMiddleware, OpenapiRouter, WalletRouter};
 use ymir::module_loader::service_module::ServiceModuleTrait;
 use ymir::services::token_validator::OauthTokenValidatorTrait;
 
 use crate::core::Core;
+use crate::modules::fed_catalog::DspCrawler;
+use crate::services::HasRepo;
 use crate::http::routes::{approver, console, docs, gate, issuer, minions, session, wallet};
 use crate::http::{
     ApproverRouter, FedCatalogRouter, GateKeeperRouter, IssuerRouter, ParticipantRouter,
@@ -239,6 +242,10 @@ impl ServiceModuleTrait for FedCatalogPlane {
 
     fn http(&self) -> Option<(String, Router)> {
         PlaneContext::mount(FedCatalogRouter::new(self.0.core.clone()).well_known())
+    }
+
+    fn workers(&self) -> Vec<Box<dyn BackgroundWorker>> {
+        vec![Box::new(DspCrawler(self.0.core.repo()))]
     }
 }
 
