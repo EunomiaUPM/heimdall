@@ -27,9 +27,8 @@ base64 = "0.22.1"
 tower-http = { version = "0.6.8", features = ["trace", "cors", "fs"] }
 x509-parser = "0.18.0"
 async-trait = "0.1.89"
-#ymir = { git = "https://github.com/EunomiaUPM/ymir.git", rev = "997e65ee0884e5066ecf3f22fdceb2fc8d33704c" }
-#events = { package = "ymir-events", git = "https://github.com/EunomiaUPM/ymir.git", rev = "997e65ee0884e5066ecf3f22fdceb2fc8d33704c" }
+ymir = { git = "https://github.com/EunomiaUPM/ymir.git", rev = "3903e4078f441070c86b125a90d4b80936445bd3" }
+events = { package = "ymir-events", git = "https://github.com/EunomiaUPM/ymir.git", rev = "3903e4078f441070c86b125a90d4b80936445bd3" }
 #ymir = {git = "https://github.com/EunomiaUPM/ymir.git", tag = "v0.8.6"}
-ymir = { path = "../ymir/crates/ymir" }
-events = { package = "ymir-events", path = "../ymir/crates/ymir-events" }
+#ymir = { path = "../ymir/crates/ymir" }
 
