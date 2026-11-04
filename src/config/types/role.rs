@@ -81,7 +81,7 @@ impl AuthorityRole {
                 vec![VcType::GxLabel]
             }
             AuthorityRole::DataSpaceAuthority => {
-                vec![VcType::DataspaceParticipant]
+                vec![VcType::DataspaceParticipant, VcType::DataspacePremium]
             }
             AuthorityRole::EcoAuthority => {
                 vec![
@@ -92,6 +92,7 @@ impl AuthorityRole {
                     VcType::VatId,
                     VcType::TaxId,
                     VcType::DataspaceParticipant,
+                    VcType::DataspacePremium,
                     VcType::GxLabel,
                 ]
             }

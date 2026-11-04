@@ -65,7 +65,9 @@ impl VcBuilderTrait for EcoAuthorityBuilder {
             | VcType::LeiCode
             | VcType::VatId
             | VcType::TaxId => self.legal.build_vc(&model, vc_config),
-            VcType::DataspaceParticipant => self.dataspace.build_vc(model, vc_config),
+            VcType::DataspaceParticipant | VcType::DataspacePremium => {
+                self.dataspace.build_vc(model, vc_config)
+            }
             VcType::GxLabel => self.clearing_house.build_vc(model, vc_config),
             _ => Err(Errors::unauthorized(
                 format!("Cannot issue vc type: {}", vc_config.vc_type()),
