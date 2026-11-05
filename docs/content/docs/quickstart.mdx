@@ -1,0 +1,91 @@
+---
+title: "Quickstart"
+description: "Run an authority, its database and its wallet on your machine with Docker Compose."
+---
+
+You need Docker with Compose. Nothing else: the images are published, and the repository brings example configuration and secrets.
+
+<Callout type="warn" title="For local use only">
+  The example keys and passwords are public. Use them to try Heimdall, never in a real deployment.
+</Callout>
+
+<Steps>
+<Step>
+
+## Get the release
+
+```bash
+git clone --branch v1.5.1 https://github.com/EunomiaUPM/heimdall.git
+cd heimdall
+```
+
+</Step>
+<Step>
+
+## Start it
+
+```bash
+docker compose up -d
+```
+
+This starts the following services, with the `EcoAuthority` role:
+
+| Service | What it is | Port |
+| --- | --- | --- |
+| `heimdall-db` | PostgreSQL | `1450` |
+| `fafnir-wallet` | The wallet of the authority | Internal |
+| `heimdall` | The authority | `1500` |
+
+`fafnir-setup` and `heimdall-setup` run first, prepare the databases and exit.
+
+</Step>
+<Step>
+
+## Check that it is up
+
+```bash
+curl http://127.0.0.1:1500/readiness
+```
+
+</Step>
+<Step>
+
+## Link the wallet
+
+The authority needs its wallet before it can sign anything:
+
+```bash
+curl -X POST http://127.0.0.1:1500/api/v1/wallet/link
+```
+
+</Step>
+<Step>
+
+## See its identity
+
+```bash
+curl http://127.0.0.1:1500/.well-known/did.json
+curl http://127.0.0.1:1500/.well-known/openid-credential-issuer
+```
+
+The first call returns its DID document, and the second one the credentials it can issue.
+
+</Step>
+<Step>
+
+## Open the console
+
+Go to `http://127.0.0.1:1500/admin` to see participants and credential requests.
+
+</Step>
+</Steps>
+
+## Stop it
+
+```bash
+docker compose down
+```
+
+## Next
+
+To issue a credential you need a participant that signs GNAP requests, usually a [DS-Agent](https://github.com/EunomiaUPM/ds-agent). [How a credential is issued](/docs/architecture/issuance) explains what it does. To run a whole data space, follow the [EUNOMIA quickstart](https://eunomiaupm.github.io/eunomia-deployment/docs/quickstart).

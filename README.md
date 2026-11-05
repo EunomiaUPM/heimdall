@@ -1,166 +1,87 @@
-# 🛡️ Heimdall
+# Heimdall
 
-Heimdall is a comprehensive **Self-Sovereign Identity (SSI) Authority** and **Wallet Manager**. It acts as a central pillar in an identity ecosystem, facilitating the issuance, verification, and management of Verifiable Credentials (VCs) and Verifiable Presentations (VPs).
+The authority of an [EUNOMIA](https://eunomia.dit.upm.es) data space. Heimdall onboards participants: it decides credential requests over GNAP, verifies presentations over OID4VP and issues verifiable credentials over OID4VCI.
 
-## 🌍 Overview
+**Documentation: https://eunomiaupm.github.io/heimdall**
 
-Heimdall provides a modular architecture to handle digital identity:
+This README describes `v1.5.1`. Its image is still `quay.io/eunomia_upm/heimdall:v1.5.0`: this tag only adds documentation. The Docker Hub image `rmenendez8/heimdall:v2.1.0`, used by the Compose files, is the same image.
 
-- **Issuer** 📜: Issues Verifiable Credentials (OID4VCI).
-- **Verifier** ✅: Verifies Verifiable Presentations (OIDV4VP).
-- **GateKeeper** 🔑: Manages fine-grained authorization (GNAP).
-- **Approver** ⚖️: Handles credential approval workflows.
-- **Wallet** 💼: Embedded wallet for keys and DIDs.
-- **Web Interface** 🖥️: A built-in React dashboard for management.
+## Quickstart
 
-Built with a **Clean Architecture** approach 🏗️, ensuring robustness and maintainability.
+You need Docker with Compose.
 
----
+```bash
+git clone --branch v1.5.1 https://github.com/EunomiaUPM/heimdall.git
+cd heimdall
+docker compose up -d
+curl -X POST http://127.0.0.1:1500/api/v1/wallet/link
+curl http://127.0.0.1:1500/.well-known/did.json
+```
 
-## 🏗️ Architecture
+This runs an `EcoAuthority` with its PostgreSQL and its Fafnir wallet. The console is at `http://127.0.0.1:1500/admin`.
 
-_(Espacio reservado para añadir una foto/diagrama de la arquitectura)_
-![Heimdall Architecture](path/to/architecture_image.png)
+The example keys and passwords are public: use them only on your machine.
 
----
+## What it does
 
-## 🧩 Modules
+| Module | Path | Purpose |
+| --- | --- | --- |
+| Gatekeeper | `/api/v1/gate` | GNAP grants, signed with HTTP Message Signatures |
+| Verifier | `/api/v1/verifier` | OID4VP presentations |
+| Issuer | `/api/v1/issuer` | OID4VCI issuance |
+| Approver | `/api/v1/approver` | The credential requests and their state |
+| Participants | `/api/v1/minions` | The participants it knows |
+| Wallet | `/api/v1/wallet` | Its keys, DIDs and credentials, through Fafnir |
+| Console | `/admin` | React interface for operators |
 
-Heimdall consists of several functional modules:
+## Roles
 
-- **Gatekeeper** 🔑: GNAP-based authorization service for advanced access control.
-- **Issuer** 📜: OID4VCI compliant service for issuing Verifiable Credentials.
-- **Verifier** ✅: OID4VP compliant service for validating Verifiable Presentations.
-- **Minion Manager** 👥: Handles participant management and entity onboarding.
-- **Approver** ⚖️: Manages credential approval workflows and policies.
-- **Wallet** 💼: Secure management of cryptographic keys and Decentralized Identifiers (DIDs).
-- **Admin UI** 🖥️: A React-based management dashboard accessible at `/admin/home`.
+`role` in the configuration sets what the authority issues:
 
----
+| Role | Issues |
+| --- | --- |
+| `DataSpaceAuthority` | `DataSpaceParticipant` |
+| `LegalAuthority` | `gx:VatId`, `gx:TaxId`, `gx:LeiCode`, `gx:LocalRegistrationNumber` |
+| `ClearingHouse` | `gx:LabelCredential` |
+| `EcoAuthority` | All of the above |
 
-## 🎭 Roles
+`ClearingHouse` imitates the behaviour of a Gaia-X Digital Clearing House: it checks the credentials a holder presents and issues a label. The `gx:` names follow the Gaia-X vocabulary, but this authority signs these credentials itself. `v1.5.1` does not claim conformance with Gaia-X.
 
-Heimdall supports different authority roles, each specialized in issuing specific sets of credentials:
+## Configuration
 
-- **Legal Authority**: Focused on legal identity. Issues `EORI`, `LEI`, `VAT ID`, `Tax ID`, and local registration numbers.
-- **Dataspace Authority**: Specialized in ecosystem participation. Issues `DataspaceParticipant` credentials.
-- **Clearing House**: Infrastructure role for clearing and settlement logic. (Not implemented yet)
-- **Clearing House Proxy**: Proxy service for clearing house interactions. (Not implemented yet)
-- **Eco Authority**: A comprehensive hybrid role that combines all role capabilities.
+An authority reads one YAML file, passed to `heimdall setup` and `heimdall start` with `--env-file`. Examples are in [`static/config`](static/config), and the [configuration guide](https://eunomiaupm.github.io/heimdall/docs/configuration) explains each field.
 
----
+## Production
 
-## ⚙️ Configuration
+[`PROD-DEPLOYMENT.md`](PROD-DEPLOYMENT.md) covers a deployment with HashiCorp Vault, Keycloak and oauth2-proxy.
 
-Heimdall loads configuration from the `static/environment` directory 📂.
+## API
 
-### 📝 Structure
+The [API documentation](https://eunomiaupm.github.io/heimdall/docs/api) lists the routes of this release. The spec is in [`static/specs/openapi/openapi.json`](static/specs/openapi/openapi.json), and a running authority serves it at `/api/v1/docs/openapi`.
 
-The `CoreApplicationConfig` (`src/config/config.rs`) aggregates:
+## Development
 
-- **Host** 🏠: Server settings.
-- **Database** 🗄️: persistence layer.
-- **API** 🌐: Versioning and specs.
-- **Role** 🎭: Deployment role (Issuer/Verifier/etc.).
+You need Rust, Node.js and Docker.
 
-### 📂 Files
+```bash
+./start-dev.sh
+```
 
-- `static/environment/config/....yaml`
-- `static/environment/envs/....env`
-- `static/specs`: `openapi.json`.
+The script starts the dependencies, builds the console, runs `setup` and starts the server with `cargo watch`, using `static/config/dev/eco_authority.yaml`. To work on the console with hot reload:
 
----
+```bash
+cd react
+npm run dev
+```
 
-## 📚 API Documentation
+The documentation site is in [`docs`](docs).
 
-A complete **OpenAPI 3.1.0** specification is available.
+## What's coming
 
-- **File**: `static/specs/openapi/openapi.json` 📄
-- **Online**: Access `/api/v1/docs` when running locally via `openapi_router.rs`.
+The next version adds an event bus with webhooks, a new console and a new credential, and it changes some configuration keys. Further ahead are the real integration with Gaia-X and DCP. See [What's coming](https://eunomiaupm.github.io/heimdall/docs/whats-coming).
 
----
-
-## 🌍 Deployment
-
-Heimdall can be deployed in different environments. Below are the primary deployment methods:
-
-### 1. Mini Deployment (Local / Quickstart)
-
-The `mini` deployment is the fastest way to spin up the Heimdall core and its database using Docker Compose. It leverages `docker-compose.yml`.
-
-**Steps to deploy:**
-
-1. Clone the repository.
-2. Ensure you have Docker and Docker Compose installed.
-3. You can configure your environment variables if you want, but this version runs perfectly with the .example
-4. Run the following command:
-   ```bash
-   docker-compose up
-   ```
-
-This will start:
-
-- `heimdall-db`: The PostgreSQL persistence layer on port `1450`.
-- `heimdall`: The main backend application serving on port `1500`, connected to the database.
-
-### 2. Prod Deployment (Production)
-
-For a full production deployment with Vault, Keycloak, and oauth2-proxy, see the [Production Deployment Guide](./PROD-DEPLOYMENT.md).
-
-## 🛠️ Development
-
-### Prerequisites
-
-- 🦀 **Rust** (latest stable)
-- 🟢 **Node.js & npm** (for the React frontend)
-- 🗄️ **Database** (configured via `DatabaseConfig`)
-
-### Building & Running (Full Stack)
-
-To run the complete system (Rust Backend + React Frontend), follow these steps:
-
-1. **Build the Frontend**:
-   Before running Rust, you must compile the React application code.
-
-   **Windows (PowerShell):**
-
-   ```powershell
-   .\react\build.ps1
-   ```
-
-   **Linux/Mac (Bash):**
-
-   ```bash
-   ./react/build.sh
-   ```
-
-   _This generates the `react/dist` folder._
-
-2. **Run the Server**:
-
-   ```bash
-   docker compose -f docker-compose.dev.yml up -d
-   ```
-
-   Depending on yor sistem copy the file heimdall.env.ps1.example o heimdall.env.sh.example into your terminal so that heimdall process can capture those environment variables
-
-   ```bash
-   cargo run setup -e ./static/environment/config/dev/dev_basic_dataspaces_authority.yaml
-   cargo run watch -x "run start -e ./static/environment/config/dev/dev_basic_dataspaces_authority.yaml"
-   ```
-
-   The server will start (default port 1500) and serve the frontend at:
-   `http://localhost:1500/admin/home`
-
-### Development Mode
-
-- **Rust**: `cargo run` (Backend API only)
-- **React**: `cd react && npm run dev` (Frontend with hot-reload at `localhost:5173`)
-  _Note: In this mode, the frontend runs separately from the Rust server backend._
-
----
-
-## 📄 License
+## License
 
 Copyright (C) 2026 - Universidad Politécnica de Madrid - UPM
-GNU General Public License v3.0
+
+GNU General Public License v3.0. See [`LICENSE`](LICENSE).

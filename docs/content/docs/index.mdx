@@ -1,0 +1,29 @@
+---
+title: "Introduction"
+description: "Heimdall is the authority of an EUNOMIA data space: it decides who belongs and gives them credentials to prove it."
+---
+
+A data space needs someone who says who its participants are. **Heimdall** is that role. A participant asks for a credential, proves who it is, and receives a verifiable credential that other participants can check on their own, without calling the authority again.
+
+It is built on open standards:
+
+| Standard | Used for |
+| --- | --- |
+| [GNAP](https://www.rfc-editor.org/rfc/rfc9635) | Credential requests, signed with HTTP Message Signatures |
+| [OID4VP](https://openid.net/specs/openid-4-verifiable-presentations-1_0.html) | Presentations of the credentials a holder already has |
+| [OID4VCI](https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html) | Delivery of the credential to the holder's wallet |
+| [W3C Verifiable Credentials](https://www.w3.org/TR/vc-data-model-2.0/) | The credentials themselves |
+| `did:jwk`, `did:web` | Identifiers of the authority and its participants |
+
+Heimdall is one piece of EUNOMIA. Participants run [DS-Agent](https://github.com/EunomiaUPM/ds-agent), keys and credentials live in [Fafnir](https://github.com/EunomiaUPM/fafnir-wallet), and the [EUNOMIA documentation](https://eunomiaupm.github.io/eunomia-deployment) explains how they work together.
+
+<Callout title="This documentation covers v1.5.1">
+  It describes the `v1.5.1` tag of the repository. Its image is still `quay.io/eunomia_upm/heimdall:v1.5.0`: this tag only adds documentation. The Docker Hub image `rmenendez8/heimdall:v2.1.0`, used by the Compose files, is the same image.
+</Callout>
+
+<Cards>
+  <Card title="Quickstart" href="/docs/quickstart" description="Run an authority on your machine." />
+  <Card title="Architecture" href="/docs/architecture" description="Its modules and how a credential is issued." />
+  <Card title="Identity" href="/docs/identity" description="DIDs, credentials and what each one proves." />
+  <Card title="API" href="/docs/api" description="The calls you need and the full reference." />
+</Cards>

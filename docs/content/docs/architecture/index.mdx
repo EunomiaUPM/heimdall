@@ -1,0 +1,54 @@
+---
+title: "Overview"
+description: "The modules of Heimdall, the services it depends on and how its role changes what it issues."
+---
+
+<Architecture />
+
+Heimdall is a single Rust binary with two commands: `setup` prepares the database and `start` serves the API. Every module is exposed over HTTP and shares one PostgreSQL database.
+
+## Modules
+
+| Module | Path | What it does |
+| --- | --- | --- |
+| **Gatekeeper** | `/api/v1/gate` | Receives GNAP grants, checks their signature and decides how each one goes on |
+| **Verifier** | `/api/v1/verifier` | Asks for presentations and verifies them over OID4VP |
+| **Issuer** | `/api/v1/issuer` | Delivers credentials over OID4VCI |
+| **Approver** | `/api/v1/approver` | Lists the credential requests and their state |
+| **Participants** | `/api/v1/minions` | Lists the participants the authority knows |
+| **Federated catalog** | `/.well-known/federated-catalog` | Publishes those participants |
+| **Wallet** | `/api/v1/wallet` | Manages the keys, DIDs and credentials of the authority through Fafnir |
+| **Console** | `/admin` | A React interface for operators, with live notifications |
+
+## What it depends on
+
+| Service | Used for |
+| --- | --- |
+| **PostgreSQL** | Grants, interactions, verifications, issuances and participants |
+| **Fafnir** | The keys and DID of the authority, and its signatures |
+| **Secrets** | Database and wallet credentials, keys and certificates. They come from HashiCorp Vault, or from files in `vault/secrets` when `is_vault_real` is `false` |
+
+## Roles
+
+The same binary works as different authorities. `role` in its [configuration](/docs/configuration) selects the credential builder, and with it what the authority may issue:
+
+| Role | Who it stands for | Issues | Based on |
+| --- | --- | --- | --- |
+| `DataSpaceAuthority` | Whoever runs the data space and admits its members | `DataSpaceParticipant` | The request |
+| `LegalAuthority` | A trusted source of legal identifiers | `gx:VatId`, `gx:TaxId`, `gx:LeiCode`, `gx:LocalRegistrationNumber` | The X.509 certificate |
+| `ClearingHouse` | A Gaia-X clearing house, which it imitates | `gx:LabelCredential` | A presentation |
+| `EcoAuthority` | All of them, in one instance | All of the above | Depends on the credential |
+
+`EcoAuthority` is convenient for development and demos. In a real ecosystem these roles belong to different organisations.
+
+### ClearingHouse
+
+In Gaia-X, a Digital Clearing House receives the credentials of a participant, checks them and signs the result. This role imitates that behaviour. The holder presents a `gx:LegalPerson`, a `gx:TermsAndConditions` and one legal identifier, the authority verifies the presentation, and it issues a `gx:LabelCredential` that lists each credential with its digest.
+
+The label is modelled on the one from the [Gaia-X Compliance service](https://gitlab.com/gaia-x/lab/compliance/gx-compliance). It has the same main fields, and the development configurations fill them as version 2.11 of that service does: level `SC`, engine `2.11.0` and rules `CD25.10`.
+
+It follows those steps, but it is a stand-in. It checks that the three credentials are there, it does not apply the Gaia-X rules, and the label is signed by this authority, not by a Gaia-X clearing house, so it cannot replace a real one.
+
+## Next
+
+[How a credential is issued](/docs/architecture/issuance) follows a request through these modules.

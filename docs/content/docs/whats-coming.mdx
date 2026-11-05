@@ -1,0 +1,87 @@
+---
+title: "What's coming"
+description: "What the next version of Heimdall adds, what to change when you move to it, and what comes after."
+---
+
+The next version is in development on the [`integration/ymir`](https://github.com/EunomiaUPM/heimdall/tree/integration/ymir) branch. None of this is in v1.5.1, and details may change before the release. [Further ahead](#further-ahead) lists what comes after it.
+
+## Events
+
+An event bus replaces the live notifications of the console. Every write to a grant, issuance, interaction, verification or participant publishes an event, named `heimdall:<entity>:<create|edit>`. Events can also go to webhooks: failed deliveries are retried, and those that still fail wait in a dead letter queue until they are replayed.
+
+| What | Call |
+| --- | --- |
+| List events | `GET /api/v1/events` |
+| Follow them live | `GET /api/v1/events/stream` |
+| Count the unread ones | `GET /api/v1/events/unread-count` |
+| Subscribe a webhook | `POST /api/v1/events/subscriptions` |
+| See the deliveries of an event | `GET /api/v1/events/{eventId}/deliveries` |
+| List dead letters | `GET /api/v1/events/dlq` |
+| Replay them | `POST /api/v1/events/dlq/replay-all` |
+
+## A new console
+
+The console moves to TypeScript and to the shared `@eunomia/ui` library, with an API client generated from the OpenAPI specification. It gets a new sign-in screen and an events section with live updates and a notification bell.
+
+## Credentials
+
+`DataSpaceAuthority` and `EcoAuthority` can issue a new credential, `DataSpacePremium`.
+
+## Presentations
+
+The new `oid4vp_service` key chooses the version of OID4VP that the verifier uses: `V1_0` or `Draft20`.
+
+## Traceability
+
+Every route echoes `x-request-id` and `x-correlation-id`, and the modules and GNAP checks add their own traces, so a request can be followed across services.
+
+## API
+
+| Call | Change |
+| --- | --- |
+| `GET /api/v1/me` | New. Returns the user signed in to the console |
+| `GET /api/v1/minions/{id}` | Takes the DID as base64url |
+| `GET /api/v1/react/notifications/stream` | Removed. Use `GET /api/v1/events/stream` |
+
+## Foundations
+
+Heimdall starts through the boot and module composition of [Ymir](https://github.com/EunomiaUPM/ymir), and takes its common configuration and OAuth settings from there. `setup` and `start` stay as they are.
+
+The Dockerfile, the Compose files and the production guide move to `deployment/`. The Compose file of the quickstart becomes `deployment/docker-compose.mini.yaml`.
+
+## Moving to it
+
+The configuration changes, so a v1.5.1 file does not load as it is:
+
+| v1.5.1 | Next version |
+| --- | --- |
+| `hosts_config` | `hosts` |
+| `connection_config` | `connection` |
+| `connection_config.has_tls_proxy` | `connection.has_proxy` |
+| `db_config` | `db` |
+| `api_config` | `api` |
+| Not present | `oid4vp_service`, required |
+
+Anything that reads the notification stream has to move to events.
+
+## Further ahead
+
+These come after the next version. They have no dates, and their scope may change.
+
+### Gaia-X
+
+The `ClearingHouse` role imitates a clearing house today. The goal is to work with Gaia-X for real, as an extension that its clearing houses can call:
+
+- **Credentials that Gaia-X accepts.** Credential types, JWT headers and DID keys with an X.509 chain, aligned with what the Gaia-X services expect.
+- **Conformance checks.** Heimdall and its credentials tested with the Gaia-X TCK and its Basic Functions.
+- **A local mode.** It imitates the Gaia-X Dispatcher and an extension, so an agent can move to the real services by changing a URL.
+- **A production mode.** An extension with its own rules, registered in the Gaia-X Meta-Registry and activated by a real clearing house.
+
+### DCP
+
+Support for the [Decentralized Claims Protocol](https://github.com/eclipse-dataspace-dcp/decentralized-claims-protocol) as a second mechanism, next to GNAP and OID4VP. How Heimdall issues credentials in that case, through OID4VCI or through the issuance API of DCP, is still to be decided.
+
+### Trust
+
+- **Certificate validation.** `LegalAuthority` will check the chain and the expiry of the certificates it reads.
+- **Credential status.** A way to revoke a credential and to check whether it is still valid.

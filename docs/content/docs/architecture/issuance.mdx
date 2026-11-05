@@ -1,0 +1,42 @@
+---
+title: "How a credential is issued"
+description: "The path of a request, from the signed GNAP grant to the credential in the holder's wallet."
+---
+
+<Issuance />
+
+## 1. Ask
+
+The participant sends a GNAP grant to `POST /api/v1/gate/access`, naming the credential it wants. The address is in the DID document of the authority, as its `CredentialIssuer` service.
+
+The request must be signed with **HTTP Message Signatures**, using the key in `client.key`: a JWK or a PEM certificate. Heimdall verifies the signature before anything else, and rejects credentials its role cannot issue.
+
+## 2. Prove
+
+What happens next depends on the `interact` block of the grant:
+
+| The grant asks for | Response | Used for |
+| --- | --- | --- |
+| `oid4vp` in `interact.start` | A presentation request | Credentials that depend on others |
+| Anything else | The credential offer, straight away | The certificate path |
+
+**With a certificate**, the authority reads what it needs from the X.509 certificate. Legal credentials take their value from the `organizationIdentifier` attribute, as [Identity](/docs/identity#legal-credentials) explains.
+
+**With a presentation**, the wallet fetches the definition at `GET /api/v1/verifier/pd/{state}` and sends its presentation to `POST /api/v1/verifier/verify/{state}`. The authority asks for the credentials in `verify_req_config.vcs_requested`, and keeps those it verifies to build the new one.
+
+## 3. Decide
+
+The decision is automatic. On the certificate path the offer already came in the first response, so the participant goes straight to the next step.
+
+On the presentation path the request is approved once the presentation is verified. The interaction finishes and the participant continues the grant at `POST /api/v1/gate/continue/{id}` with its `interact_ref`, signing that call as well. The response brings the credential offer.
+
+Every request appears in the console and in `GET /api/v1/approver/all`.
+
+## 4. Redeem
+
+The offer goes to the wallet of the participant, which completes OID4VCI with the pre-authorized code flow:
+
+1. `POST /api/v1/issuer/token` exchanges the code for an access token.
+2. `POST /api/v1/issuer/credential` sends a proof of possession of the holder key and receives the credential, signed by the authority.
+
+The participant then appears in `GET /api/v1/minions/all` and in the federated catalog.

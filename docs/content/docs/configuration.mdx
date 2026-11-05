@@ -1,0 +1,106 @@
+---
+title: "Configuration"
+description: "The YAML file that defines an authority, and the environment variables that point to its secrets."
+---
+
+An authority reads one YAML file, passed to both commands:
+
+```bash
+heimdall setup --env-file /app/static/config/mini_eco_authority.yaml
+heimdall start --env-file /app/static/config/mini_eco_authority.yaml
+```
+
+The repository brings examples in [`static/config`](https://github.com/EunomiaUPM/heimdall/tree/v1.5.1/static/config):
+
+| File | For |
+| --- | --- |
+| `mini_eco_authority.yaml`, `mini_basic_dataspace_authority.yaml` | `docker-compose.yml` |
+| `dev/*.yaml` | Running the binary on your machine |
+| `prod/*.yaml` | `docker-compose.prod.yml` |
+
+## Example
+
+```yaml
+hosts_config:
+  http:
+    protocol: 'http'
+    url: 'host.docker.internal'
+    port: '1500'
+    internal_port: null
+  grpc: null
+  graphql: null
+
+connection_config:
+  is_prod: false
+  is_vault_real: false
+  has_tls_proxy: false
+
+db_config:
+  db_type: Postgres
+  url: 'heimdall-db'
+  port: '5432'
+
+wallet_config:
+  wallet: Fafnir
+  api:
+    http:
+      protocol: 'http'
+      url: 'fafnir-wallet'
+      port: '7001'
+    grpc: null
+    graphql: null
+
+did_config:
+  type: Web
+  domain: 'host.docker.internal'
+  path:
+  port: '1500'
+
+role: EcoAuthority
+
+api_config:
+  version: 'v1'
+  openapi_path: '/app/static/specs/openapi/openapi.json'
+
+issue_config:
+  clh_config:
+    label_level: 'SC'
+    engine_version: '2.11.0'
+    rules_version: 'CD25.10'
+    validated_criteria: 'https://example.org/criteria'
+
+verify_req_config:
+  is_cert_allowed: true
+  auto_approve_cert: true
+  vcs_requested: ['gx:VatId', 'gx:LegalPerson', 'gx:TermsAndConditions']
+```
+
+## Fields
+
+<TypeTable
+  type={{
+    hosts_config: { type: 'object', description: 'The public address of the authority. It appears in its DID document and in the URLs it hands out.' },
+    'connection_config.is_prod': { type: 'boolean', description: 'Production mode. Without a TLS proxy, the authority serves TLS itself.' },
+    'connection_config.is_vault_real': { type: 'boolean', description: 'Read secrets from HashiCorp Vault instead of vault/secrets.' },
+    'connection_config.has_tls_proxy': { type: 'boolean', description: 'Another service terminates TLS in front of the authority.' },
+    db_config: { type: 'object', description: 'Where its PostgreSQL is. Its credentials are a secret.' },
+    wallet_config: { type: 'object', description: 'Its wallet and how to reach it.' },
+    did_config: { type: 'Jwk | Web', description: 'The DID method. Web takes domain, path and port.' },
+    role: { type: 'string', description: 'What it issues: see Roles in the architecture.' },
+    api_config: { type: 'object', description: 'The API version in the paths, and the OpenAPI file it serves.' },
+    'issue_config.clh_config': { type: 'object', description: 'Values written in the label credential. Needed by ClearingHouse and EcoAuthority.' },
+    'verify_req_config.auto_approve_cert': { type: 'boolean', description: 'Approve certificate requests automatically. Keep it true.' },
+    'verify_req_config.vcs_requested': { type: 'string[]', description: 'The credentials asked for in a presentation.' },
+  }}
+/>
+
+## Environment
+
+The environment says where the secrets are. [`static/envs/heimdall.env.example`](https://github.com/EunomiaUPM/heimdall/blob/v1.5.1/static/envs/heimdall.env.example) has the variables for local use, and [Production](/docs/production) covers those for HashiCorp Vault.
+
+| Variable | What it points to |
+| --- | --- |
+| `VAULT_PATH` | The folder with the secrets |
+| `VAULT_APP_DB` | Database credentials |
+| `VAULT_APP_WALLET` | Wallet credentials |
+| `VAULT_APP_PRIV_KEY`, `VAULT_APP_PUB_PKEY`, `VAULT_APP_CERT` | Key pair and certificate of the authority |

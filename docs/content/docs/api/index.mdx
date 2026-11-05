@@ -1,0 +1,42 @@
+---
+title: "Basic API"
+description: "The calls you need most. The reference lists all of them."
+---
+
+Management and protocol routes are under `/api/v1`. Health checks, the console and the `.well-known` documents are at the root of the host. In the [quickstart](/docs/quickstart), that host is `http://127.0.0.1:1500`.
+
+## Run it
+
+| What | Call |
+| --- | --- |
+| Is it ready | `GET /readiness` |
+| Link the wallet | `POST /api/v1/wallet/link` |
+| Is the wallet linked | `GET /api/v1/wallet/is-linked` |
+| Its DID document | `GET /.well-known/did.json` |
+| What it can issue | `GET /.well-known/openid-credential-issuer` |
+
+## Operate it
+
+| What | Call |
+| --- | --- |
+| Credential requests | `GET /api/v1/approver/all` |
+| One request, in detail | `GET /api/v1/approver/{id}/details` |
+| Participants | `GET /api/v1/minions/all` |
+| The published participants | `GET /.well-known/federated-catalog` |
+
+## Get a credential
+
+A participant uses these in order, usually through its agent and wallet. [How a credential is issued](/docs/architecture/issuance) explains each step.
+
+| Step | Call |
+| --- | --- |
+| Ask, with a signed request | `POST /api/v1/gate/access` |
+| Read what to present | `GET /api/v1/verifier/pd/{state}` |
+| Present | `POST /api/v1/verifier/verify/{state}` |
+| Continue the grant | `POST /api/v1/gate/continue/{id}` |
+| Get a token | `POST /api/v1/issuer/token` |
+| Get the credential | `POST /api/v1/issuer/credential` |
+
+## Everything else
+
+[The reference](/docs/api/reference/gatekeeper) lists every route. A running authority also serves it at `/api/v1/docs/openapi`.

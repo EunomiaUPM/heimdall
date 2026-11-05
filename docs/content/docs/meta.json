@@ -1,0 +1,19 @@
+{
+  "title": "Heimdall",
+  "root": true,
+  "pages": [
+    "---Get started---",
+    "index",
+    "quickstart",
+    "---Learn---",
+    "architecture",
+    "identity",
+    "---Run---",
+    "configuration",
+    "production",
+    "---Reference---",
+    "api",
+    "---Next---",
+    "whats-coming"
+  ]
+}

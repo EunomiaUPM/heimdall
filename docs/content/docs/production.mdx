@@ -1,0 +1,42 @@
+---
+title: "Production"
+description: "What a production authority adds to the local setup, and where the full guide is."
+---
+
+The local setup is not meant for real use: its secrets are public and nothing protects the console. A production deployment runs from [`docker-compose.prod.yml`](https://github.com/EunomiaUPM/heimdall/blob/v1.5.1/docker-compose.prod.yml) and adds:
+
+| Service | Why |
+| --- | --- |
+| **HashiCorp Vault** | Keeps the secrets, instead of files |
+| **Keycloak** | Identifies the operators |
+| **oauth2-proxy** | Terminates TLS and puts Keycloak in front of the console and the management API. The protocol routes stay open: `.well-known`, `/gate`, `/verifier` and `/issuer` |
+
+## What you need
+
+- A server with Docker and Compose.
+- A domain that points to it.
+- TLS certificates for that domain.
+- The key pair and certificate of the authority. Only RSA is supported.
+
+Two kinds of certificates are involved:
+
+| Kind | Folder | Used for |
+| --- | --- | --- |
+| Domain | `vault/config` | HTTPS |
+| Ecosystem | `vault/secrets` | Issuing verifiable credentials |
+
+## Steps
+
+The order matters, because the services depend on values from each other:
+
+1. Place the certificates and secrets.
+2. Fill in the base environment files.
+3. Set the domain in the application configuration.
+4. Launch part of the stack.
+5. Initialise and unseal Vault.
+6. Complete `heimdall.env`.
+7. Configure Keycloak: realm, client, users and audience mapper.
+8. Complete `proxy.env`.
+9. Launch everything.
+
+The [production deployment guide](https://github.com/EunomiaUPM/heimdall/blob/v1.5.1/PROD-DEPLOYMENT.md) has every value. Paths in that guide under `static/environment` are now directly under `static`.

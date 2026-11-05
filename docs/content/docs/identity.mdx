@@ -1,0 +1,64 @@
+---
+title: "Identity"
+description: "How the authority identifies itself, how it identifies participants, and what each credential proves."
+---
+
+There are no shared accounts in a data space. Each participant has its own keys, and the authority links them to facts about that participant with credentials that anyone can verify.
+
+## The identity of the authority
+
+The authority has a DID and a key pair, both kept in its Fafnir wallet. They are created when the wallet is linked, and `did_config` chooses the method:
+
+| Method | What it is | Use it for |
+| --- | --- | --- |
+| `did:jwk` | The identifier is the public key, encoded. Nothing to resolve | Local instances without a domain |
+| `did:web` | The identifier points to a document on a domain, served at `/.well-known/did.json` | Deployments with a domain. The quickstart uses it on `host.docker.internal` |
+
+Its DID document also says how to reach it, with two services:
+
+| Service | Points to |
+| --- | --- |
+| `CredentialIssuer` | `/api/v1/gate/access` |
+| `FederatedCatalog` | `/.well-known/federated-catalog` |
+
+## The identity of a participant
+
+A participant identifies itself in two ways during a request:
+
+- **Its request key.** The GNAP grant is signed with this key, so the authority knows the request comes from whoever holds it.
+- **Its DID.** The credential is issued to this holder DID, and the wallet proves it controls that DID when it redeems the offer.
+
+A certificate or a presentation then adds the facts behind them, depending on the [path of the request](/docs/architecture/issuance#2-prove).
+
+## Credentials
+
+| Credential | Issued by the role | Based on | Proves |
+| --- | --- | --- | --- |
+| `DataSpaceParticipant` | `DataSpaceAuthority` | The request | Membership of the data space |
+| `gx:VatId`, `gx:TaxId`, `gx:LeiCode`, `gx:LocalRegistrationNumber` | `LegalAuthority` | The X.509 certificate | A legal identifier of the holder |
+| `gx:LabelCredential` | `ClearingHouse` | A presentation | That the holder presented the three credentials below |
+
+`EcoAuthority` issues all of them.
+
+### Legal credentials
+
+The value comes from the certificate of the participant: the country from its subject, and the identifier from `organizationIdentifier`, in the ETSI format. A VAT number looks like `VATES-123456789`.
+
+| Credential | Accepted prefixes |
+| --- | --- |
+| `gx:VatId` | `VAT` |
+| `gx:TaxId` | `TIN`, `VAT` |
+| `gx:LeiCode` | `LEI` |
+| `gx:LocalRegistrationNumber` | `NTR` |
+
+### Label credential
+
+To issue it, the authority needs exactly three presented credentials: a `gx:LegalPerson`, a `gx:TermsAndConditions` and one legal identifier. The label lists them, with the level and versions set in `issue_config.clh_config`.
+
+<Callout type="warn" title="Not a Gaia-X credential">
+  The `ClearingHouse` role [imitates what a Gaia-X Digital Clearing House does](/docs/architecture#clearinghouse). The `gx:` names follow the Gaia-X vocabulary, but this authority signs these credentials itself, and v1.5.1 does not claim conformance with Gaia-X.
+</Callout>
+
+## Secrets
+
+Keys and certificates never go in the configuration. The authority reads them from HashiCorp Vault, or from `vault/secrets` when `is_vault_real` is `false`. [Production](/docs/production) lists what each one is for.
