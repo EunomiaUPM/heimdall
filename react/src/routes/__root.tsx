@@ -10,6 +10,7 @@ import {
 import { TanStackRouterDevtools } from "@tanstack/router-devtools";
 import {
   Activity,
+  BadgeCheck,
   Home as HomeIcon,
   Info,
   Loader2,
@@ -123,6 +124,11 @@ function AuthenticatedShell({
             title: "VC Requests",
             url: "/admin/requests",
             icon: ShieldCheck,
+          },
+          {
+            title: "Issued VCs",
+            url: "/admin/issued",
+            icon: BadgeCheck,
           },
           {
             title: "Events",

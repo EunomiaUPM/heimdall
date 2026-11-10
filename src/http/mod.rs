@@ -21,6 +21,7 @@ mod issuer_router;
 mod participant_router;
 pub mod routes;
 mod session;
+mod status_list_router;
 mod vcs_router;
 mod verifier_router;
 
@@ -29,5 +30,6 @@ pub use gatekeeper_router::GateKeeperRouter;
 pub use issuer_router::IssuerRouter;
 pub use participant_router::ParticipantRouter;
 pub use session::SessionHandlers;
+pub use status_list_router::StatusListRouter;
 pub use vcs_router::ApproverRouter;
 pub use verifier_router::VerifierRouter;

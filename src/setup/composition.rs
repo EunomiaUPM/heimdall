@@ -35,10 +35,12 @@ use ymir::services::token_validator::OauthTokenValidatorTrait;
 use crate::core::Core;
 use crate::modules::fed_catalog::DspCrawler;
 use crate::services::HasRepo;
-use crate::http::routes::{approver, console, docs, gate, issuer, minions, session, wallet};
+use crate::http::routes::{
+    approver, console, docs, gate, issued, issuer, minions, session, status_lists, wallet,
+};
 use crate::http::{
     ApproverRouter, FedCatalogRouter, GateKeeperRouter, IssuerRouter, ParticipantRouter,
-    SessionHandlers, VerifierRouter,
+    SessionHandlers, StatusListRouter, VerifierRouter,
 };
 use ymir::http::routes::verifier;
 
@@ -201,6 +203,30 @@ impl ServiceModuleTrait for ApproverPlane {
         let r = ApproverRouter::new(self.0.core.clone());
         let router =
             Router::new().nest(&self.0.api(approver::PREFIX), self.0.guarded(r.internal()));
+        PlaneContext::mount(router)
+    }
+}
+
+/// Status lists of the issued credentials: open lists, and the console's revocation behind the
+/// guard.
+pub struct StatusListPlane(PlaneContext);
+
+impl StatusListPlane {
+    pub fn new(ctx: PlaneContext) -> Self {
+        Self(ctx)
+    }
+}
+
+impl ServiceModuleTrait for StatusListPlane {
+    fn name(&self) -> &'static str {
+        "status-list"
+    }
+
+    fn http(&self) -> Option<(String, Router)> {
+        let r = StatusListRouter::new(self.0.core.clone());
+        let router = Router::new()
+            .nest(&self.0.api(status_lists::PREFIX), r.external())
+            .nest(&self.0.api(issued::PREFIX), self.0.guarded(r.internal()));
         PlaneContext::mount(router)
     }
 }

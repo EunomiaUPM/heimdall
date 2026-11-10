@@ -19,7 +19,7 @@ use crate::config::traits::{Oid4VpServiceTrait, RoleConfigTrait};
 use crate::config::types::{AuthorityRole, Oid4VpService};
 use crate::config::{CoreConfig, CoreConfigTrait};
 use crate::core::Core;
-use crate::http::routes::{fed_catalog, gate};
+use crate::http::routes::{fed_catalog, gate, status_lists};
 use crate::services::events::EventsService;
 use crate::services::gatekeeper::gnap::{GnapConfig, GnapGateKeeperService};
 use crate::services::repo::RepoForSql;
@@ -183,6 +183,15 @@ impl CoreBuilder {
                     "{}{}",
                     config.get_host(HostType::Http),
                     fed_catalog::CATALOG
+                ),
+            ),
+            DidService::basic(
+                DidServiceType::BitstringStatusList,
+                format!(
+                    "{}{}{}",
+                    config.get_host(HostType::Http),
+                    config.get_api_version(),
+                    status_lists::PREFIX
                 ),
             ),
         ]

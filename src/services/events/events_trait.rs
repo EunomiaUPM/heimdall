@@ -19,6 +19,8 @@ use async_trait::async_trait;
 use ymir::data::entities::received::{grant, interaction, verification};
 use ymir::data::entities::shared::{issuance, participant};
 
+use crate::data::entities::vc_status;
+
 /// One event per write, under `heimdall:<entity>:<action>`, owned like the grant it belongs to.
 #[async_trait]
 pub trait EventsTrait: Send + Sync + 'static {
@@ -42,4 +44,5 @@ pub trait EventsTrait: Send + Sync + 'static {
         participant: &participant::Model,
         action: &str,
     );
+    async fn vc_status(&self, grant: &grant::Model, status: &vc_status::Model, action: &str);
 }

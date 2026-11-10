@@ -17,11 +17,13 @@ import { Route as AboutImport } from './routes/about'
 import { Route as WalletRouteImport } from './routes/wallet/route'
 import { Route as RequestsRouteImport } from './routes/requests/route'
 import { Route as ParticipantsRouteImport } from './routes/participants/route'
+import { Route as IssuedRouteImport } from './routes/issued/route'
 import { Route as EventsRouteImport } from './routes/events/route'
 import { Route as IndexImport } from './routes/index'
 import { Route as WalletIndexImport } from './routes/wallet/index'
 import { Route as RequestsIndexImport } from './routes/requests/index'
 import { Route as ParticipantsIndexImport } from './routes/participants/index'
+import { Route as IssuedIndexImport } from './routes/issued/index'
 import { Route as EventsIndexImport } from './routes/events/index'
 import { Route as WalletOidc4vpImport } from './routes/wallet/oidc4vp'
 import { Route as WalletOidc4vciImport } from './routes/wallet/oidc4vci'
@@ -34,6 +36,7 @@ import { Route as EventsFeedImport } from './routes/events/feed'
 import { Route as EventsDlqImport } from './routes/events/dlq'
 import { Route as RequestsRequestIdIndexImport } from './routes/requests/$requestId/index'
 import { Route as ParticipantsParticipantIdIndexImport } from './routes/participants/$participantId/index'
+import { Route as IssuedIssuedIdIndexImport } from './routes/issued/$issuedId/index'
 
 // Create/Update Routes
 
@@ -73,6 +76,12 @@ const ParticipantsRouteRoute = ParticipantsRouteImport.update({
   getParentRoute: () => rootRoute,
 } as any)
 
+const IssuedRouteRoute = IssuedRouteImport.update({
+  id: '/issued',
+  path: '/issued',
+  getParentRoute: () => rootRoute,
+} as any)
+
 const EventsRouteRoute = EventsRouteImport.update({
   id: '/events',
   path: '/events',
@@ -101,6 +110,12 @@ const ParticipantsIndexRoute = ParticipantsIndexImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => ParticipantsRouteRoute,
+} as any)
+
+const IssuedIndexRoute = IssuedIndexImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => IssuedRouteRoute,
 } as any)
 
 const EventsIndexRoute = EventsIndexImport.update({
@@ -176,6 +191,12 @@ const ParticipantsParticipantIdIndexRoute =
     getParentRoute: () => ParticipantsRouteRoute,
   } as any)
 
+const IssuedIssuedIdIndexRoute = IssuedIssuedIdIndexImport.update({
+  id: '/$issuedId/',
+  path: '/$issuedId/',
+  getParentRoute: () => IssuedRouteRoute,
+} as any)
+
 // Populate the FileRoutesByPath interface
 
 declare module '@tanstack/react-router' {
@@ -192,6 +213,13 @@ declare module '@tanstack/react-router' {
       path: '/events'
       fullPath: '/events'
       preLoaderRoute: typeof EventsRouteImport
+      parentRoute: typeof rootRoute
+    }
+    '/issued': {
+      id: '/issued'
+      path: '/issued'
+      fullPath: '/issued'
+      preLoaderRoute: typeof IssuedRouteImport
       parentRoute: typeof rootRoute
     }
     '/participants': {
@@ -306,6 +334,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof EventsIndexImport
       parentRoute: typeof EventsRouteImport
     }
+    '/issued/': {
+      id: '/issued/'
+      path: '/'
+      fullPath: '/issued/'
+      preLoaderRoute: typeof IssuedIndexImport
+      parentRoute: typeof IssuedRouteImport
+    }
     '/participants/': {
       id: '/participants/'
       path: '/'
@@ -326,6 +361,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/wallet/'
       preLoaderRoute: typeof WalletIndexImport
       parentRoute: typeof WalletRouteImport
+    }
+    '/issued/$issuedId/': {
+      id: '/issued/$issuedId/'
+      path: '/$issuedId'
+      fullPath: '/issued/$issuedId'
+      preLoaderRoute: typeof IssuedIssuedIdIndexImport
+      parentRoute: typeof IssuedRouteImport
     }
     '/participants/$participantId/': {
       id: '/participants/$participantId/'
@@ -362,6 +404,20 @@ const EventsRouteRouteChildren: EventsRouteRouteChildren = {
 
 const EventsRouteRouteWithChildren = EventsRouteRoute._addFileChildren(
   EventsRouteRouteChildren,
+)
+
+interface IssuedRouteRouteChildren {
+  IssuedIndexRoute: typeof IssuedIndexRoute
+  IssuedIssuedIdIndexRoute: typeof IssuedIssuedIdIndexRoute
+}
+
+const IssuedRouteRouteChildren: IssuedRouteRouteChildren = {
+  IssuedIndexRoute: IssuedIndexRoute,
+  IssuedIssuedIdIndexRoute: IssuedIssuedIdIndexRoute,
+}
+
+const IssuedRouteRouteWithChildren = IssuedRouteRoute._addFileChildren(
+  IssuedRouteRouteChildren,
 )
 
 interface ParticipantsRouteRouteChildren {
@@ -418,6 +474,7 @@ const WalletRouteRouteWithChildren = WalletRouteRoute._addFileChildren(
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/events': typeof EventsRouteRouteWithChildren
+  '/issued': typeof IssuedRouteRouteWithChildren
   '/participants': typeof ParticipantsRouteRouteWithChildren
   '/requests': typeof RequestsRouteRouteWithChildren
   '/wallet': typeof WalletRouteRouteWithChildren
@@ -434,9 +491,11 @@ export interface FileRoutesByFullPath {
   '/wallet/oidc4vci': typeof WalletOidc4vciRoute
   '/wallet/oidc4vp': typeof WalletOidc4vpRoute
   '/events/': typeof EventsIndexRoute
+  '/issued/': typeof IssuedIndexRoute
   '/participants/': typeof ParticipantsIndexRoute
   '/requests/': typeof RequestsIndexRoute
   '/wallet/': typeof WalletIndexRoute
+  '/issued/$issuedId': typeof IssuedIssuedIdIndexRoute
   '/participants/$participantId': typeof ParticipantsParticipantIdIndexRoute
   '/requests/$requestId': typeof RequestsRequestIdIndexRoute
 }
@@ -456,9 +515,11 @@ export interface FileRoutesByTo {
   '/wallet/oidc4vci': typeof WalletOidc4vciRoute
   '/wallet/oidc4vp': typeof WalletOidc4vpRoute
   '/events': typeof EventsIndexRoute
+  '/issued': typeof IssuedIndexRoute
   '/participants': typeof ParticipantsIndexRoute
   '/requests': typeof RequestsIndexRoute
   '/wallet': typeof WalletIndexRoute
+  '/issued/$issuedId': typeof IssuedIssuedIdIndexRoute
   '/participants/$participantId': typeof ParticipantsParticipantIdIndexRoute
   '/requests/$requestId': typeof RequestsRequestIdIndexRoute
 }
@@ -467,6 +528,7 @@ export interface FileRoutesById {
   __root__: typeof rootRoute
   '/': typeof IndexRoute
   '/events': typeof EventsRouteRouteWithChildren
+  '/issued': typeof IssuedRouteRouteWithChildren
   '/participants': typeof ParticipantsRouteRouteWithChildren
   '/requests': typeof RequestsRouteRouteWithChildren
   '/wallet': typeof WalletRouteRouteWithChildren
@@ -483,9 +545,11 @@ export interface FileRoutesById {
   '/wallet/oidc4vci': typeof WalletOidc4vciRoute
   '/wallet/oidc4vp': typeof WalletOidc4vpRoute
   '/events/': typeof EventsIndexRoute
+  '/issued/': typeof IssuedIndexRoute
   '/participants/': typeof ParticipantsIndexRoute
   '/requests/': typeof RequestsIndexRoute
   '/wallet/': typeof WalletIndexRoute
+  '/issued/$issuedId/': typeof IssuedIssuedIdIndexRoute
   '/participants/$participantId/': typeof ParticipantsParticipantIdIndexRoute
   '/requests/$requestId/': typeof RequestsRequestIdIndexRoute
 }
@@ -495,6 +559,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/events'
+    | '/issued'
     | '/participants'
     | '/requests'
     | '/wallet'
@@ -511,9 +576,11 @@ export interface FileRouteTypes {
     | '/wallet/oidc4vci'
     | '/wallet/oidc4vp'
     | '/events/'
+    | '/issued/'
     | '/participants/'
     | '/requests/'
     | '/wallet/'
+    | '/issued/$issuedId'
     | '/participants/$participantId'
     | '/requests/$requestId'
   fileRoutesByTo: FileRoutesByTo
@@ -532,15 +599,18 @@ export interface FileRouteTypes {
     | '/wallet/oidc4vci'
     | '/wallet/oidc4vp'
     | '/events'
+    | '/issued'
     | '/participants'
     | '/requests'
     | '/wallet'
+    | '/issued/$issuedId'
     | '/participants/$participantId'
     | '/requests/$requestId'
   id:
     | '__root__'
     | '/'
     | '/events'
+    | '/issued'
     | '/participants'
     | '/requests'
     | '/wallet'
@@ -557,9 +627,11 @@ export interface FileRouteTypes {
     | '/wallet/oidc4vci'
     | '/wallet/oidc4vp'
     | '/events/'
+    | '/issued/'
     | '/participants/'
     | '/requests/'
     | '/wallet/'
+    | '/issued/$issuedId/'
     | '/participants/$participantId/'
     | '/requests/$requestId/'
   fileRoutesById: FileRoutesById
@@ -568,6 +640,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   EventsRouteRoute: typeof EventsRouteRouteWithChildren
+  IssuedRouteRoute: typeof IssuedRouteRouteWithChildren
   ParticipantsRouteRoute: typeof ParticipantsRouteRouteWithChildren
   RequestsRouteRoute: typeof RequestsRouteRouteWithChildren
   WalletRouteRoute: typeof WalletRouteRouteWithChildren
@@ -579,6 +652,7 @@ export interface RootRouteChildren {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   EventsRouteRoute: EventsRouteRouteWithChildren,
+  IssuedRouteRoute: IssuedRouteRouteWithChildren,
   ParticipantsRouteRoute: ParticipantsRouteRouteWithChildren,
   RequestsRouteRoute: RequestsRouteRouteWithChildren,
   WalletRouteRoute: WalletRouteRouteWithChildren,
@@ -599,6 +673,7 @@ export const routeTree = rootRoute
       "children": [
         "/",
         "/events",
+        "/issued",
         "/participants",
         "/requests",
         "/wallet",
@@ -617,6 +692,13 @@ export const routeTree = rootRoute
         "/events/feed",
         "/events/subscriptions",
         "/events/"
+      ]
+    },
+    "/issued": {
+      "filePath": "issued/route.tsx",
+      "children": [
+        "/issued/",
+        "/issued/$issuedId/"
       ]
     },
     "/participants": {
@@ -694,6 +776,10 @@ export const routeTree = rootRoute
       "filePath": "events/index.tsx",
       "parent": "/events"
     },
+    "/issued/": {
+      "filePath": "issued/index.tsx",
+      "parent": "/issued"
+    },
     "/participants/": {
       "filePath": "participants/index.tsx",
       "parent": "/participants"
@@ -705,6 +791,10 @@ export const routeTree = rootRoute
     "/wallet/": {
       "filePath": "wallet/index.tsx",
       "parent": "/wallet"
+    },
+    "/issued/$issuedId/": {
+      "filePath": "issued/$issuedId/index.tsx",
+      "parent": "/issued"
     },
     "/participants/$participantId/": {
       "filePath": "participants/$participantId/index.tsx",

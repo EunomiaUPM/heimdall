@@ -22,10 +22,13 @@ use ymir::services::repo::traits::received::{
 };
 use ymir::services::repo::traits::shared::{IssuanceRepoTrait, ParticipantRepoTrait};
 
+use crate::services::repo::VcStatusRepoTrait;
+
 pub trait RepoTrait: Send + Sync + 'static {
     fn recv_grant(&self) -> Arc<dyn RecvGrantRepoTrait>;
     fn recv_interaction(&self) -> Arc<dyn RecvInteractionRepoTrait>;
     fn recv_verification(&self) -> Arc<dyn RecvVerificationRepoTrait>;
     fn participant(&self) -> Arc<dyn ParticipantRepoTrait>;
     fn issuance(&self) -> Arc<dyn IssuanceRepoTrait>;
+    fn vc_status(&self) -> Arc<dyn VcStatusRepoTrait>;
 }

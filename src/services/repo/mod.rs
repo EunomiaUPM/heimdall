@@ -17,6 +17,8 @@
 
 mod repo_trait;
 mod service;
+mod vc_status_repo;
 
 pub use repo_trait::RepoTrait;
 pub use service::RepoForSql;
+pub use vc_status_repo::{STATUS_LIST_CAPACITY, VcStatusPostgresRepo, VcStatusRepoTrait};

@@ -74,6 +74,22 @@ pub mod issuer {
     pub const AS_METADATA: &str = "/.well-known/oauth-authorization-server";
 }
 
+/// Bitstring Status Lists of the issued credentials, open for any verifier.
+pub mod status_lists {
+    pub const PREFIX: &str = "/status-lists";
+    pub const BY_ID: &str = "/{purpose}/{list_no}";
+}
+
+/// Credentials the authority has issued, for an operator to revoke, suspend or reinstate.
+pub mod issued {
+    pub const PREFIX: &str = "/issued";
+    pub const ALL: &str = "/all";
+    pub const BY_ID: &str = "/{id}";
+    pub const REVOKE: &str = "/{id}/revoke";
+    pub const SUSPEND: &str = "/{id}/suspend";
+    pub const REINSTATE: &str = "/{id}/reinstate";
+}
+
 /// Federated catalog: the participants of the data space, at the root of the host, for the
 /// agents to import.
 pub mod fed_catalog {

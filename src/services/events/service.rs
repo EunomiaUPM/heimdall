@@ -23,6 +23,8 @@ use ymir::data::entities::received::{grant, interaction, verification};
 use ymir::data::entities::shared::{issuance, participant};
 use ymir::oauth::Owner;
 
+use crate::data::entities::vc_status;
+
 use super::{EventsTrait, GrantEvent, InteractionEvent, IssuanceEvent, VerificationEvent};
 use crate::EVENT_PREFIX;
 
@@ -114,6 +116,17 @@ impl EventsTrait for EventsService {
             "participant",
             action,
             participant
+        );
+    }
+
+    async fn vc_status(&self, grant: &grant::Model, status: &vc_status::Model, action: &str) {
+        events::emit_action!(
+            self.sink,
+            &Self::owner(grant),
+            EVENT_PREFIX,
+            "vc_status",
+            action,
+            status
         );
     }
 }

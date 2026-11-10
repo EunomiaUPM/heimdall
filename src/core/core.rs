@@ -18,7 +18,7 @@
 use crate::config::CoreConfigTrait;
 use crate::modules::{
     ApproverModule, FedCatalogModule, GatekeeperModule, IssuerModule, OrchestratorTrait,
-    ParticipantModule, VerifierModule,
+    ParticipantModule, StatusListModule, VerifierModule,
 };
 use crate::services::events::EventsTrait;
 use crate::services::gatekeeper::GateKeeperTrait;
@@ -123,5 +123,6 @@ impl ApproverModule for Core {}
 impl GatekeeperModule for Core {}
 impl FedCatalogModule for Core {}
 impl ParticipantModule for Core {}
+impl StatusListModule for Core {}
 
 impl OrchestratorTrait for Core {}

@@ -13,8 +13,16 @@ const ENTITIES: Record<string, string> = {
   interaction: "Interaction",
   verification: "Verification",
   participant: "Participant",
+  vc_status: "Issued credential",
 };
-const ACTIONS: Record<string, string> = { create: "created", edit: "updated", delete: "deleted" };
+const ACTIONS: Record<string, string> = {
+  create: "created",
+  edit: "updated",
+  delete: "deleted",
+  revoke: "revoked",
+  suspend: "suspended",
+  reinstate: "reinstated",
+};
 
 /** Readable labels and in-app links for heimdall's bus topics. */
 export const EventTopics: EventTopicCatalog = {
@@ -45,6 +53,8 @@ export const EventTopics: EventTopicCatalog = {
         params: { participantId: p.participant_id },
         label: p.participant_id,
       };
+    if (event.topic.startsWith("heimdall:vc_status:") && typeof p.issuance_id === "string")
+      return { to: "/issued/$issuedId", params: { issuedId: p.issuance_id }, label: p.issuance_id };
     if (typeof p.grant_id === "string")
       return { to: "/requests/$requestId", params: { requestId: p.grant_id }, label: p.grant_id };
     return undefined;
@@ -54,10 +64,11 @@ export const EventTopics: EventTopicCatalog = {
 /** Query key prefixes (orval keys are request paths) each heimdall topic refreshes. */
 export const EVENT_INVALIDATIONS: LiveInvalidations = [
   ["heimdall:grant:", ["/approver"]],
-  ["heimdall:issuance:", ["/approver"]],
+  ["heimdall:issuance:", ["/approver", "/issued"]],
   ["heimdall:interaction:", ["/approver"]],
   ["heimdall:verification:", ["/approver"]],
   ["heimdall:participant:", ["/minions"]],
+  ["heimdall:vc_status:", ["/issued"]],
 ];
 
 /** The bus's SSE stream under the configured API base. */

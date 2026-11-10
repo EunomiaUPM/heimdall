@@ -17,7 +17,7 @@
 
 use std::sync::Arc;
 
-use crate::services::repo::RepoTrait;
+use crate::services::repo::{RepoTrait, VcStatusPostgresRepo, VcStatusRepoTrait};
 use sea_orm::DatabaseConnection;
 use ymir::services::repo::postgres::received::{
     RecvGrantPostgresRepo, RecvInteractionPostgresRepo, RecvVerificationPostgresRepo,
@@ -35,6 +35,7 @@ pub struct RepoForSql {
     recv_verification_repo: Arc<dyn RecvVerificationRepoTrait>,
     issuance_repo: Arc<dyn IssuanceRepoTrait>,
     participant_repo: Arc<dyn ParticipantRepoTrait>,
+    vc_status_repo: Arc<dyn VcStatusRepoTrait>,
 }
 
 impl RepoForSql {
@@ -49,6 +50,7 @@ impl RepoForSql {
             )),
             issuance_repo: Arc::new(IssuancePostgresRepo::new(db_connection.clone())),
             participant_repo: Arc::new(ParticipantPostgresRepo::new(db_connection.clone())),
+            vc_status_repo: Arc::new(VcStatusPostgresRepo::new(db_connection.clone())),
         }
     }
 }
@@ -72,5 +74,9 @@ impl RepoTrait for RepoForSql {
 
     fn issuance(&self) -> Arc<dyn IssuanceRepoTrait> {
         self.issuance_repo.clone()
+    }
+
+    fn vc_status(&self) -> Arc<dyn VcStatusRepoTrait> {
+        self.vc_status_repo.clone()
     }
 }

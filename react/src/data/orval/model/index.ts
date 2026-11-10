@@ -43,6 +43,8 @@ export * from './grantStatus.ts';
 export * from './grantStatus';
 export * from './issuanceDto.ts';
 export * from './issuanceDto';
+export * from './issuedVcDetailsDto';
+export * from './issuedVcDto';
 export * from './issuerCredential200.ts';
 export * from './issuerCredential200';
 export * from './issuerToken200.ts';

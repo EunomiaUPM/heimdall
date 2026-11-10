@@ -16,7 +16,9 @@
  */
 
 use crate::modules::fed_catalog::crawl_dsp;
-use crate::services::{HasEvents, HasGateKeeper, HasRepo, HasVcBuilder};
+use crate::data::entities::vc_status;
+use crate::modules::{issued_types, status_entries};
+use crate::services::{HasConfig, HasEvents, HasGateKeeper, HasRepo, HasVcBuilder};
 use async_trait::async_trait;
 use chrono::Utc;
 use ymir::errors::{Errors, Outcome};
@@ -30,7 +32,16 @@ use ymir::utils::require_field;
 
 #[async_trait]
 pub trait IssuerModule:
-    HasGateKeeper + HasIssuer + HasRepo + HasVcBuilder + HasWallet + HasEvents + Send + Sync + 'static
+    HasGateKeeper
+    + HasIssuer
+    + HasRepo
+    + HasVcBuilder
+    + HasWallet
+    + HasEvents
+    + HasConfig
+    + Send
+    + Sync
+    + 'static
 {
     #[tracing::instrument(level = "info", skip_all, err)]
     async fn get_cred_offer_data(&self, id: &str) -> Outcome<VcCredOffer> {
@@ -82,7 +93,22 @@ pub trait IssuerModule:
 
         issuance.build_ctx.holder_did = Some(holder_did.id().to_string());
 
-        let claims = self.vc_builder().build_vc(&issuance, vc_config)?;
+        let mut claims = self.vc_builder().build_vc(&issuance, vc_config)?;
+
+        let status = self
+            .repo()
+            .vc_status()
+            .allocate(vc_status::Plan {
+                credential_id: issuance.credential_id.clone(),
+                issuance_id: issuance.id.clone(),
+                vc_type: issued_types(claims.vc_doc()),
+                holder_did: holder_did.id().to_string(),
+                subject_name: issuance.subject_name.clone(),
+            })
+            .await?;
+        claims.vc_doc_mut().credential_status =
+            Some(status_entries(&*self.config(), status.list_no, status.idx));
+
         let vc_jwt = self.issuer().sign_claims(&claims).await?.as_str().to_string();
 
         issuance.credential = Some(vc_jwt.clone());

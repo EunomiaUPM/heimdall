@@ -139,6 +139,111 @@
       }
     },
     "schemas": {
+      "IssuedVcDto": {
+        "type": "object",
+        "properties": {
+          "credential_id": {
+            "type": "string"
+          },
+          "issuance_id": {
+            "type": "string"
+          },
+          "vc_type": {
+            "type": "string"
+          },
+          "holder_did": {
+            "type": "string"
+          },
+          "subject_name": {
+            "type": "string"
+          },
+          "list_no": {
+            "type": "integer"
+          },
+          "idx": {
+            "type": "integer"
+          },
+          "issued_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "revoked_at": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "suspended_at": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        },
+        "required": [
+          "credential_id",
+          "issuance_id",
+          "vc_type",
+          "holder_did",
+          "subject_name",
+          "list_no",
+          "idx",
+          "issued_at"
+        ]
+      },
+      "IssuedVcDetailsDto": {
+        "type": "object",
+        "properties": {
+          "credential_id": {
+            "type": "string"
+          },
+          "issuance_id": {
+            "type": "string"
+          },
+          "vc_type": {
+            "type": "string"
+          },
+          "holder_did": {
+            "type": "string"
+          },
+          "subject_name": {
+            "type": "string"
+          },
+          "list_no": {
+            "type": "integer"
+          },
+          "idx": {
+            "type": "integer"
+          },
+          "issued_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "revoked_at": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "suspended_at": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "credential": {
+            "type": "string",
+            "nullable": true,
+            "description": "The signed VC as a JWT"
+          }
+        },
+        "required": [
+          "credential_id",
+          "issuance_id",
+          "vc_type",
+          "holder_did",
+          "subject_name",
+          "list_no",
+          "idx",
+          "issued_at"
+        ]
+      },
       "CreateSubscriptionCommand": {
         "type": "object",
         "required": [
@@ -1188,6 +1293,239 @@
                 "schema": { "$ref": "#/components/schemas/RequestDetailsDto" }
               }
             }
+          }
+        }
+      }
+    },
+    "/issued/all": {
+      "get": {
+        "operationId": "getAllIssued",
+        "summary": "Get All Issued Credentials",
+        "tags": [
+          "Issued"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Issued credentials with their status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/IssuedVcDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/issued/{id}": {
+      "get": {
+        "operationId": "getIssuedById",
+        "summary": "Get Issued Credential",
+        "tags": [
+          "Issued"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Issuance id (the id of its credential request grant)",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Issued credential, its status and its JWT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IssuedVcDetailsDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/issued/{id}/revoke": {
+      "post": {
+        "operationId": "revokeIssued",
+        "summary": "Revoke Issued Credential (irreversible)",
+        "tags": [
+          "Issued"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Issuance id (the id of its credential request grant)",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Updated status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IssuedVcDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential is revoked"
+          }
+        }
+      }
+    },
+    "/issued/{id}/suspend": {
+      "post": {
+        "operationId": "suspendIssued",
+        "summary": "Suspend Issued Credential",
+        "tags": [
+          "Issued"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Issuance id (the id of its credential request grant)",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Updated status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IssuedVcDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential is revoked"
+          }
+        }
+      }
+    },
+    "/issued/{id}/reinstate": {
+      "post": {
+        "operationId": "reinstateIssued",
+        "summary": "Reinstate Suspended Credential",
+        "tags": [
+          "Issued"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Issuance id (the id of its credential request grant)",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Updated status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IssuedVcDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The credential is revoked"
+          }
+        }
+      }
+    },
+    "/status-lists/{purpose}/{list_no}": {
+      "get": {
+        "operationId": "getStatusList",
+        "summary": "Get Bitstring Status List Credential",
+        "tags": [
+          "StatusLists"
+        ],
+        "parameters": [
+          {
+            "name": "purpose",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "revocation",
+                "suspension"
+              ]
+            }
+          },
+          {
+            "name": "list_no",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "BitstringStatusListCredential signed as a JWT",
+            "content": {
+              "application/vc+jwt": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unknown purpose or list"
           }
         }
       }

@@ -21,6 +21,7 @@ mod gaia;
 mod gatekeeper;
 mod issuer;
 mod participants;
+mod status_list;
 mod verifier;
 
 pub use crate::core::OrchestratorTrait;
@@ -29,4 +30,7 @@ pub use fed_catalog::FedCatalogModule;
 pub use gatekeeper::GatekeeperModule;
 pub use issuer::IssuerModule;
 pub use participants::ParticipantModule;
+pub use status_list::{
+    issued_types, status_entries, IssuedVcDetails, StatusChange, StatusListModule,
+};
 pub use verifier::VerifierModule;
