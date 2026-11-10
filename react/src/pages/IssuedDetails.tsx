@@ -26,7 +26,6 @@ import {
   Identifier,
   InfoList,
   type InfoItemProps,
-  JsonTable,
   PageHeader,
   PageLayout,
   Skeleton,
@@ -40,19 +39,8 @@ import {
   useSuspendIssued,
 } from "@/data/orval/issued/issued";
 import { IssuedStateBadge, issuedState } from "@/pages/Issued";
-
-function decodeJwtPayload(jwt?: string | null): unknown {
-  if (!jwt) return null;
-  try {
-    const payload = jwt.split(".")[1];
-    const base64 = payload.replace(/-/g, "+").replace(/_/g, "/");
-    const padded = base64 + "=".repeat((4 - (base64.length % 4)) % 4);
-    const bytes = Uint8Array.from(atob(padded), (c) => c.charCodeAt(0));
-    return JSON.parse(new TextDecoder().decode(bytes));
-  } catch {
-    return null;
-  }
-}
+import { CredentialView, decodeJwtPayload } from "@/components/credentials/CredentialView";
+import { type CredentialStatus, statusEntries } from "@/components/credentials/credentialStatus";
 
 type Change = "revoke" | "suspend" | "reinstate";
 
@@ -83,11 +71,6 @@ export default function IssuedDetails() {
   const reinstateMutation = useReinstateIssued();
   const busy =
     revokeMutation.isPending || suspendMutation.isPending || reinstateMutation.isPending;
-
-  const vcPayload = useMemo(
-    () => decodeJwtPayload(res?.status === 200 ? res.data.credential : null),
-    [res],
-  );
 
   const applyChange = async (change: Change) => {
     const mutation =
@@ -137,6 +120,20 @@ export default function IssuedDetails() {
 
   const vc = res.data;
   const state = issuedState(vc);
+  const status: CredentialStatus = {
+    source: "As recorded by this authority, which publishes it in its status lists.",
+    entries: statusEntries(vc.credential ? decodeJwtPayload(vc.credential) : null).map((entry) => ({
+      ...entry,
+      state:
+        entry.purpose === "revocation"
+          ? vc.revoked_at
+            ? "revoked"
+            : "active"
+          : vc.suspended_at
+            ? "suspended"
+            : "active",
+    })),
+  };
 
   const items: InfoItemProps[] = [
     {
@@ -228,15 +225,11 @@ export default function IssuedDetails() {
             <CardHeader className="pb-2">
               <CardTitle className="text-base font-semibold flex items-center gap-2">
                 <FileJson className="h-4 w-4 text-brand-sky" />
-                Signed Credential (JWT payload)
+                Signed Credential
               </CardTitle>
             </CardHeader>
             <CardContent>
-              {vcPayload ? (
-                <JsonTable value={vcPayload} />
-              ) : (
-                <span className="text-muted-foreground">—</span>
-              )}
+              <CredentialView jwt={vc.credential} status={status} />
             </CardContent>
           </Card>
         </div>

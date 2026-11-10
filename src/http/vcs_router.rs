@@ -94,10 +94,10 @@ impl ApproverRouter {
         let response = match gatekeeper.manage_req(&user, id, payload).await? {
             InteractionFinishResponse::Success(Some(uri)) => (StatusCode::OK, uri).into_response(),
             InteractionFinishResponse::Success(None) => StatusCode::OK.into_response(),
-            InteractionFinishResponse::Failure(Some(uri)) => {
+            InteractionFinishResponse::Failure(Some(uri), _) => {
                 (StatusCode::UNPROCESSABLE_ENTITY, uri).into_response()
             }
-            InteractionFinishResponse::Failure(None) => {
+            InteractionFinishResponse::Failure(None, _) => {
                 StatusCode::UNPROCESSABLE_ENTITY.into_response()
             }
         };

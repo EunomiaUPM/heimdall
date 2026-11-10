@@ -92,8 +92,12 @@ pub trait StatusListModule:
         for idx in self.repo().vc_status().marked_indices(list_no, purpose).await? {
             bits.set(idx as usize, true)?;
         }
-        let subject =
-            BitstringStatusList::new(&url, purpose, bits.encode()?, Some(status_list_ttl_ms()));
+        let subject = BitstringStatusList::new(
+            &url,
+            purpose,
+            bits.encode()?,
+            Some(DEFAULT_STATUS_LIST_TTL_MS),
+        );
 
         let did = self.wallet().get_did().await?;
         let now = Utc::now();
@@ -205,11 +209,4 @@ pub fn issued_types(doc: &VcDocument) -> String {
         .cloned()
         .collect::<Vec<_>>()
         .join(", ")
-}
-
-fn status_list_ttl_ms() -> u64 {
-    std::env::var("STATUS_LIST_TTL_MS")
-        .ok()
-        .and_then(|ttl| ttl.parse().ok())
-        .unwrap_or(DEFAULT_STATUS_LIST_TTL_MS)
 }

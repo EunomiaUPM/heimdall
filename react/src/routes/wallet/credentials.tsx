@@ -1,8 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { WalletCredentialsView } from "@eunomia/ui";
+import { WalletCredentials } from "@/components/credentials/WalletCredentials";
 
 const HeimdallWalletCredentials = () => (
-  <WalletCredentialsView
+  <WalletCredentials
     showGaiaCompliance={false}
     requestVcHref={() => "/requests"}
   />

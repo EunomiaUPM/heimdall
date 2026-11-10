@@ -73,9 +73,9 @@ impl VerifierRouter {
         let payload = extract_form_payload(payload)?;
 
         let refused = payload.refusal().is_some();
-        let (verified, redirect_uri) = match verifier.verify(state, payload).await? {
-            InteractionFinishResponse::Success(uri) => (true, uri),
-            InteractionFinishResponse::Failure(uri) => (false, uri),
+        let (verified, redirect_uri, reason) = match verifier.verify(state, payload).await? {
+            InteractionFinishResponse::Success(uri) => (true, uri, None),
+            InteractionFinishResponse::Failure(uri, reason) => (false, uri, reason),
         };
         if verified || refused {
             let body = Json(DirectPostResponse::new(redirect_uri));
@@ -83,7 +83,7 @@ impl VerifierRouter {
         }
         let error = json!({
             "error": "invalid_request",
-            "error_description": "the presentation did not verify",
+            "error_description": reason.as_deref().unwrap_or("the presentation did not verify"),
             "redirect_uri": redirect_uri,
         });
         Ok((StatusCode::BAD_REQUEST, headers.response_headers(), Json(error)).into_response())

@@ -100,6 +100,12 @@ function AuthenticatedShell({
           ]
         : []),
       {
+        title: "Events",
+        url: "/admin/events/feed",
+        section: "/admin/events",
+        icon: Activity,
+      },
+      {
         title: "About",
         url: "/admin/about",
         icon: Info,
@@ -129,12 +135,6 @@ function AuthenticatedShell({
             title: "Issued VCs",
             url: "/admin/issued",
             icon: BadgeCheck,
-          },
-          {
-            title: "Events",
-            url: "/admin/events/feed",
-            section: "/admin/events",
-            icon: Activity,
           },
         ],
       },
@@ -167,7 +167,7 @@ function AuthenticatedShell({
             </div>
           </SidebarInset>
         </SidebarProvider>
-        <Toaster />
+        <Toaster richColors />
         <GlobalLoadingIndicator />
         <TanStackRouterDevtools />
       </LiveProvider>
