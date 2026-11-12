@@ -17,7 +17,6 @@
 
 mod builder_default_trait;
 pub mod clearing_house;
-pub mod clearing_house_proxy;
 pub mod dataspace_authority;
 mod eco_authority;
 pub mod legal_authority;

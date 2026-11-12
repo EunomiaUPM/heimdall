@@ -127,10 +127,6 @@ impl CoreBuilder {
                 let config = ClearingHouseAuthorityConfig::from(config.clone());
                 Arc::new(ClearingHouseAuthorityVcBuilder::new(config))
             }
-            AuthorityRole::ClearingHouseProxy => {
-                let config = LegalAuthorityConfig::from(config.clone());
-                Arc::new(LegalAuthorityVcBuilder::new(config))
-            }
             AuthorityRole::DataSpaceAuthority => {
                 let config = DataSpaceAuthorityConfig::from(config.clone());
                 Arc::new(DataSpaceAuthorityVcBuilder::new(config))

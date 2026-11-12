@@ -17,7 +17,6 @@
 
 mod approver;
 pub mod fed_catalog;
-mod gaia;
 mod gatekeeper;
 mod issuer;
 mod participants;

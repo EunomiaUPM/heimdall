@@ -27,7 +27,6 @@ use ymir::types::vcs::VcType;
 pub enum AuthorityRole {
     LegalAuthority,
     ClearingHouse,
-    ClearingHouseProxy,
     DataSpaceAuthority,
     EcoAuthority,
 }
@@ -38,7 +37,6 @@ impl FromStr for AuthorityRole {
         match s {
             "LegalAuthority" => Ok(Self::LegalAuthority),
             "ClearingHouse" => Ok(Self::ClearingHouse),
-            "ClearingHouseProxy" => Ok(Self::ClearingHouseProxy),
             "DataSpaceAuthority" => Ok(Self::DataSpaceAuthority),
             "DataspaceAuthority" => Ok(Self::DataSpaceAuthority),
             "EcoAuthority" => Ok(Self::EcoAuthority),
@@ -52,7 +50,6 @@ impl fmt::Display for AuthorityRole {
         let s = match self {
             AuthorityRole::LegalAuthority => "LegalAuthority",
             AuthorityRole::ClearingHouse => "ClearingHouse",
-            AuthorityRole::ClearingHouseProxy => "ClearingHouseProxy",
             AuthorityRole::DataSpaceAuthority => "DataSpaceAuthority",
             AuthorityRole::EcoAuthority => "EcoAuthority",
         };
@@ -67,7 +64,7 @@ impl AuthorityRole {
             AuthorityRole::LegalAuthority => {
                 vec![
                     VcType::Eori,
-                    VcType::Eori,
+                    VcType::Euid,
                     VcType::LocalRegistrationNumber,
                     VcType::LeiCode,
                     VcType::VatId,
@@ -77,16 +74,13 @@ impl AuthorityRole {
             AuthorityRole::ClearingHouse => {
                 vec![VcType::GxLabel]
             }
-            AuthorityRole::ClearingHouseProxy => {
-                vec![VcType::GxLabel]
-            }
             AuthorityRole::DataSpaceAuthority => {
                 vec![VcType::DataspaceParticipant, VcType::DataspacePremium]
             }
             AuthorityRole::EcoAuthority => {
                 vec![
                     VcType::Eori,
-                    VcType::Eori,
+                    VcType::Euid,
                     VcType::LocalRegistrationNumber,
                     VcType::LeiCode,
                     VcType::VatId,

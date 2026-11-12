@@ -14,11 +14,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
-use base64::engine::general_purpose::STANDARD;
-use base64::Engine;
 use serde_json::Value;
 use std::str::FromStr;
-use ymir::capabilities::DigestSRI;
+use ymir::capabilities::Digest;
 use ymir::data::entities::shared::issuance;
 use ymir::errors::{Errors, Outcome};
 use ymir::types::crypto::{Canon, HashAlg};
@@ -142,10 +140,12 @@ impl ClearingHouseAuthorityVcBuilder {
 
         let canon = Canon::new(&claims_value)?;
         let alg = HashAlg::Sha256;
-        let digest = DigestSRI::digest(&canon, alg);
+        let digest = Digest::digest(&canon, alg);
+        // Gaia-X puts hex here, not the base64 of W3C SRI.
+        let hex: String = digest.iter().map(|b| format!("{b:02x}")).collect();
         Ok(CompliantCredential {
             credential_type: vc_type.clone(),
-            digest_sri: format!("{}-{}", alg.label(), STANDARD.encode(digest)),
+            digest_sri: format!("{}-{}", alg.label(), hex),
         })
     }
 }
