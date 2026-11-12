@@ -54,10 +54,15 @@ interface VcsResponse {
 }
 
 const REGISTRATION_TYPES = [
-  "gx:Eori",
-  "gx:Euid",
+  "gx:EORI",
+  "gx:EUID",
   "gx:LeiCode",
   "gx:LocalRegistrationNumber",
+  "gx:TaxID",
+  "gx:VatID",
+  // Spellings of credentials issued before the Gaia-X names.
+  "gx:Eori",
+  "gx:Euid",
   "gx:TaxId",
   "gx:VatId",
   "Eori",
@@ -65,10 +70,14 @@ const REGISTRATION_TYPES = [
   "VatId",
 ];
 const LEGAL_PERSON_TYPES = ["gx:LegalPerson", "LegalPerson"];
-const TC_TYPES = ["gx:TermsAndConditions", "TermsAndConditions"];
-const LABEL_TYPES = ["gx:LabelCredential", "LabelCredential"];
+const TC_TYPES = ["gx:Issuer"];
+const LABEL_TYPES = [
+  "gx:LabelCredential",
+  "LabelCredential",
+  "gx:ParticipantComplianceCredential",
+];
 
-const RECOMMENDED_REGISTRATION_VC = "gx_VatId_jwt_vc_json";
+const RECOMMENDED_REGISTRATION_VC = "gx_VatID_jwt_vc_json";
 const RECOMMENDED_COMPLIANCE_VC = "gx_LabelCredential_jwt_vc_json";
 
 function vcHasAny(vcs: WalletVcRecord[], targets: string[]): boolean {
@@ -413,13 +422,13 @@ const ComplianceStepCard = ({
       {step === 1 && (
         <Hint
           tone="amber"
-          text="Request a registration credential (VatId, TaxId or LeiCode) from a legal authority."
+          text="Request a registration credential (VatID, TaxID or LeiCode) from a legal authority."
         />
       )}
       {step === 2 && !flags.hasLegalPerson && !flags.hasTermsAndConditions && (
         <Hint
           tone="primary"
-          text="The wallet will self-issue gx:LegalPerson and gx:TermsAndConditions on top of your registration credential."
+          text="The wallet will self-issue gx:LegalPerson and gx:Issuer (Gaia-X terms) on top of your registration credential."
         />
       )}
       {step === 3 && (
@@ -505,9 +514,9 @@ function stepTitle(step: 1 | 2 | 3 | 4) {
 function stepDescription(step: 1 | 2 | 3 | 4) {
   switch (step) {
     case 1:
-      return "Pick a registration credential (VatId, TaxId, LEI, EORI, ...) from a trusted authority. This anchors your legal identity.";
+      return "Pick a registration credential (VatID, TaxID, LEI, EORI, ...) from a trusted authority. This anchors your legal identity.";
     case 2:
-      return "Generate self-signed gx:LegalPerson and gx:TermsAndConditions credentials linked to your registration credential.";
+      return "Generate self-signed gx:LegalPerson and gx:Issuer (Gaia-X terms) credentials linked to your registration credential.";
     case 3:
       return "Submit your credentials to a Gaia-X Clearing House to receive your LabelCredential.";
     case 4:

@@ -16,7 +16,6 @@
  */
 use serde_json::Value;
 use std::str::FromStr;
-use ymir::capabilities::Digest;
 use ymir::data::entities::shared::issuance;
 use ymir::errors::{Errors, Outcome};
 use ymir::types::crypto::{Canon, HashAlg};
@@ -64,14 +63,6 @@ impl VcBuilderTrait for ClearingHouseAuthorityVcBuilder {
         }
 
         let vcs = &issuance.build_ctx.vcs;
-        if vcs.len() != 3 {
-            return Err(Errors::unauthorized(
-                "Not enough credentials were presented",
-                None,
-            ));
-        }
-
-        let vcs = &issuance.build_ctx.vcs;
         let mut compliant_credentials = Vec::with_capacity(vcs.len());
 
         let mut has_legal_person = false;
@@ -84,7 +75,7 @@ impl VcBuilderTrait for ClearingHouseAuthorityVcBuilder {
             let Ok(t) = VcType::from_str(&parsed.credential_type);
             match t {
                 VcType::LegalPerson => has_legal_person = true,
-                VcType::TermsAndConditions => has_terms = true,
+                VcType::GxIssuer => has_terms = true,
                 t if t.is_legal_registration_number() => has_registration = true,
                 _ => {}
             }
@@ -100,7 +91,7 @@ impl VcBuilderTrait for ClearingHouseAuthorityVcBuilder {
         }
         if !has_terms {
             return Err(Errors::forbidden(
-                "Missing required credential: TermsAndConditions",
+                "Missing required credential: Issuer (Gaia-X terms and conditions)",
                 None,
             ));
         }
@@ -113,7 +104,8 @@ impl VcBuilderTrait for ClearingHouseAuthorityVcBuilder {
 
         let cred_subj = GxLabelCredSubject {
             id: holder_did.to_string(),
-            label_level: self.config.get_label_level().to_string(),
+            label_level: (*vc_config.vc_type() == VcType::GxLabel)
+                .then(|| self.config.get_label_level().to_string()),
             engine_version: self.config.get_engine_version().to_string(),
             rules_version: self.config.get_rules_version().to_string(),
             compliant_credentials,
@@ -140,7 +132,7 @@ impl ClearingHouseAuthorityVcBuilder {
 
         let canon = Canon::new(&claims_value)?;
         let alg = HashAlg::Sha256;
-        let digest = Digest::digest(&canon, alg);
+        let digest = canon.digest(alg);
         // Gaia-X puts hex here, not the base64 of W3C SRI.
         let hex: String = digest.iter().map(|b| format!("{b:02x}")).collect();
         Ok(CompliantCredential {

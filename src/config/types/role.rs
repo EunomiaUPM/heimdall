@@ -72,7 +72,7 @@ impl AuthorityRole {
                 ]
             }
             AuthorityRole::ClearingHouse => {
-                vec![VcType::GxLabel]
+                vec![VcType::GxLabel, VcType::ParticipantCompliance]
             }
             AuthorityRole::DataSpaceAuthority => {
                 vec![VcType::DataspaceParticipant, VcType::DataspacePremium]
@@ -88,6 +88,7 @@ impl AuthorityRole {
                     VcType::DataspaceParticipant,
                     VcType::DataspacePremium,
                     VcType::GxLabel,
+                    VcType::ParticipantCompliance,
                 ]
             }
         }

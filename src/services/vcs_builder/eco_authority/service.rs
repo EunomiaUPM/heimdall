@@ -68,7 +68,9 @@ impl VcBuilderTrait for EcoAuthorityBuilder {
             VcType::DataspaceParticipant | VcType::DataspacePremium => {
                 self.dataspace.build_vc(model, vc_config)
             }
-            VcType::GxLabel => self.clearing_house.build_vc(model, vc_config),
+            VcType::GxLabel | VcType::ParticipantCompliance => {
+                self.clearing_house.build_vc(model, vc_config)
+            }
             _ => Err(Errors::unauthorized(
                 format!("Cannot issue vc type: {}", vc_config.vc_type()),
                 None,
