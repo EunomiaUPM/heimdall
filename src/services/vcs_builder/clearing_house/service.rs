@@ -14,11 +14,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
-use serde_json::Value;
 use std::str::FromStr;
 use ymir::data::entities::shared::issuance;
 use ymir::errors::{Errors, Outcome};
-use ymir::types::crypto::{Canon, HashAlg};
 use ymir::types::jwt::{Jwt, JwtClaims};
 use ymir::types::vcs::VcPayload;
 use ymir::types::vcs::vc_specs::gx_label::{CompliantCredential, GxLabelCredSubject};
@@ -52,7 +50,7 @@ impl VcBuilderTrait for ClearingHouseAuthorityVcBuilder {
         issuance: &issuance::Model,
         vc_config: VcTypeConfig,
     ) -> Outcome<JwtClaims<VcPayload>> {
-        let holder_did = need_field_for_vc(issuance.build_ctx.holder_did.as_deref())?;
+        need_field_for_vc(issuance.build_ctx.holder_did.as_deref())?;
 
         let role = self.config.get_role();
         if !role.available_credentials().contains(vc_config.vc_type()) {
@@ -103,7 +101,7 @@ impl VcBuilderTrait for ClearingHouseAuthorityVcBuilder {
         }
 
         let cred_subj = GxLabelCredSubject {
-            id: holder_did.to_string(),
+            id: format!("{}#cs", issuance.credential_id),
             label_level: (*vc_config.vc_type() == VcType::GxLabel)
                 .then(|| self.config.get_label_level().to_string()),
             engine_version: self.config.get_engine_version().to_string(),
@@ -119,10 +117,11 @@ impl VcBuilderTrait for ClearingHouseAuthorityVcBuilder {
 
 impl ClearingHouseAuthorityVcBuilder {
     fn parse_credential(credential: &str) -> Outcome<CompliantCredential> {
-        // The whole payload, untyped, so the digest covers every claim.
-        let jwt: Jwt<Value> = Jwt::parse(credential)?;
-        let claims_value: Value = serde_json::to_value(jwt.unverified_claims())?;
-        let claims: JwtClaims<VcPayload> = serde_json::from_value(claims_value.clone())?;
+        let jwt: Jwt<VcPayload> = Jwt::parse(credential)?;
+        let claims = jwt.unverified_claims();
+        let id = Some(claims.vc_doc().id.clone())
+            .filter(|id| !id.is_empty())
+            .or_else(|| claims.jti().map(str::to_string));
         let doc = &claims.vc_doc().r#type;
 
         let vc_type = doc
@@ -130,14 +129,10 @@ impl ClearingHouseAuthorityVcBuilder {
             .find(|t| t.as_str() != "VerifiableCredential")
             .ok_or_else(|| Errors::unauthorized("Credential type missing", None))?;
 
-        let canon = Canon::new(&claims_value)?;
-        let alg = HashAlg::Sha256;
-        let digest = canon.digest(alg);
-        // Gaia-X puts hex here, not the base64 of W3C SRI.
-        let hex: String = digest.iter().map(|b| format!("{b:02x}")).collect();
         Ok(CompliantCredential {
+            id,
             credential_type: vc_type.clone(),
-            digest_sri: format!("{}-{}", alg.label(), hex),
+            digest_sri: CompliantCredential::digest_of(credential)?,
         })
     }
 }

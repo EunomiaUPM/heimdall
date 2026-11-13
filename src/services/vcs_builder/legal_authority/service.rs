@@ -58,7 +58,9 @@ impl VcBuilderTrait for LegalAuthorityVcBuilder {
         issuance: &issuance::Model,
         vc_config: VcTypeConfig,
     ) -> Outcome<JwtClaims<VcPayload>> {
-        let holder_did = need_field_for_vc(issuance.build_ctx.holder_did.as_deref())?;
+        need_field_for_vc(issuance.build_ctx.holder_did.as_deref())?;
+        // The number is its own node, as in Gaia-X: the legal person links to it.
+        let subject_id = format!("{}#cs", issuance.credential_id);
 
         let role = self.config.get_role();
         if !role.available_credentials().contains(vc_config.vc_type()) {
@@ -72,7 +74,7 @@ impl VcBuilderTrait for LegalAuthorityVcBuilder {
         let credential_subject = match vc_config.vc_type() {
             VcType::LeiCode => {
                 let v = LeiCode {
-                    id: holder_did.to_string(),
+                    id: subject_id.clone(),
                     lei_code: code,
                     subdivision_country_code: None,
                     country_code: country,
@@ -81,21 +83,21 @@ impl VcBuilderTrait for LegalAuthorityVcBuilder {
             }
             VcType::LocalRegistrationNumber => {
                 let v = LocalRegistrationNumber {
-                    id: holder_did.to_string(),
+                    id: subject_id.clone(),
                     local: code,
                 };
                 serde_json::to_value(&v)?
             }
             VcType::TaxId => {
                 let v = TaxId {
-                    id: holder_did.to_string(),
+                    id: subject_id.clone(),
                     tax_id: code,
                 };
                 serde_json::to_value(&v)?
             }
             VcType::VatId => {
                 let v = VatId {
-                    id: holder_did.to_string(),
+                    id: subject_id.clone(),
                     vat_id: code,
                     country_code: Some(country),
                 };
