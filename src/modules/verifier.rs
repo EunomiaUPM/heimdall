@@ -18,6 +18,7 @@
 use crate::services::{HasEvents, HasGateKeeper, HasRepo};
 use async_trait::async_trait;
 use chrono::Utc;
+use tracing::warn;
 use ymir::errors::{Errors, Outcome};
 use ymir::services::HasVerifier;
 use ymir::types::gnap::InteractionFinishResponse;
@@ -57,6 +58,9 @@ pub trait VerifierModule: HasGateKeeper + HasVerifier + HasRepo + HasEvents + Se
                 Err(refusal.unwrap_or_else(|| Errors::forbidden("no presentation", None)))
             }
         };
+        if let Err(e) = &result {
+            warn!("Presentation for {state} rejected: {}", e.reason());
+        }
 
         let verification = self.repo().recv_verification().update(verification).await?;
         let grant = self.repo().recv_grant().get_by_id(&verification.grant_id).await?;

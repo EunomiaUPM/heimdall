@@ -36,14 +36,14 @@ wallet_config:
     grpc: null
     graphql: null
 
-#did_config:
-#  type: Jwk
-
 did_config:
-  type: Web
-  domain: '127.0.0.1'
-  path:
-  port: '1500'
+  type: Jwk
+
+#did_config:
+#  type: Web
+#  domain: '127.0.0.1'
+#  path:
+#  port: '1500'
 
 role: LegalAuthority
 

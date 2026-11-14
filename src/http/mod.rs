@@ -16,6 +16,7 @@
  */
 
 mod fed_catalog_router;
+mod gaia_router;
 mod gatekeeper_router;
 mod issuer_router;
 mod participant_router;
@@ -26,6 +27,7 @@ mod vcs_router;
 mod verifier_router;
 
 pub use fed_catalog_router::FedCatalogRouter;
+pub use gaia_router::GaiaRouter;
 pub use gatekeeper_router::GateKeeperRouter;
 pub use issuer_router::IssuerRouter;
 pub use participant_router::ParticipantRouter;

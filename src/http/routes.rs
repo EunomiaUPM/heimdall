@@ -74,6 +74,14 @@ pub mod issuer {
     pub const AS_METADATA: &str = "/.well-known/oauth-authorization-server";
 }
 
+/// Gaia-X compliance by plain POST, only with the clearing house role: a VP-JWT in, the
+/// credential out (`?vcid=` names it). Without a type, a `gx:LabelCredential`.
+pub mod gaia {
+    pub const PREFIX: &str = "/gaia";
+    pub const COMPLIANCE: &str = "/compliance";
+    pub const COMPLIANCE_BY_TYPE: &str = "/compliance/{vc_type}";
+}
+
 /// Bitstring Status Lists of the issued credentials, open for any verifier.
 pub mod status_lists {
     pub const PREFIX: &str = "/status-lists";

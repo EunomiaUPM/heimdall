@@ -34,12 +34,12 @@ use ymir::services::token_validator::OauthTokenValidatorTrait;
 
 use crate::core::Core;
 use crate::modules::fed_catalog::DspCrawler;
-use crate::services::HasRepo;
+use crate::services::{HasRepo, HasVcBuilder};
 use crate::http::routes::{
-    approver, console, docs, gate, issued, issuer, minions, session, status_lists, wallet,
+    approver, console, docs, gaia, gate, issued, issuer, minions, session, status_lists, wallet,
 };
 use crate::http::{
-    ApproverRouter, FedCatalogRouter, GateKeeperRouter, IssuerRouter, ParticipantRouter,
+    ApproverRouter, FedCatalogRouter, GaiaRouter, GateKeeperRouter, IssuerRouter, ParticipantRouter,
     SessionHandlers, StatusListRouter, VerifierRouter,
 };
 use ymir::http::routes::verifier;
@@ -162,6 +162,29 @@ impl ServiceModuleTrait for VerifierPlane {
     fn http(&self) -> Option<(String, Router)> {
         let r = VerifierRouter::new(self.0.core.clone());
         PlaneContext::mount(Router::new().nest(&self.0.api(verifier::PREFIX), r.external()))
+    }
+}
+
+/// Gaia-X compliance by plain POST; mounted only with the clearing house role.
+pub struct GaiaPlane(PlaneContext);
+
+impl GaiaPlane {
+    pub fn new(ctx: PlaneContext) -> Self {
+        Self(ctx)
+    }
+}
+
+impl ServiceModuleTrait for GaiaPlane {
+    fn name(&self) -> &'static str {
+        "gaia"
+    }
+
+    fn http(&self) -> Option<(String, Router)> {
+        if !self.0.core.vc_builder().get_role().is_gaia() {
+            return None;
+        }
+        let r = GaiaRouter::new(self.0.core.clone());
+        PlaneContext::mount(Router::new().nest(&self.0.api(gaia::PREFIX), r.external()))
     }
 }
 

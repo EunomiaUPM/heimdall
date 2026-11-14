@@ -19,7 +19,7 @@ use crate::config::traits::{Oid4VpServiceTrait, RoleConfigTrait};
 use crate::config::types::{AuthorityRole, Oid4VpService};
 use crate::config::{CoreConfig, CoreConfigTrait};
 use crate::core::Core;
-use crate::http::routes::{fed_catalog, gate, status_lists};
+use crate::http::routes::{fed_catalog, gaia, gate, status_lists};
 use crate::services::events::EventsService;
 use crate::services::gatekeeper::gnap::{GnapConfig, GnapGateKeeperService};
 use crate::services::repo::RepoForSql;
@@ -162,7 +162,7 @@ impl CoreBuilder {
     }
 
     fn authority_services(config: &CoreConfig) -> Vec<DidService> {
-        vec![
+        let mut services = vec![
             DidService::basic(
                 DidServiceType::CredentialIssuer,
                 format!(
@@ -190,6 +190,19 @@ impl CoreBuilder {
                     status_lists::PREFIX
                 ),
             ),
-        ]
+        ];
+        if config.get_role().is_gaia() {
+            services.push(DidService::basic(
+                DidServiceType::Other("GaiaXCompliance".to_string()),
+                format!(
+                    "{}{}{}{}",
+                    config.get_host(HostType::Http),
+                    config.get_api_version(),
+                    gaia::PREFIX,
+                    gaia::COMPLIANCE
+                ),
+            ));
+        }
+        services
     }
 }

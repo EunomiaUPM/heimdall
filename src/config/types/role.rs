@@ -59,6 +59,13 @@ impl fmt::Display for AuthorityRole {
 }
 
 impl AuthorityRole {
+    /// Whether the role issues Gaia-X compliance credentials (clearing house).
+    pub fn is_gaia(&self) -> bool {
+        self.available_credentials()
+            .iter()
+            .any(|t| matches!(t, VcType::GxLabel | VcType::ParticipantCompliance))
+    }
+
     pub fn available_credentials(&self) -> Vec<VcType> {
         match self {
             AuthorityRole::LegalAuthority => {

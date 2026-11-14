@@ -17,6 +17,7 @@
 
 mod approver;
 pub mod fed_catalog;
+mod gaia;
 mod gatekeeper;
 mod issuer;
 mod participants;
@@ -26,6 +27,7 @@ mod verifier;
 pub use crate::core::OrchestratorTrait;
 pub use approver::ApproverModule;
 pub use fed_catalog::FedCatalogModule;
+pub use gaia::GaiaModule;
 pub use gatekeeper::GatekeeperModule;
 pub use issuer::IssuerModule;
 pub use participants::ParticipantModule;
